@@ -1,0 +1,12 @@
+[project]
+name = "mpl2typ"
+version = "0.1.0"
+description = "Export Matplotlib figures to structured Typst files"
+readme = "README.md"
+authors = [{ name = "Janek Fleper", email = "j.fleper@mailbox.org" }]
+requires-python = ">=3.10"
+dependencies = ["matplotlib>=3.10.1"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
