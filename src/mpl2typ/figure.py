@@ -3,6 +3,7 @@ import matplotlib as mpl
 
 from .util import function, compute_gutter
 from .axes import axes_template
+from .grid import Grid
 
 
 header = """
@@ -98,41 +99,27 @@ class Figure:
                 bottom=spacing.bottom,
             )
 
-            axes = function(
-                "block",
-                dict(
-                    width="100%",
-                    height="100%",
-                    stroke="red",
-                ),
-            )
-
-            grid = []
-            gridspec = None
+            grids = []
+            gridspecs = []
             other = []
             for ax in self.fig.get_axes():
-                if ax.get_gridspec() is not None:
-                    gridspec = ax.get_gridspec()
-                    grid.append(ax)
-                else:
+                gs = ax.get_gridspec()
+                if gs is None:
                     other.append(ax)
+                    continue
+                elif gs not in gridspecs:
+                    gridspecs.append(gs)
+                    grids.append([ax])
+                else:
+                    grids[gridspecs.index(gs)].append(ax)
 
-            for i, ax in enumerate(grid):
+            if not gridspecs:
+                return
+            elif len(gridspecs) > 1:
+                raise ValueError("Only one gridspec is supported for now")
+
+            for i, ax in enumerate(grids[0]):
                 f.write(axes_template(ax, i))
 
-            if gridspec is not None:
-                nrows, ncols = gridspec.get_geometry()
-                columns = ", ".join(["1fr"] * ncols)
-                rows = ", ".join(["1fr"] * nrows)
-                column_gutter = f"{compute_gutter(spacing.wspace, ncols) * 100:.3g}%"
-                row_gutter = f"{compute_gutter(spacing.hspace, nrows) * 100:.3g}%"
-                axes_grid = function(
-                    "grid",
-                    {
-                        "columns": f"({columns})",
-                        "rows": f"({rows})",
-                        "column-gutter": column_gutter,
-                        "row-gutter": row_gutter,
-                    },
-                )(",\n".join([axes(f"axes-{i}()") for i in range(len(grid))]))
-                f.write(figure_template(axes_grid))
+            grid = Grid(gridspecs[0], grids[0])
+            f.write(figure_template(grid.export()))

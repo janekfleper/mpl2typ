@@ -1,3 +1,3 @@
-from .figure import Figure
+from .figure import Figure, Grid
 
-__all__ = ["Figure"]
+__all__ = ["Figure", "Grid"]
