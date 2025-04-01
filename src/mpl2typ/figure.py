@@ -39,7 +39,13 @@ def figure(
 ):
     s = ""
     s += f"#let width = {width}cm\n"
-    s += f"#let height = {height}cm\n\n"
+    s += f"#let height = {height}cm\n"
+    s += "#let padding = (\n"
+    s += f"  left: {left * 100:.3g}%,\n"
+    s += f"  right: {(1 - right) * 100:.3g}%,\n"
+    s += f"  top: {(1 - top) * 100:.3g}%,\n"
+    s += f"  bottom: {bottom * 100:.3g}%,\n"
+    s += ")\n\n"
 
     figure_block = function(
         "#block",
@@ -52,17 +58,14 @@ def figure(
 
     figure_place = function(
         "place",
-        dict(
-            dx=f"{left * 100:.3g}%",
-            dy=f"{(1 - top) * 100:.3g}%",
-        ),
+        dict(dx="padding.left", dy="padding.top"),
     )
 
     inner_block = function(
         "block",
         dict(
-            width=f"{(right - left) * 100:.3g}%",
-            height=f"{(top - bottom) * 100:.3g}%",
+            width="100% - padding.right - padding.left",
+            height="100% - padding.top - padding.bottom",
             stroke="green",
         ),
     )
