@@ -1,42 +1,7 @@
-import textwrap
 import matplotlib as mpl
 
-from .util import function, compute_gutter
+from .util import function, compute_gutter, block
 from .axes import Axes
-
-
-def template(index: int, left: float, right: float, top: float, bottom: float):
-    s = ""
-    s += "let padding = (\n"
-    s += f"  left: {left * 100:.3g}%,\n"
-    s += f"  right: {right * 100:.3g}%,\n"
-    s += f"  top: {top * 100:.3g}%,\n"
-    s += f"  bottom: {bottom * 100:.3g}%,\n"
-    s += ")\n\n"
-
-    place = function(
-        "place",
-        dict(dx="padding.left", dy="padding.top"),
-    )
-
-    block = function(
-        "block",
-        dict(
-            width="100% - padding.right - padding.left",
-            height="100% - padding.top - padding.bottom",
-            stroke="green",
-        ),
-    )
-
-    def wrapper(body: str):
-        return (
-            f"#let grid-{index}() = {{\n"
-            + textwrap.indent(s, "  ")
-            + textwrap.indent(place(block(body)), "  ")
-            + "\n}\n\n"
-        )
-
-    return wrapper
 
 
 class Grid:
@@ -131,10 +96,7 @@ class Grid:
                 )(axes(f"axes-{cell['i']}()")),
             )
 
-        return template(
-            self.index,
-            self.padding["left"],
-            self.padding["right"],
-            self.padding["top"],
-            self.padding["bottom"],
+        return block(
+            f"grid-{self.index}",
+            self.padding,
         )(grid(",\n".join(body)))
