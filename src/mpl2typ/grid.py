@@ -12,6 +12,7 @@ class Grid:
         self.row_gutter = compute_gutter(self.hspace, self.grid.nrows)
 
         self.cells: list[dict] = []
+        self.padding: dict[str, float] = dict(left=0, right=0, top=0, bottom=0)
         self.parse()
 
     @property
@@ -31,13 +32,29 @@ class Grid:
         return self.grid.get_subplot_params().hspace
 
     def parse(self):
+        # find the outer bounding box of all axes
+        x0, x1, y0, y1 = [], [], [], []
+
         for ax in self.axes:
+            position = ax.get_position()
+            x0.append(position.x0)
+            x1.append(position.x1)
+            y0.append(position.y0)
+            y1.append(position.y1)
+
             sps = ax.get_subplotspec()
             x = sps.colspan.start
             y = sps.rowspan.start
             colspan = sps.colspan.stop - x
             rowspan = sps.rowspan.stop - y
             self.cells.append(dict(x=x, y=y, colspan=colspan, rowspan=rowspan))
+
+        self.padding = dict(
+            left=min(x0),
+            right=1 - max(x1),
+            top=1 - max(y1),
+            bottom=min(y0),
+        )
 
     def export(self):
         columns = ", ".join([f"{col}fr" for col in self.columns])
