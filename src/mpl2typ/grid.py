@@ -87,12 +87,7 @@ class Grid:
             body.append(
                 function(
                     "grid.cell",
-                    dict(
-                        x=cell["x"],
-                        y=cell["y"],
-                        colspan=cell["colspan"],
-                        rowspan=cell["rowspan"],
-                    ),
+                    cell,
                 )(axes(f"axes-{cell['i']}()")),
             )
 
