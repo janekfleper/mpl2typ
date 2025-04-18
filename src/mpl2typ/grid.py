@@ -2,6 +2,7 @@ import textwrap
 import matplotlib as mpl
 
 from .util import function, compute_gutter
+from .axes import Axes
 
 
 def template(index: int, left: float, right: float, top: float, bottom: float):
@@ -43,7 +44,7 @@ class Grid:
         self,
         index: int,
         grid: mpl.gridspec.GridSpec,
-        axes: dict[int, mpl.axes.Axes],
+        axes: list[Axes],
     ):
         self.index = index
         self.grid = grid
@@ -76,19 +77,13 @@ class Grid:
         # find the outer bounding box of all axes
         x0, x1, y0, y1 = [], [], [], []
 
-        for i, ax in self.axes.items():
-            position = ax.get_position()
+        for axes in self.axes:
+            position = axes.position
             x0.append(position.x0)
             x1.append(position.x1)
             y0.append(position.y0)
             y1.append(position.y1)
-
-            sps = ax.get_subplotspec()
-            x = sps.colspan.start
-            y = sps.rowspan.start
-            colspan = sps.colspan.stop - x
-            rowspan = sps.rowspan.stop - y
-            self.cells.append(dict(i=i, x=x, y=y, colspan=colspan, rowspan=rowspan))
+            self.cells.append(axes.cell)
 
         self.padding = dict(
             left=min(x0),

@@ -3,7 +3,7 @@ import textwrap
 import matplotlib as mpl
 
 from .util import function
-from .axes import axes_template
+from .axes import Axes
 from .grid import Grid
 
 
@@ -70,21 +70,21 @@ class Figure:
 
             grid_axes = []
             gridspecs = []
-            other_axes = {}
+            other_axes = []
             for i, ax in enumerate(self.fig.get_axes()):
                 gs = ax.get_gridspec()
                 if gs is None:
-                    other_axes[i] = ax
+                    other_axes.append(Axes(i, ax))
                 elif gs not in gridspecs:
                     gridspecs.append(gs)
-                    grid_axes.append({i: ax})
+                    grid_axes.append([Axes(i, ax)])
                 else:
-                    grid_axes[gridspecs.index(gs)][i] = ax
+                    grid_axes[gridspecs.index(gs)].append(Axes(i, ax))
 
             children = []
             for i in range(len(gridspecs)):
-                for j, ax in grid_axes[i].items():
-                    f.write(axes_template(ax, j))
+                for ax in grid_axes[i]:
+                    f.write(ax.export())
 
                 grid = Grid(i, gridspecs[i], grid_axes[i])
                 f.write(grid.export() + "\n")

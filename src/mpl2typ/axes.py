@@ -4,7 +4,7 @@ import matplotlib as mpl
 
 from .line import get_stroke, get_marker
 
-axes_header = """
+header = """
   let xscale = 1 / (xlim.at(1) - xlim.at(0)) * 100%
   let yscale = -1 / (ylim.at(1) - ylim.at(0)) * 100%
   let xshift = 50% - (xlim.at(0) + xlim.at(1)) / 2 * xscale
@@ -17,12 +17,12 @@ axes_header = """
 """
 
 
-def axes_template(ax: mpl.axes.Axes, index: int):
+def template(index: int, ax: mpl.axes.Axes):
     xlim = f"({ax.get_xlim()[0]}, {ax.get_xlim()[1]})"
     ylim = f"({ax.get_ylim()[0]}, {ax.get_ylim()[1]})"
 
     s = f"#let axes-{index}(xlim: {xlim}, ylim: {ylim}) = {{"
-    s += axes_header + "\n"
+    s += header + "\n"
 
     for i, line in enumerate(ax.lines):
         thickness, stroke = get_stroke(line)
@@ -45,3 +45,25 @@ def axes_template(ax: mpl.axes.Axes, index: int):
         s += f"  draw-marker(data-{i}, marker:marker-{i})\n"
     s += "}\n\n"
     return s
+
+
+class Axes:
+    def __init__(self, index: int, ax: mpl.axes.Axes):
+        self.index = index
+        self.ax = ax
+
+    @property
+    def position(self):
+        return self.ax.get_position()
+
+    @property
+    def cell(self):
+        sps = self.ax.get_subplotspec()
+        x = sps.colspan.start
+        y = sps.rowspan.start
+        colspan = sps.colspan.stop - x
+        rowspan = sps.rowspan.stop - y
+        return dict(i=self.index, x=x, y=y, colspan=colspan, rowspan=rowspan)
+
+    def export(self):
+        return template(self.index, self.ax)
