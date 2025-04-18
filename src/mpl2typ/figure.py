@@ -1,4 +1,5 @@
 import pathlib
+import textwrap
 import matplotlib as mpl
 
 from .util import function
@@ -67,28 +68,32 @@ class Figure:
                 height=height,
             )
 
-            grids = []
+            grid_axes = []
             gridspecs = []
-            other = []
-            for ax in self.fig.get_axes():
+            other_axes = {}
+            for i, ax in enumerate(self.fig.get_axes()):
                 gs = ax.get_gridspec()
                 if gs is None:
-                    other.append(ax)
-                    continue
+                    other_axes[i] = ax
                 elif gs not in gridspecs:
                     gridspecs.append(gs)
-                    grids.append([ax])
+                    grid_axes.append({i: ax})
                 else:
-                    grids[gridspecs.index(gs)].append(ax)
+                    grid_axes[gridspecs.index(gs)][i] = ax
 
-            if not gridspecs:
-                return
-            elif len(gridspecs) > 1:
-                raise ValueError("Only one gridspec is supported for now")
+            children = []
+            for i in range(len(gridspecs)):
+                for j, ax in grid_axes[i].items():
+                    f.write(axes_template(ax, j))
 
-            for i, ax in enumerate(grids[0]):
-                f.write(axes_template(ax, i))
+                grid = Grid(i, gridspecs[i], grid_axes[i])
+                f.write(grid.export() + "\n")
+                children.append(f"grid-{i}()")
 
-            grid = Grid(0, gridspecs[0], grids[0])
-            f.write(grid.export() + "\n")
-            f.write(figure("grid-0()"))
+            if not children:
+                body = "none"
+            elif len(children) == 1:
+                body = children[0]
+            else:
+                body = "{\n" + textwrap.indent("\n".join(children), "  ") + "\n}"
+            f.write(figure(body))

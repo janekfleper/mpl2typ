@@ -43,7 +43,7 @@ class Grid:
         self,
         index: int,
         grid: mpl.gridspec.GridSpec,
-        axes: list[mpl.axes.Axes],
+        axes: dict[int, mpl.axes.Axes],
     ):
         self.index = index
         self.grid = grid
@@ -76,7 +76,7 @@ class Grid:
         # find the outer bounding box of all axes
         x0, x1, y0, y1 = [], [], [], []
 
-        for ax in self.axes:
+        for i, ax in self.axes.items():
             position = ax.get_position()
             x0.append(position.x0)
             x1.append(position.x1)
@@ -88,7 +88,7 @@ class Grid:
             y = sps.rowspan.start
             colspan = sps.colspan.stop - x
             rowspan = sps.rowspan.stop - y
-            self.cells.append(dict(x=x, y=y, colspan=colspan, rowspan=rowspan))
+            self.cells.append(dict(i=i, x=x, y=y, colspan=colspan, rowspan=rowspan))
 
         self.padding = dict(
             left=min(x0),
@@ -123,7 +123,7 @@ class Grid:
         )
 
         body = []
-        for i, cell in enumerate(self.cells):
+        for cell in self.cells:
             body.append(
                 function(
                     "grid.cell",
@@ -133,7 +133,7 @@ class Grid:
                         colspan=cell["colspan"],
                         rowspan=cell["rowspan"],
                     ),
-                )(axes(f"axes-{i}()")),
+                )(axes(f"axes-{cell['i']}()")),
             )
 
         return template(
