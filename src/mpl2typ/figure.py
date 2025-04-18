@@ -74,7 +74,7 @@ class Figure:
             for i, ax in enumerate(self.fig.get_axes()):
                 gs = ax.get_gridspec()
                 if gs is None:
-                    other_axes.append(Axes(i, ax))
+                    other_axes.append(Axes(i, ax, standalone=True))
                 elif gs not in gridspecs:
                     gridspecs.append(gs)
                     grid_axes.append([Axes(i, ax)])
@@ -89,6 +89,9 @@ class Figure:
                 grid = Grid(i, gridspecs[i], grid_axes[i])
                 f.write(grid.export() + "\n")
                 children.append(f"grid-{i}()")
+            for ax in other_axes:
+                f.write(ax.export() + "\n")
+                children.append(f"other-axes-{ax.index}()")
 
             if not children:
                 body = "none"

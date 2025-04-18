@@ -2,6 +2,7 @@ import textwrap
 
 import matplotlib as mpl
 
+from .util import function
 from .line import get_stroke, get_marker
 
 header = """
@@ -47,14 +48,64 @@ def template(index: int, ax: mpl.axes.Axes):
     return s
 
 
+def other(index: int, padding: dict[str, float]):
+    s = ""
+    s += "let padding = (\n"
+    s += f"  left: {padding['left'] * 100:.3g}%,\n"
+    s += f"  right: {padding['right'] * 100:.3g}%,\n"
+    s += f"  top: {padding['top'] * 100:.3g}%,\n"
+    s += f"  bottom: {padding['bottom'] * 100:.3g}%,\n"
+    s += ")\n\n"
+
+    place = function(
+        "place",
+        dict(dx="padding.left", dy="padding.top"),
+    )
+
+    block = function(
+        "block",
+        dict(
+            width="100% - padding.right - padding.left",
+            height="100% - padding.top - padding.bottom",
+            stroke="green",
+        ),
+    )
+
+    def wrapper(body: str):
+        return (
+            f"#let other-axes-{index}() = {{\n"
+            + textwrap.indent(s, "  ")
+            + textwrap.indent(place(block(body)), "  ")
+            + "\n}\n\n"
+        )
+
+    return wrapper
+
+
 class Axes:
-    def __init__(self, index: int, ax: mpl.axes.Axes):
+    def __init__(self, index: int, ax: mpl.axes.Axes, standalone: bool = False):
         self.index = index
         self.ax = ax
+        self.standalone = standalone
 
     @property
     def position(self):
         return self.ax.get_position()
+
+    @property
+    def padding(self):
+        """
+        Compute the padding from the position of the axes.
+
+        This is used for standalone axes that have to be placed manually.
+        """
+        position = self.position
+        return dict(
+            left=position.x0,
+            right=1 - position.x1,
+            top=1 - position.y1,
+            bottom=position.y0,
+        )
 
     @property
     def cell(self):
@@ -66,4 +117,7 @@ class Axes:
         return dict(i=self.index, x=x, y=y, colspan=colspan, rowspan=rowspan)
 
     def export(self):
-        return template(self.index, self.ax)
+        s = template(self.index, self.ax)
+        if self.standalone:
+            s += other(self.index, self.padding)(f"axes-{self.index}()")
+        return s
