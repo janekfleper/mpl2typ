@@ -1,7 +1,7 @@
 import pathlib
 import matplotlib as mpl
 
-from .util import function, compute_gutter
+from .util import function
 from .axes import axes_template
 from .grid import Grid
 
@@ -30,25 +30,12 @@ header = """
 """
 
 
-def figure(
-    width: float,
-    height: float,
-    left: float,
-    right: float,
-    top: float,
-    bottom: float,
-):
+def template(width: float, height: float):
     s = ""
     s += f"#let width = {width}cm\n"
-    s += f"#let height = {height}cm\n"
-    s += "#let padding = (\n"
-    s += f"  left: {left * 100:.3g}%,\n"
-    s += f"  right: {(1 - right) * 100:.3g}%,\n"
-    s += f"  top: {(1 - top) * 100:.3g}%,\n"
-    s += f"  bottom: {bottom * 100:.3g}%,\n"
-    s += ")\n\n"
+    s += f"#let height = {height}cm\n\n"
 
-    figure_block = function(
+    block = function(
         "#block",
         dict(
             width="width",
@@ -57,22 +44,8 @@ def figure(
         ),
     )
 
-    figure_place = function(
-        "place",
-        dict(dx="padding.left", dy="padding.top"),
-    )
-
-    inner_block = function(
-        "block",
-        dict(
-            width="100% - padding.right - padding.left",
-            height="100% - padding.top - padding.bottom",
-            stroke="green",
-        ),
-    )
-
     def wrapper(body: str):
-        return s + figure_block(figure_place(inner_block(body)))
+        return s + block(body)
 
     return wrapper
 
@@ -83,20 +56,15 @@ class Figure:
 
     def export(self, path: str | pathlib.Path):
         width, height = self.fig.get_size_inches() * 2.54
-        spacing = self.fig.subplotpars
 
         with open(path, "w") as f:
             f.write("#set page(width: auto, height: auto, margin: 0.9mm)\n")
             f.write(header)
             f.write("\n\n")
 
-            figure_template = figure(
+            figure = template(
                 width=width,
                 height=height,
-                left=spacing.left,
-                right=spacing.right,
-                top=spacing.top,
-                bottom=spacing.bottom,
             )
 
             grids = []
@@ -121,5 +89,6 @@ class Figure:
             for i, ax in enumerate(grids[0]):
                 f.write(axes_template(ax, i))
 
-            grid = Grid(gridspecs[0], grids[0])
-            f.write(figure_template(grid.export()))
+            grid = Grid(0, gridspecs[0], grids[0])
+            f.write(grid.export() + "\n")
+            f.write(figure("grid-0()"))
