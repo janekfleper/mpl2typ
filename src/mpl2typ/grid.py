@@ -84,11 +84,12 @@ class Grid:
 
         body = []
         for cell in self.cells:
+            index = cell.pop("i")
             body.append(
                 function(
                     "grid.cell",
                     cell,
-                )(axes(f"axes-{cell['i']}()")),
+                )(axes(f"axes-{index}()")),
             )
 
         return block(
