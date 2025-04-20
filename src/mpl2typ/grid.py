@@ -1,7 +1,40 @@
+import textwrap
 import matplotlib as mpl
 
 from .util import function, compute_gutter, block
 from .axes import Axes
+
+
+class Cell:
+    def __init__(self, x: int, y: int, colspan: int, rowspan: int):
+        self.x = x
+        self.y = y
+        self.colspan = colspan
+        self.rowspan = rowspan
+        self.axes: list[Axes] = []
+
+    def export(self):
+        content = function(
+            "block",
+            dict(
+                width="100%",
+                height="100%",
+                stroke="red",
+            ),
+        )
+
+        axes = [f"axes-{axes.index}()" for axes in self.axes]
+        if not axes:
+            body = "none"
+        elif len(axes) == 1:
+            body = axes[0]
+        else:
+            body = "{\n" + textwrap.indent("\n".join(axes), "  ") + "\n}"
+
+        return function(
+            "grid.cell",
+            dict(x=self.x, y=self.y, colspan=self.colspan, rowspan=self.rowspan),
+        )(content(body))
 
 
 class Grid:
@@ -18,7 +51,7 @@ class Grid:
         self.column_gutter = compute_gutter(self.wspace, self.grid.ncols)
         self.row_gutter = compute_gutter(self.hspace, self.grid.nrows)
 
-        self.cells: list[dict] = []
+        self.cells: list[Cell] = []
         self.padding: dict[str, float] = dict(left=0, right=0, top=0, bottom=0)
         self.parse()
 
@@ -38,6 +71,16 @@ class Grid:
     def hspace(self):
         return self.grid.get_subplot_params().hspace
 
+    def _add_axes(self, axes: Axes):
+        for cell in self.cells:
+            if cell.x == axes.cell["x"] and cell.y == axes.cell["y"]:
+                cell.axes.append(axes)
+                return
+
+        cell = Cell(**axes.cell)
+        cell.axes.append(axes)
+        self.cells.append(cell)
+
     def parse(self):
         # find the outer bounding box of all axes
         x0, x1, y0, y1 = [], [], [], []
@@ -48,7 +91,7 @@ class Grid:
             x1.append(position.x1)
             y0.append(position.y0)
             y1.append(position.y1)
-            self.cells.append(axes.cell)
+            self._add_axes(axes)
 
         self.padding = dict(
             left=min(x0),
@@ -73,24 +116,9 @@ class Grid:
             },
         )
 
-        axes = function(
-            "block",
-            dict(
-                width="100%",
-                height="100%",
-                stroke="red",
-            ),
-        )
-
         body = []
         for cell in self.cells:
-            index = cell.pop("i")
-            body.append(
-                function(
-                    "grid.cell",
-                    cell,
-                )(axes(f"axes-{index}()")),
-            )
+            body.append(cell.export())
 
         return block(
             f"grid-{self.index}",

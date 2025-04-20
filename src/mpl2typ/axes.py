@@ -80,7 +80,7 @@ class Axes:
         y = sps.rowspan.start
         colspan = sps.colspan.stop - x
         rowspan = sps.rowspan.stop - y
-        return dict(i=self.index, x=x, y=y, colspan=colspan, rowspan=rowspan)
+        return dict(x=x, y=y, colspan=colspan, rowspan=rowspan)
 
     def export(self):
         s = template(self.index, self.ax)
