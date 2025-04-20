@@ -2,6 +2,31 @@ import textwrap
 from typing import Callable
 
 
+def make_body(elements: list[str]) -> str:
+    """
+    Join elements into a valid Typst body
+
+    If the list is empty, "none" is returned to get an empty body.
+    If the list contains a single element, it is returned as is.
+    Otherwise, the elements are wrapped in curly braces.
+
+    Parameters
+    ----------
+    elements: list[str]
+        The elements to join
+
+    Returns
+    -------
+    str
+    """
+    if not elements:
+        return "none"
+    elif len(elements) == 1:
+        return elements[0]
+    else:
+        return "{\n" + textwrap.indent("\n".join(elements), "  ") + "\n}"
+
+
 def function(
     name: str,
     args: dict[str, str],

@@ -1,8 +1,7 @@
 import pathlib
-import textwrap
 import matplotlib as mpl
 
-from .util import function
+from .util import make_body, function
 from .axes import Axes
 from .grid import Grid
 
@@ -93,10 +92,4 @@ class Figure:
                 f.write(ax.export() + "\n")
                 children.append(f"other-axes-{ax.index}()")
 
-            if not children:
-                body = "none"
-            elif len(children) == 1:
-                body = children[0]
-            else:
-                body = "{\n" + textwrap.indent("\n".join(children), "  ") + "\n}"
-            f.write(figure(body))
+            f.write(figure(make_body(children)))

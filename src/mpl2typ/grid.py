@@ -1,7 +1,6 @@
-import textwrap
 import matplotlib as mpl
 
-from .util import function, compute_gutter, block
+from .util import make_body, function, compute_gutter, block
 from .axes import Axes
 
 
@@ -14,27 +13,20 @@ class Cell:
         self.axes: list[Axes] = []
 
     def export(self):
-        content = function(
+        axes = [f"axes-{axes.index}()" for axes in self.axes]
+        body = function(
             "block",
             dict(
                 width="100%",
                 height="100%",
                 stroke="red",
             ),
-        )
-
-        axes = [f"axes-{axes.index}()" for axes in self.axes]
-        if not axes:
-            body = "none"
-        elif len(axes) == 1:
-            body = axes[0]
-        else:
-            body = "{\n" + textwrap.indent("\n".join(axes), "  ") + "\n}"
+        )(make_body(axes))
 
         return function(
             "grid.cell",
             dict(x=self.x, y=self.y, colspan=self.colspan, rowspan=self.rowspan),
-        )(content(body))
+        )(body)
 
 
 class Grid:
