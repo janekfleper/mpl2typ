@@ -33,21 +33,37 @@ class Text:
 
         return f"{horizontal} + {vertical}"
 
+    def inner(self, body: str) -> str:
+        rotation = self.text.get_rotation()
+        if rotation:
+            if self.text.get_rotation_mode() == "anchor":
+                return f"rotate(-{rotation}deg, place({self.alignment}, {body}))"
+            else:  # "default" or None
+                return f"place({self.alignment}, rotate(-{rotation}deg, reflow: true, {body}))"
+        else:
+            return f"place({self.alignment}, {body})"
+
     def export(self) -> str:
         """Exports the Text object to a Typst `place` command string."""
         x, y = self.position
         dx = f"{(x + self.offset[0]) * 100}%"
         dy = f"{(1 - y - self.offset[1]) * 100}%"
-        body = self.text.get_text()
-        color = self.text.get_color()
-        fontsize = self.text.get_fontsize()
 
         outer = function(
             "place",
             dict(dx=dx, dy=dy),
         )
 
-        inner = f"place({self.alignment}, {self.name})"
-        s = f"let {self.name} = text(size: {fontsize}pt, fill: {color}, {body})"
-        s += f"\n{outer(inner)}"
-        return s
+        fontsize = self.text.get_fontsize()
+        color = self.text.get_color()
+        alpha = self.text.get_alpha()
+        if alpha is not None:
+            color += f".transparentize({round((1 - alpha) * 100, 3)}%)"
+        kwargs = dict(size=f"{fontsize}pt", fill=color)
+        if self.text.get_verticalalignment() in ["center", "bottom"]:
+            kwargs["bottom-edge"] = '"descender"'
+        variable = f"let {self.name} = " + function("text", kwargs)(
+            self.text.get_text()
+        )
+
+        return variable + "\n" + outer(self.inner(self.name))
