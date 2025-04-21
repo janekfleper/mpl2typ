@@ -95,8 +95,8 @@ class Grid:
     def export(self):
         columns = ", ".join([f"{col}fr" for col in self.columns])
         rows = ", ".join([f"{row}fr" for row in self.rows])
-        column_gutter = f"{self.column_gutter * 100:.3g}%"
-        row_gutter = f"{self.row_gutter * 100:.3g}%"
+        column_gutter = f"{round(self.column_gutter * 100, 3)}%"
+        row_gutter = f"{round(self.row_gutter * 100, 3)}%"
 
         grid = function(
             "grid",

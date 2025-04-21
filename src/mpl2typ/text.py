@@ -46,8 +46,8 @@ class Text:
     def export(self) -> str:
         """Exports the Text object to a Typst `place` command string."""
         x, y = self.position
-        dx = f"{(x + self.offset[0]) * 100}%"
-        dy = f"{(1 - y - self.offset[1]) * 100}%"
+        dx = f"{round((x + self.offset[0]) * 100, 3)}%"
+        dy = f"{round((1 - y - self.offset[1]) * 100, 3)}%"
 
         outer = function(
             "place",

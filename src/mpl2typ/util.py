@@ -51,10 +51,10 @@ def compute_gutter(space: float, n: int):
 def block(name: str, padding: dict[str, float]):
     s = ""
     s += "let padding = (\n"
-    s += f"  left: {padding['left'] * 100:.3g}%,\n"
-    s += f"  right: {padding['right'] * 100:.3g}%,\n"
-    s += f"  top: {padding['top'] * 100:.3g}%,\n"
-    s += f"  bottom: {padding['bottom'] * 100:.3g}%,\n"
+    s += f"  left: {round(padding['left'] * 100, 3)}%,\n"
+    s += f"  right: {round(padding['right'] * 100, 3)}%,\n"
+    s += f"  top: {round(padding['top'] * 100, 3)}%,\n"
+    s += f"  bottom: {round(padding['bottom'] * 100, 3)}%,\n"
     s += ")\n\n"
 
     place = function(
