@@ -23,6 +23,14 @@ class Text:
         return self.text.get_fontsize()
 
     @property
+    def color(self) -> str:
+        color = self.text.get_color()
+        alpha = self.text.get_alpha()
+        if alpha is not None:
+            color += f".transparentize({round((1 - alpha) * 100, 3)}%)"
+        return color
+
+    @property
     def alignment(self) -> str:
         horizontal = self.text.get_horizontalalignment()
         vertical = self.text.get_verticalalignment()
@@ -55,11 +63,7 @@ class Text:
         )
 
         fontsize = self.text.get_fontsize()
-        color = self.text.get_color()
-        alpha = self.text.get_alpha()
-        if alpha is not None:
-            color += f".transparentize({round((1 - alpha) * 100, 3)}%)"
-        kwargs = dict(size=f"{fontsize}pt", fill=color)
+        kwargs = dict(size=f"{fontsize}pt", fill=self.color)
         if self.text.get_verticalalignment() in ["center", "bottom"]:
             kwargs["bottom-edge"] = '"descender"'
         variable = f"let {self.name} = " + function("text", kwargs)(
