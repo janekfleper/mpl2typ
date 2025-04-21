@@ -69,6 +69,6 @@ class Text:
             "text",
             named=kwargs,
             inline=True,
-        )(self.text.get_text())
+        )(f"[{self.text.get_text()}]")
 
         return variable + "\n" + outer(self.inner(self.name))
