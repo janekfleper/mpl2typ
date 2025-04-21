@@ -27,18 +27,8 @@ def template(index: int, ax: mpl.axes.Axes):
     s = f"#let axes-{index}(xlim: {xlim}, ylim: {ylim}) = {{"
     s += header + "\n"
 
-    transform = np.linalg.inv(ax.transAxes.get_matrix())
-    offset = ax.titleOffsetTrans.get_matrix()
-    title_offset = tuple((transform @ np.array([offset[0, 2], offset[1, 2], 0]))[:2])
-    if ax.get_title(loc="center"):
-        title = Text("title", ax.title, offset=title_offset)
-        s += textwrap.indent(title.export() + "\n\n", "  ")
-    if ax.get_title(loc="left"):
-        title = Text("title-left", ax._left_title, offset=title_offset)
-        s += textwrap.indent(title.export() + "\n\n", "  ")
-    if ax.get_title(loc="right"):
-        title = Text("title-right", ax._right_title, offset=title_offset)
-        s += textwrap.indent(title.export() + "\n\n", "  ")
+    title = Title(ax)
+    s += textwrap.indent(title.export(), "  ")
 
     for i, line in enumerate(ax.lines):
         thickness, stroke = get_stroke(line)
@@ -61,6 +51,30 @@ def template(index: int, ax: mpl.axes.Axes):
         s += f"  draw-marker(data-{i}, marker:marker-{i})\n"
     s += "}\n\n"
     return s
+
+
+class Title:
+    def __init__(self, ax: mpl.axes.Axes):
+        self.center = ax.title if ax.get_title(loc="center") else None
+        self.left = ax._left_title if ax.get_title(loc="left") else None
+        self.right = ax._right_title if ax.get_title(loc="right") else None
+
+        transform = np.linalg.inv(ax.transAxes.get_matrix())
+        offset = np.hstack([ax.titleOffsetTrans.get_matrix()[:2, 2], np.zeros(1)])
+        self.offset = tuple((transform @ offset)[:2])
+
+    def export(self):
+        s = ""
+        if self.center is not None:
+            title = Text("title", self.center, offset=self.offset)
+            s += title.export() + "\n\n"
+        if self.left is not None:
+            title = Text("title-left", self.left, offset=self.offset)
+            s += title.export() + "\n\n"
+        if self.right is not None:
+            title = Text("title-right", self.right, offset=self.offset)
+            s += title.export() + "\n\n"
+        return s
 
 
 class Axes:
