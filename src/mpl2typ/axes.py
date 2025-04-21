@@ -1,9 +1,11 @@
 import textwrap
 
+import numpy as np
 import matplotlib as mpl
 
 from .util import block
 from .line import get_stroke, get_marker
+from .text import Text
 
 header = """
   let xscale = 1 / (xlim.at(1) - xlim.at(0)) * 100%
@@ -24,6 +26,19 @@ def template(index: int, ax: mpl.axes.Axes):
 
     s = f"#let axes-{index}(xlim: {xlim}, ylim: {ylim}) = {{"
     s += header + "\n"
+
+    transform = np.linalg.inv(ax.transAxes.get_matrix())
+    offset = ax.titleOffsetTrans.get_matrix()
+    title_offset = tuple((transform @ np.array([offset[0, 2], offset[1, 2], 0]))[:2])
+    if ax.get_title(loc="center"):
+        title = Text("title", ax.title, offset=title_offset)
+        s += textwrap.indent(title.export() + "\n\n", "  ")
+    if ax.get_title(loc="left"):
+        title = Text("title-left", ax._left_title, offset=title_offset)
+        s += textwrap.indent(title.export() + "\n\n", "  ")
+    if ax.get_title(loc="right"):
+        title = Text("title-right", ax._right_title, offset=title_offset)
+        s += textwrap.indent(title.export() + "\n\n", "  ")
 
     for i, line in enumerate(ax.lines):
         thickness, stroke = get_stroke(line)
