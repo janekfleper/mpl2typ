@@ -16,7 +16,7 @@ class Cell:
         axes = [f"axes-{axes.index}()" for axes in self.axes]
         body = function(
             "block",
-            dict(
+            named=dict(
                 width="100%",
                 height="100%",
                 stroke="red",
@@ -25,7 +25,12 @@ class Cell:
 
         return function(
             "grid.cell",
-            dict(x=self.x, y=self.y, colspan=self.colspan, rowspan=self.rowspan),
+            named=dict(
+                x=self.x,
+                y=self.y,
+                colspan=self.colspan,
+                rowspan=self.rowspan,
+            ),
         )(body)
 
 
@@ -100,7 +105,7 @@ class Grid:
 
         grid = function(
             "grid",
-            {
+            named={
                 "columns": f"({columns})",
                 "rows": f"({rows})",
                 "column-gutter": column_gutter,

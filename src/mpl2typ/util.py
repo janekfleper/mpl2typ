@@ -29,10 +29,18 @@ def make_body(elements: list[str]) -> str:
 
 def function(
     name: str,
-    args: dict[str, str],
+    *,
+    pos: list[str] | tuple[str, ...] | None = None,
+    named: dict[str, str] | None = None,
     comment: str = "",
     inline: bool = False,
 ) -> Callable[[str], str]:
+    if pos is None:
+        pos = []
+    if named is None:
+        named = {}
+    args = list(pos) + [f"{k}: {v}" for k, v in named.items()]
+
     newline = "" if inline else "\n"
     separator = ", " if inline else ",\n"
     indent = "" if inline else "  "
@@ -41,9 +49,7 @@ def function(
         return (
             f"{'// ' + comment + '\n' if comment and inline else ''}"
             + f"{name}({' // ' + comment if comment and not inline else ''}{newline}"
-            + textwrap.indent(
-                separator.join([f"{k}: {v}" for k, v in args.items()]), indent
-            )
+            + textwrap.indent(separator.join(args), indent)
             + separator
             + textwrap.indent(body, indent)
             + f"{newline})"

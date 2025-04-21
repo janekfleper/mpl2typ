@@ -37,7 +37,7 @@ def template(width: float, height: float):
 
     block = function(
         "#block",
-        dict(
+        named=dict(
             width="width",
             height="height",
             stroke="blue",

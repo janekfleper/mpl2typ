@@ -59,15 +59,16 @@ class Text:
 
         outer = function(
             "place",
-            dict(dx=dx, dy=dy),
+            named=dict(dx=dx, dy=dy),
         )
 
-        fontsize = self.text.get_fontsize()
-        kwargs = dict(size=f"{fontsize}pt", fill=self.color)
+        kwargs = dict(size=f"{self.fontsize}pt", fill=self.color)
         if self.text.get_verticalalignment() in ["center", "bottom"]:
             kwargs["bottom-edge"] = '"descender"'
-        variable = f"let {self.name} = " + function("text", kwargs, inline=True)(
-            self.text.get_text()
-        )
+        variable = f"let {self.name} = " + function(
+            "text",
+            named=kwargs,
+            inline=True,
+        )(self.text.get_text())
 
         return variable + "\n" + outer(self.inner(self.name))
