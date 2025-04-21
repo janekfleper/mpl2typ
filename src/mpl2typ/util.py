@@ -73,12 +73,12 @@ def block(name: str, padding: dict[str, float]):
 
     place = function(
         "place",
-        dict(dx="padding.left", dy="padding.top"),
+        named=dict(dx="padding.left", dy="padding.top"),
     )
 
     block = function(
         "block",
-        dict(
+        named=dict(
             width="100% - padding.right - padding.left",
             height="100% - padding.top - padding.bottom",
             stroke="green",
