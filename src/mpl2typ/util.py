@@ -31,14 +31,22 @@ def function(
     name: str,
     args: dict[str, str],
     comment: str = "",
+    inline: bool = False,
 ) -> Callable[[str], str]:
+    newline = "" if inline else "\n"
+    separator = ", " if inline else ",\n"
+    indent = "" if inline else "  "
+
     def wrapper(body: str):
         return (
-            f"{name}({' // ' + comment if comment else ''}\n"
-            + textwrap.indent(",\n".join([f"{k}: {v}" for k, v in args.items()]), "  ")
-            + ",\n"
-            + textwrap.indent(body, "  ")
-            + "\n)"
+            f"{'// ' + comment + '\n' if comment and inline else ''}"
+            + f"{name}({' // ' + comment if comment and not inline else ''}{newline}"
+            + textwrap.indent(
+                separator.join([f"{k}: {v}" for k, v in args.items()]), indent
+            )
+            + separator
+            + textwrap.indent(body, indent)
+            + f"{newline})"
         )
 
     return wrapper

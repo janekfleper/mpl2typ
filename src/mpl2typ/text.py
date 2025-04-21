@@ -66,7 +66,7 @@ class Text:
         kwargs = dict(size=f"{fontsize}pt", fill=self.color)
         if self.text.get_verticalalignment() in ["center", "bottom"]:
             kwargs["bottom-edge"] = '"descender"'
-        variable = f"let {self.name} = " + function("text", kwargs)(
+        variable = f"let {self.name} = " + function("text", kwargs, inline=True)(
             self.text.get_text()
         )
 
