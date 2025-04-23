@@ -3,7 +3,7 @@ import textwrap
 import numpy as np
 import matplotlib as mpl
 
-from .util import block
+from .util import boolean, array, dictionary, block
 from .line import get_stroke, get_marker
 from .text import Text
 
@@ -49,6 +49,11 @@ def template(index: int, ax: mpl.axes.Axes):
     for i, line in enumerate(ax.lines):
         s += f"  draw-line(data-{i}, stroke:stroke-{i})\n"
         s += f"  draw-marker(data-{i}, marker:marker-{i})\n"
+    s += "\n"
+
+    axis = Axis(ax)
+    s += textwrap.indent(axis.export(), "  ")
+
     s += "}\n\n"
     return s
 
@@ -74,6 +79,102 @@ class Title:
         if self.right is not None:
             title = Text("title-right", self.right, offset=self.offset)
             s += title.export() + "\n\n"
+        return s
+
+
+class Axis:
+    def __init__(self, ax: mpl.axes.Axes):
+        xaxis_major_ticks = ax.xaxis.get_major_ticks()
+        self.xaxis_major = dict(
+            locs=self.get_tick_locs(xaxis_major_ticks),
+            labels=self.get_tick_labels(xaxis_major_ticks),
+            tick_style=self.get_tick_style(xaxis_major_ticks[0], "x"),
+            label_style=self.get_tick_label_style(xaxis_major_ticks[0]),
+            params=ax.xaxis.get_tick_params(which="major"),
+        )
+
+        yaxis_major_ticks = ax.yaxis.get_major_ticks()
+        self.yaxis_major = dict(
+            locs=self.get_tick_locs(yaxis_major_ticks),
+            labels=self.get_tick_labels(yaxis_major_ticks),
+            tick_style=self.get_tick_style(yaxis_major_ticks[0], "y"),
+            label_style=self.get_tick_label_style(yaxis_major_ticks[0]),
+            params=ax.yaxis.get_tick_params(which="major"),
+        )
+
+    def get_tick_locs(self, ticks: list[mpl.axis.XTick]):
+        return array([f"{tick.get_loc()}" for tick in ticks])
+
+    def get_tick_labels(self, ticks: list[mpl.axis.XTick]):
+        return array([f'"{tick.label1.get_text()}"' for tick in ticks])
+
+    def get_tick_style(self, tick: mpl.axis.XTick, axis: str):
+        line = tick.tick1line
+        return dictionary(
+            dict(
+                direction=f'"{tick.get_tickdir()}"',
+                line=dictionary(
+                    dict(
+                        length=f"{line.get_markersize()}pt",
+                        angle=f"{90 if axis == 'x' else 0}deg",
+                        stroke=f"{line.get_color()} + {line.get_markeredgewidth()}pt",
+                    )
+                ),
+            )
+        )
+
+    def get_tick_label_style(self, tick: mpl.axis.XTick):
+        text = tick.label1
+        return dictionary(
+            dict(
+                pad=f"{tick.get_pad()}pt",
+                rotation=f"{-text.get_rotation()}deg",
+                text=dictionary(
+                    dict(
+                        size=f"{text.get_fontsize()}pt",
+                        fill=f"{text.get_color()}",
+                    )
+                ),
+            )
+        )
+
+    def export(self):
+        s = ""
+        s += "let xaxis-major-ticks = (\n"
+        s += f"  locs: {self.xaxis_major['locs']}.map(x => (x, 0)).map(transform).map(point => point.at(0)),\n"
+        s += f"  labels: {self.xaxis_major['labels']},\n"
+        s += f"  tick-style: {self.xaxis_major['tick_style']},\n"
+        s += f"  label-style: {self.xaxis_major['label_style']},\n"
+        s += ")\n"
+
+        tick_bottom = self.xaxis_major["params"]["bottom"]
+        label_bottom = self.xaxis_major["params"]["labelbottom"]
+        tick_top = self.xaxis_major["params"]["top"]
+        label_top = self.xaxis_major["params"]["labeltop"]
+
+        if tick_bottom or label_bottom:
+            s += f"draw-xaxis-ticks(bottom, show-ticks: {boolean(tick_bottom)}, show-labels: {boolean(label_bottom)}, ..xaxis-major-ticks)\n"
+        if tick_top or label_top:
+            s += f"draw-xaxis-ticks(top, show-ticks: {boolean(tick_top)}, show-labels: {boolean(label_top)}, ..xaxis-major-ticks)\n"
+        s += "\n"
+
+        s += "let yaxis-major-ticks = (\n"
+        s += f"  locs: {self.yaxis_major['locs']}.map(y => (0, y)).map(transform).map(point => point.at(1)),\n"
+        s += f"  labels: {self.yaxis_major['labels']},\n"
+        s += f"  tick-style: {self.yaxis_major['tick_style']},\n"
+        s += f"  label-style: {self.yaxis_major['label_style']},\n"
+        s += ")\n"
+
+        tick_left = self.yaxis_major["params"]["left"]
+        label_left = self.yaxis_major["params"]["labelleft"]
+        tick_right = self.yaxis_major["params"]["right"]
+        label_right = self.yaxis_major["params"]["labelright"]
+
+        if tick_left or label_left:
+            s += f"draw-yaxis-ticks(left, show-ticks: {boolean(tick_left)}, show-labels: {boolean(label_left)}, ..yaxis-major-ticks)\n"
+        if tick_right or label_right:
+            s += f"draw-yaxis-ticks(right, show-ticks: {boolean(tick_right)}, show-labels: {boolean(label_right)}, ..yaxis-major-ticks)\n"
+
         return s
 
 
