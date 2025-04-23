@@ -27,6 +27,18 @@ def make_body(elements: list[str]) -> str:
         return "{\n" + textwrap.indent("\n".join(elements), "  ") + "\n}"
 
 
+def boolean(value: bool) -> str:
+    return "true" if value else "false"
+
+
+def array(elements: list[str]) -> str:
+    return f"({', '.join(elements)})"
+
+
+def dictionary(elements: dict[str, str]) -> str:
+    return f"({', '.join([f'{k}: {v}' for k, v in elements.items()])})"
+
+
 def function(
     name: str,
     *,
