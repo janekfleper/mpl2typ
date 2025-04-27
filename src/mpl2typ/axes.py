@@ -35,9 +35,12 @@ def template(index: int, ax: mpl.axes.Axes):
         s += textwrap.indent(f"let thickness = {thickness}pt\n", "  ")
         s += textwrap.indent(f"let stroke-{i} = {stroke}\n\n", "  ")
 
-        size, marker = get_marker(line)
-        s += textwrap.indent(f"let d = {size}pt\n", "  ")
-        s += textwrap.indent(f"let marker-{i} = {marker}\n\n", "  ")
+        if line.get_marker() == "None":
+            s += textwrap.indent(f"let marker-{i} = none\n\n", "  ")
+        else:
+            size, marker = get_marker(line)
+            s += textwrap.indent(f"let d = {size}pt\n", "  ")
+            s += textwrap.indent(f"let marker-{i} = {marker}\n\n", "  ")
 
     for i, line in enumerate(ax.lines):
         points = line.get_xydata()
@@ -47,8 +50,8 @@ def template(index: int, ax: mpl.axes.Axes):
         s += "  ).map(point => transform(point))\n\n"
 
     for i, line in enumerate(ax.lines):
-        s += f"  draw-line(data-{i}, stroke:stroke-{i})\n"
-        s += f"  draw-marker(data-{i}, marker:marker-{i})\n"
+        s += f"  draw-line(data-{i}, stroke: stroke-{i})\n"
+        s += f"  draw-marker(data-{i}, marker: marker-{i})\n"
     s += "\n"
 
     axis = Axis(ax)
