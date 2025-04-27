@@ -148,6 +148,14 @@ class Figure:
         self.other_axes: list[Axes] = []
         self.parse()
 
+    @property
+    def width(self):
+        return self.fig.get_size_inches()[0] * 2.54
+
+    @property
+    def height(self):
+        return self.fig.get_size_inches()[1] * 2.54
+
     def parse(self):
         grid_axes = []
         gridspecs = []
@@ -165,16 +173,14 @@ class Figure:
             self.grids.append(Grid(i, gridspecs[i], grid_axes[i]))
 
     def export(self, path: str | pathlib.Path):
-        width, height = self.fig.get_size_inches() * 2.54
-
         with open(path, "w") as f:
             f.write("#set page(width: auto, height: auto, margin: 0.9mm)\n")
             f.write(header)
             f.write("\n\n")
 
             figure = template(
-                width=width,
-                height=height,
+                width=self.width,
+                height=self.height,
             )
 
             children = []
