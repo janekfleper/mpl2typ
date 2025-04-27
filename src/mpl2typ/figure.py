@@ -144,6 +144,25 @@ def template(width: float, height: float):
 class Figure:
     def __init__(self, fig: mpl.figure.Figure):
         self.fig = fig
+        self.grids: list[Grid] = []
+        self.other_axes: list[Axes] = []
+        self.parse()
+
+    def parse(self):
+        grid_axes = []
+        gridspecs = []
+        for i, ax in enumerate(self.fig.get_axes()):
+            gs = ax.get_gridspec()
+            if gs is None:
+                self.other_axes.append(Axes(i, ax, standalone=True))
+            elif gs not in gridspecs:
+                gridspecs.append(gs)
+                grid_axes.append([Axes(i, ax)])
+            else:
+                grid_axes[gridspecs.index(gs)].append(Axes(i, ax))
+
+        for i in range(len(gridspecs)):
+            self.grids.append(Grid(i, gridspecs[i], grid_axes[i]))
 
     def export(self, path: str | pathlib.Path):
         width, height = self.fig.get_size_inches() * 2.54
@@ -158,28 +177,14 @@ class Figure:
                 height=height,
             )
 
-            grid_axes = []
-            gridspecs = []
-            other_axes = []
-            for i, ax in enumerate(self.fig.get_axes()):
-                gs = ax.get_gridspec()
-                if gs is None:
-                    other_axes.append(Axes(i, ax, standalone=True))
-                elif gs not in gridspecs:
-                    gridspecs.append(gs)
-                    grid_axes.append([Axes(i, ax)])
-                else:
-                    grid_axes[gridspecs.index(gs)].append(Axes(i, ax))
-
             children = []
-            for i in range(len(gridspecs)):
-                for ax in grid_axes[i]:
-                    f.write(ax.export())
-
-                grid = Grid(i, gridspecs[i], grid_axes[i])
+            for grid in self.grids:
+                for ax in grid.axes:
+                    f.write(ax.export() + "\n")
                 f.write(grid.export() + "\n")
-                children.append(f"grid-{i}()")
-            for ax in other_axes:
+                children.append(f"grid-{grid.index}()")
+
+            for ax in self.other_axes:
                 f.write(ax.export() + "\n")
                 children.append(f"other-axes-{ax.index}()")
 
