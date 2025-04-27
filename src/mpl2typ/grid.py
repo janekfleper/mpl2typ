@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib as mpl
 
 from .util import make_body, function, compute_gutter, block
@@ -45,9 +46,6 @@ class Grid:
         self.grid = grid
         self.axes = axes
 
-        self.column_gutter = compute_gutter(self.wspace, self.grid.ncols)
-        self.row_gutter = compute_gutter(self.hspace, self.grid.nrows)
-
         self.cells: list[Cell] = []
         self.padding: dict[str, float] = dict(left=0, right=0, top=0, bottom=0)
         self.parse()
@@ -90,12 +88,26 @@ class Grid:
             y1.append(position.y1)
             self._add_axes(axes)
 
+        x0 = np.unique(np.array(x0))
+        x1 = np.unique(np.array(x1))
+        y0 = np.unique(np.array(y0))
+        y1 = np.unique(np.array(y1))
+
+        xmin = x0.min()
+        xmax = x1.max()
+        ymin = y0.min()
+        ymax = y1.max()
+
         self.padding = dict(
-            left=min(x0),
-            right=1 - max(x1),
-            top=1 - max(y1),
-            bottom=min(y0),
+            left=xmin,
+            right=1 - xmax,
+            top=1 - ymax,
+            bottom=ymin,
         )
+
+        # is there any reason to allow multiple values for the gutters?
+        self.column_gutter = np.unique((x0[1:] - x1[:-1]) / (xmax - xmin))[0]
+        self.row_gutter = np.unique((y0[1:] - y1[:-1]) / (ymax - ymin))[0]
 
     def export(self):
         columns = ", ".join([f"{col}fr" for col in self.columns])

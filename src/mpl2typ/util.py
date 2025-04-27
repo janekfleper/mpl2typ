@@ -70,10 +70,6 @@ def function(
     return wrapper
 
 
-def compute_gutter(space: float, n: int):
-    return space / (n + (n - 1) * space)
-
-
 def block(name: str, padding: dict[str, float]):
     s = ""
     s += "let padding = (\n"
