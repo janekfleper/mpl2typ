@@ -35,8 +35,19 @@ def array(elements: list[str]) -> str:
     return f"({', '.join(elements)})"
 
 
-def dictionary(elements: dict[str, str]) -> str:
-    return f"({', '.join([f'{k}: {v}' for k, v in elements.items()])})"
+def dictionary(elements: dict[str, str], inline: bool = False) -> str:
+    newline = "" if inline else "\n"
+    separator = ", " if inline else ",\n"
+    indent = "" if inline else "  "
+
+    return (
+        f"({newline}"
+        + textwrap.indent(
+            separator.join([f"{k}: {v}" for k, v in elements.items()]),
+            indent,
+        )
+        + f"{separator if not inline else ''})"
+    )
 
 
 def function(

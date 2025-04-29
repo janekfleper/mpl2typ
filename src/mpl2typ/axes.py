@@ -121,9 +121,11 @@ class Axis:
                         length=f"{line.get_markersize()}pt",
                         angle=f"{90 if axis == 'x' else 0}deg",
                         stroke=f"{line.get_color()} + {line.get_markeredgewidth()}pt",
-                    )
+                    ),
+                    inline=True,
                 ),
-            )
+            ),
+            inline=True,
         )
 
     def get_tick_label_style(self, tick: mpl.axis.XTick):
@@ -136,9 +138,11 @@ class Axis:
                     dict(
                         size=f"{text.get_fontsize()}pt",
                         fill=f"{text.get_color()}",
-                    )
+                    ),
+                    inline=True,
                 ),
-            )
+            ),
+            inline=True,
         )
 
     def export(self):
