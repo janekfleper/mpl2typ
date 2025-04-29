@@ -147,12 +147,16 @@ class Axis:
 
     def export(self):
         s = ""
-        s += "let xaxis-major-ticks = (\n"
-        s += f"  locs: {self.xaxis_major['locs']}.map(x => (x, 0)).map(transform).map(point => point.at(0)),\n"
-        s += f"  labels: {self.xaxis_major['labels']},\n"
-        s += f"  tick-style: {self.xaxis_major['tick_style']},\n"
-        s += f"  label-style: {self.xaxis_major['label_style']},\n"
-        s += ")\n"
+        s += "let xaxis-major-ticks = "
+        s += typst.dictionary(
+            {
+                "locs": f"{self.xaxis_major['locs']}.map(x => (x, 0)).map(transform).map(point => point.at(0))",
+                "labels": self.xaxis_major["labels"],
+                "tick-style": self.xaxis_major["tick_style"],
+                "label-style": self.xaxis_major["label_style"],
+            },
+        )
+        s += "\n"
 
         tick_bottom = self.xaxis_major["params"]["bottom"]
         label_bottom = self.xaxis_major["params"]["labelbottom"]
@@ -160,17 +164,37 @@ class Axis:
         label_top = self.xaxis_major["params"]["labeltop"]
 
         if tick_bottom or label_bottom:
-            s += f"draw-xaxis-ticks(bottom, show-ticks: {typst.boolean(tick_bottom)}, show-labels: {typst.boolean(label_bottom)}, ..xaxis-major-ticks)\n"
+            s += typst.function(
+                "draw-xaxis-ticks",
+                pos=["bottom"],
+                named={
+                    "show-ticks": typst.boolean(tick_bottom),
+                    "show-labels": typst.boolean(label_bottom),
+                },
+                inline=True,
+            )("..xaxis-major-ticks")
         if tick_top or label_top:
-            s += f"draw-xaxis-ticks(top, show-ticks: {typst.boolean(tick_top)}, show-labels: {typst.boolean(label_top)}, ..xaxis-major-ticks)\n"
+            s += typst.function(
+                "draw-xaxis-ticks",
+                pos=["top"],
+                named={
+                    "show-ticks": typst.boolean(tick_top),
+                    "show-labels": typst.boolean(label_top),
+                },
+                inline=True,
+            )("..xaxis-major-ticks")
         s += "\n"
 
-        s += "let yaxis-major-ticks = (\n"
-        s += f"  locs: {self.yaxis_major['locs']}.map(y => (0, y)).map(transform).map(point => point.at(1)),\n"
-        s += f"  labels: {self.yaxis_major['labels']},\n"
-        s += f"  tick-style: {self.yaxis_major['tick_style']},\n"
-        s += f"  label-style: {self.yaxis_major['label_style']},\n"
-        s += ")\n"
+        s += "let yaxis-major-ticks = "
+        s += typst.dictionary(
+            {
+                "locs": f"{self.yaxis_major['locs']}.map(y => (0, y)).map(transform).map(point => point.at(1))",
+                "labels": self.yaxis_major["labels"],
+                "tick-style": self.yaxis_major["tick_style"],
+                "label-style": self.yaxis_major["label_style"],
+            },
+        )
+        s += "\n"
 
         tick_left = self.yaxis_major["params"]["left"]
         label_left = self.yaxis_major["params"]["labelleft"]
@@ -178,11 +202,26 @@ class Axis:
         label_right = self.yaxis_major["params"]["labelright"]
 
         if tick_left or label_left:
-            s += f"draw-yaxis-ticks(left, show-ticks: {typst.boolean(tick_left)}, show-labels: {typst.boolean(label_left)}, ..yaxis-major-ticks)\n"
+            s += typst.function(
+                "draw-yaxis-ticks",
+                pos=["left"],
+                named={
+                    "show-ticks": typst.boolean(tick_left),
+                    "show-labels": typst.boolean(label_left),
+                },
+                inline=True,
+            )("..yaxis-major-ticks")
         if tick_right or label_right:
-            s += f"draw-yaxis-ticks(right, show-ticks: {typst.boolean(tick_right)}, show-labels: {typst.boolean(label_right)}, ..yaxis-major-ticks)\n"
-
-        return s
+            s += typst.function(
+                "draw-yaxis-ticks",
+                pos=["right"],
+                named={
+                    "show-ticks": typst.boolean(tick_right),
+                    "show-labels": typst.boolean(label_right),
+                },
+                inline=True,
+            )("..yaxis-major-ticks")
+        return s + "\n"
 
 
 class Axes:
