@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib as mpl
 
-from .util import make_body, function, compute_gutter, block
+from . import typst
 from .axes import Axes
 
 
@@ -15,16 +15,16 @@ class Cell:
 
     def export(self):
         axes = [f"axes-{axes.index}()" for axes in self.axes]
-        body = function(
+        body = typst.function(
             "block",
             named=dict(
                 width="100%",
                 height="100%",
                 stroke="red",
             ),
-        )(make_body(axes))
+        )(typst.make_body(axes))
 
-        return function(
+        return typst.function(
             "grid.cell",
             named=dict(
                 x=self.x,
@@ -115,7 +115,7 @@ class Grid:
         column_gutter = f"{round(self.column_gutter * 100, 3)}%"
         row_gutter = f"{round(self.row_gutter * 100, 3)}%"
 
-        grid = function(
+        grid = typst.function(
             "grid",
             named={
                 "columns": f"({columns})",
@@ -129,7 +129,7 @@ class Grid:
         for cell in self.cells:
             body.append(cell.export())
 
-        return block(
+        return typst.block(
             f"grid-{self.index}",
             self.padding,
         )(grid(",\n".join(body)))

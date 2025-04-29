@@ -3,7 +3,7 @@ import textwrap
 import numpy as np
 import matplotlib as mpl
 
-from .util import boolean, array, dictionary, block
+from . import typst
 from .line import get_stroke, get_marker
 from .text import Text
 
@@ -106,17 +106,17 @@ class Axis:
         )
 
     def get_tick_locs(self, ticks: list[mpl.axis.XTick]):
-        return array([f"{tick.get_loc()}" for tick in ticks])
+        return typst.array([f"{tick.get_loc()}" for tick in ticks])
 
     def get_tick_labels(self, ticks: list[mpl.axis.XTick]):
-        return array([f'"{tick.label1.get_text()}"' for tick in ticks])
+        return typst.array([f'"{tick.label1.get_text()}"' for tick in ticks])
 
     def get_tick_style(self, tick: mpl.axis.XTick, axis: str):
         line = tick.tick1line
-        return dictionary(
+        return typst.dictionary(
             dict(
                 direction=f'"{tick.get_tickdir()}"',
-                line=dictionary(
+                line=typst.dictionary(
                     dict(
                         length=f"{line.get_markersize()}pt",
                         angle=f"{90 if axis == 'x' else 0}deg",
@@ -128,11 +128,11 @@ class Axis:
 
     def get_tick_label_style(self, tick: mpl.axis.XTick):
         text = tick.label1
-        return dictionary(
+        return typst.dictionary(
             dict(
                 pad=f"{tick.get_pad()}pt",
                 rotation=f"{-text.get_rotation()}deg",
-                text=dictionary(
+                text=typst.dictionary(
                     dict(
                         size=f"{text.get_fontsize()}pt",
                         fill=f"{text.get_color()}",
@@ -156,9 +156,9 @@ class Axis:
         label_top = self.xaxis_major["params"]["labeltop"]
 
         if tick_bottom or label_bottom:
-            s += f"draw-xaxis-ticks(bottom, show-ticks: {boolean(tick_bottom)}, show-labels: {boolean(label_bottom)}, ..xaxis-major-ticks)\n"
+            s += f"draw-xaxis-ticks(bottom, show-ticks: {typst.boolean(tick_bottom)}, show-labels: {typst.boolean(label_bottom)}, ..xaxis-major-ticks)\n"
         if tick_top or label_top:
-            s += f"draw-xaxis-ticks(top, show-ticks: {boolean(tick_top)}, show-labels: {boolean(label_top)}, ..xaxis-major-ticks)\n"
+            s += f"draw-xaxis-ticks(top, show-ticks: {typst.boolean(tick_top)}, show-labels: {typst.boolean(label_top)}, ..xaxis-major-ticks)\n"
         s += "\n"
 
         s += "let yaxis-major-ticks = (\n"
@@ -174,9 +174,9 @@ class Axis:
         label_right = self.yaxis_major["params"]["labelright"]
 
         if tick_left or label_left:
-            s += f"draw-yaxis-ticks(left, show-ticks: {boolean(tick_left)}, show-labels: {boolean(label_left)}, ..yaxis-major-ticks)\n"
+            s += f"draw-yaxis-ticks(left, show-ticks: {typst.boolean(tick_left)}, show-labels: {typst.boolean(label_left)}, ..yaxis-major-ticks)\n"
         if tick_right or label_right:
-            s += f"draw-yaxis-ticks(right, show-ticks: {boolean(tick_right)}, show-labels: {boolean(label_right)}, ..yaxis-major-ticks)\n"
+            s += f"draw-yaxis-ticks(right, show-ticks: {typst.boolean(tick_right)}, show-labels: {typst.boolean(label_right)}, ..yaxis-major-ticks)\n"
 
         return s
 
@@ -218,7 +218,7 @@ class Axes:
     def export(self):
         s = template(self.index, self.ax)
         if self.standalone:
-            s += block(
+            s += typst.block(
                 f"other-axes-{self.index}",
                 self.padding,
             )(f"axes-{self.index}()")

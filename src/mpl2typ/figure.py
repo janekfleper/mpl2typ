@@ -1,7 +1,7 @@
 import pathlib
 import matplotlib as mpl
 
-from .util import make_body, function
+from . import typst
 from .axes import Axes
 from .grid import Grid
 
@@ -126,7 +126,7 @@ def template(width: float, height: float):
     s += f"#let width = {width}cm\n"
     s += f"#let height = {height}cm\n\n"
 
-    block = function(
+    block = typst.function(
         "#block",
         named=dict(
             width="width",
@@ -194,4 +194,4 @@ class Figure:
                 f.write(ax.export() + "\n")
                 children.append(f"other-axes-{ax.index}()")
 
-            f.write(figure(make_body(children)))
+            f.write(figure(typst.make_body(children)))

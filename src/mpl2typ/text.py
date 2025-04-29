@@ -1,6 +1,6 @@
 import matplotlib as mpl
 
-from .util import function
+from . import typst
 
 
 class Text:
@@ -57,7 +57,7 @@ class Text:
         dx = f"{round((x + self.offset[0]) * 100, 3)}%"
         dy = f"{round((1 - y - self.offset[1]) * 100, 3)}%"
 
-        outer = function(
+        outer = typst.function(
             "place",
             named=dict(dx=dx, dy=dy),
         )
@@ -65,7 +65,7 @@ class Text:
         kwargs = dict(size=f"{self.fontsize}pt", fill=self.color)
         if self.text.get_verticalalignment() in ["center", "bottom"]:
             kwargs["bottom-edge"] = '"descender"'
-        variable = f"let {self.name} = " + function(
+        variable = f"let {self.name} = " + typst.function(
             "text",
             named=kwargs,
             inline=True,
