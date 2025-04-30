@@ -232,29 +232,26 @@ class YTicks(Ticks):
 
 class Axis:
     def __init__(self, ax: mpl.axes.Axes):
-        xaxis_major_ticks = ax.xaxis.get_major_ticks()
-        yaxis_major_ticks = ax.yaxis.get_major_ticks()
-
-        self.xticks = XTicks(
-            "xaxis-major-ticks",
-            xaxis_major_ticks,
-            ax.xaxis.get_tick_params(which="major"),
-        )
-        self.yticks = YTicks(
-            "yaxis-major-ticks",
-            yaxis_major_ticks,
-            ax.yaxis.get_tick_params(which="major"),
-        )
+        self.ticks: list[Ticks] = []
+        if ticks := ax.xaxis.get_major_ticks():
+            params = ax.xaxis.get_tick_params(which="major")
+            self.ticks.append(XTicks("xaxis-major-ticks", ticks, params))
+        if ticks := ax.xaxis.get_minor_ticks():
+            params = ax.xaxis.get_tick_params(which="minor")
+            self.ticks.append(XTicks("xaxis-minor-ticks", ticks, params))
+        if ticks := ax.yaxis.get_major_ticks():
+            params = ax.yaxis.get_tick_params(which="major")
+            self.ticks.append(YTicks("yaxis-major-ticks", ticks, params))
+        if ticks := ax.yaxis.get_minor_ticks():
+            params = ax.yaxis.get_tick_params(which="minor")
+            self.ticks.append(YTicks("yaxis-minor-ticks", ticks, params))
 
     def export(self):
         definitions = []
         draws = []
-        if self.xticks is not None:
-            definitions.append(self.xticks.definition)
-            draws.append(self.xticks.draw)
-        if self.yticks is not None:
-            definitions.append(self.yticks.definition)
-            draws.append(self.yticks.draw)
+        for ticks in self.ticks:
+            definitions.append(ticks.definition)
+            draws.append(ticks.draw)
 
         return "\n".join(definitions) + "\n" + "\n".join(draws) + "\n"
 
