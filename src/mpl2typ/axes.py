@@ -158,13 +158,9 @@ class Ticks(ABC):
             inline=True,
         )
 
-    def export(self):
-        s = ""
-        if not self.ticks:
-            return s
-
-        s += f"let {self.name} = "
-        s += typst.dictionary(
+    @property
+    def definition(self):
+        return f"let {self.name} = " + typst.dictionary(
             {
                 "locs": f"{self.locs}.{self.transform_function}",
                 "labels": self.labels,
@@ -172,27 +168,23 @@ class Ticks(ABC):
                 "label-style": self.label_style,
             },
         )
-        s += "\n"
 
-        calls = []
-        for pos, show in self.positions.items():
+    @property
+    def draw(self):
+        s = ""
+        for position, show in self.positions.items():
             if show["ticks"] or show["labels"]:
-                calls.append(
-                    typst.function(
-                        self.draw_function,
-                        pos=[pos],
-                        named={
-                            "show-ticks": typst.boolean(show["ticks"]),
-                            "show-labels": typst.boolean(show["labels"]),
-                        },
-                        inline=True,
-                    )(f"..{self.name}")
-                )
-
-        if calls:
-            s += "\n".join(calls)
-            s += "\n"
-
+                pos = [position]
+                named = {
+                    "show-ticks": typst.boolean(show["ticks"]),
+                    "show-labels": typst.boolean(show["labels"]),
+                }
+                s += typst.function(
+                    self.draw_function,
+                    pos=pos,
+                    named=named,
+                    inline=True,
+                )(f"..{self.name}")
         return s
 
 
@@ -255,10 +247,16 @@ class Axis:
         )
 
     def export(self):
-        s = ""
-        s += self.xticks.export()
-        s += self.yticks.export()
-        return s
+        definitions = []
+        draws = []
+        if self.xticks is not None:
+            definitions.append(self.xticks.definition)
+            draws.append(self.xticks.draw)
+        if self.yticks is not None:
+            definitions.append(self.yticks.definition)
+            draws.append(self.yticks.draw)
+
+        return "\n".join(definitions) + "\n" + "\n".join(draws) + "\n"
 
 
 class Axes:
