@@ -1,4 +1,5 @@
 import textwrap
+from abc import ABC, abstractmethod
 
 import numpy as np
 import matplotlib as mpl
@@ -85,24 +86,43 @@ class Title:
         return s
 
 
-class XTicks:
-    def __init__(self, name: str, ticks: list[mpl.axis.XTick], params: dict):
+class Ticks(ABC):
+    def __init__(self, name: str, ticks: list[mpl.axis.Tick], params: dict):
         self.name = name
         self.ticks = ticks
         self.params = params
 
-        self.locs = self._get_locs()
-        self.labels = self._get_labels()
-        self.tick_style = self._get_tick_style(ticks[0])
-        self.label_style = self._get_label_style(ticks[0])
-
-    def _get_locs(self):
+    @property
+    def locs(self):
         return typst.array([f"{tick.get_loc()}" for tick in self.ticks])
 
-    def _get_labels(self):
+    @property
+    def labels(self):
         return typst.array([f'"{tick.label1.get_text()}"' for tick in self.ticks])
 
-    def _get_tick_style(self, tick: mpl.axis.XTick):
+    @property
+    @abstractmethod
+    def line_angle(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def draw_function(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def transform_function(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def positions(self) -> dict[str, dict[str, bool]]:
+        pass
+
+    @property
+    def tick_style(self):
+        tick = self.ticks[0]
         line = tick.tick1line
         return typst.dictionary(
             dict(
@@ -110,7 +130,7 @@ class XTicks:
                 line=typst.dictionary(
                     dict(
                         length=f"{line.get_markersize()}pt",
-                        angle="90deg",
+                        angle=self.line_angle,
                         stroke=f"{line.get_color()} + {line.get_markeredgewidth()}pt",
                     ),
                     inline=True,
@@ -119,8 +139,10 @@ class XTicks:
             inline=True,
         )
 
-    def _get_label_style(self, tick: mpl.axis.XTick):
-        text = tick.label1
+    @property
+    def label_style(self):
+        tick = self.ticks[0]
+        text = self.ticks[0].label1
         return typst.dictionary(
             dict(
                 pad=f"{tick.get_pad()}pt",
@@ -139,12 +161,12 @@ class XTicks:
     def export(self):
         s = ""
         if not self.ticks:
-            return s  # No ticks, no export
+            return s
 
         s += f"let {self.name} = "
         s += typst.dictionary(
             {
-                "locs": f"{self.locs}.map(x => (x, 0)).map(transform).map(point => point.at(0))",
+                "locs": f"{self.locs}.{self.transform_function}",
                 "labels": self.labels,
                 "tick-style": self.tick_style,
                 "label-style": self.label_style,
@@ -152,36 +174,20 @@ class XTicks:
         )
         s += "\n"
 
-        tick_bottom = self.params["bottom"]
-        label_bottom = self.params["labelbottom"]
-        tick_top = self.params["top"]
-        label_top = self.params["labeltop"]
-
         calls = []
-        if tick_bottom or label_bottom:
-            calls.append(
-                typst.function(
-                    "draw-xaxis-ticks",
-                    pos=["bottom"],
-                    named={
-                        "show-ticks": typst.boolean(tick_bottom),
-                        "show-labels": typst.boolean(label_bottom),
-                    },
-                    inline=True,
-                )(f"..{self.name}")
-            )
-        if tick_top or label_top:
-            calls.append(
-                typst.function(
-                    "draw-xaxis-ticks",
-                    pos=["top"],
-                    named={
-                        "show-ticks": typst.boolean(tick_top),
-                        "show-labels": typst.boolean(label_top),
-                    },
-                    inline=True,
-                )(f"..{self.name}")
-            )
+        for pos, show in self.positions.items():
+            if show["ticks"] or show["labels"]:
+                calls.append(
+                    typst.function(
+                        self.draw_function,
+                        pos=[pos],
+                        named={
+                            "show-ticks": typst.boolean(show["ticks"]),
+                            "show-labels": typst.boolean(show["labels"]),
+                        },
+                        inline=True,
+                    )(f"..{self.name}")
+                )
 
         if calls:
             s += "\n".join(calls)
@@ -190,109 +196,46 @@ class XTicks:
         return s
 
 
-class YTicks:
-    def __init__(self, name: str, ticks: list[mpl.axis.YTick], params: dict):
-        self.name = name
-        self.ticks = ticks
-        self.params = params
+class XTicks(Ticks):
+    @property
+    def line_angle(self) -> str:
+        return "90deg"
 
-        self.locs = self._get_locs()
-        self.labels = self._get_labels()
-        self.tick_style = self._get_tick_style(ticks[0])
-        self.label_style = self._get_label_style(ticks[0])
+    @property
+    def draw_function(self) -> str:
+        return "draw-xaxis-ticks"
 
-    def _get_locs(self):
-        return typst.array([f"{tick.get_loc()}" for tick in self.ticks])
+    @property
+    def transform_function(self) -> str:
+        return "map(x => (x, 0)).map(transform).map(point => point.at(0))"
 
-    def _get_labels(self):
-        return typst.array([f'"{tick.label1.get_text()}"' for tick in self.ticks])
-
-    def _get_tick_style(self, tick: mpl.axis.YTick):  # Changed type hint
-        line = tick.tick1line
-        return typst.dictionary(
-            dict(
-                direction=f'"{tick.get_tickdir()}"',
-                line=typst.dictionary(
-                    dict(
-                        length=f"{line.get_markersize()}pt",
-                        angle="0deg",
-                        stroke=f"{line.get_color()} + {line.get_markeredgewidth()}pt",
-                    ),
-                    inline=True,
-                ),
-            ),
-            inline=True,
+    @property
+    def positions(self) -> dict[str, dict[str, bool]]:
+        return dict(
+            bottom=dict(ticks=self.params["bottom"], labels=self.params["labelbottom"]),
+            top=dict(ticks=self.params["top"], labels=self.params["labeltop"]),
         )
 
-    def _get_label_style(self, tick: mpl.axis.YTick):
-        text = tick.label1
-        return typst.dictionary(
-            dict(
-                pad=f"{tick.get_pad()}pt",
-                rotation=f"{-text.get_rotation()}deg",
-                text=typst.dictionary(
-                    dict(
-                        size=f"{text.get_fontsize()}pt",
-                        fill=f"{text.get_color()}",
-                    ),
-                    inline=True,
-                ),
-            ),
-            inline=True,
+
+class YTicks(Ticks):
+    @property
+    def line_angle(self) -> str:
+        return "0deg"
+
+    @property
+    def draw_function(self) -> str:
+        return "draw-yaxis-ticks"
+
+    @property
+    def transform_function(self) -> str:
+        return "map(y => (0, y)).map(transform).map(point => point.at(1))"
+
+    @property
+    def positions(self) -> dict[str, dict[str, bool]]:
+        return dict(
+            left=dict(ticks=self.params["left"], labels=self.params["labelleft"]),
+            right=dict(ticks=self.params["right"], labels=self.params["labelright"]),
         )
-
-    def export(self):
-        s = ""
-        if not self.ticks:
-            return s  # No ticks, no export
-
-        s += f"let {self.name} = "
-        s += typst.dictionary(
-            {
-                "locs": f"{self.locs}.map(y => (0, y)).map(transform).map(point => point.at(1))",
-                "labels": self.labels,
-                "tick-style": self.tick_style,
-                "label-style": self.label_style,
-            },
-        )
-        s += "\n"
-
-        tick_left = self.params["left"]
-        label_left = self.params["labelleft"]
-        tick_right = self.params["right"]
-        label_right = self.params["labelright"]
-
-        calls = []
-        if tick_left or label_left:
-            calls.append(
-                typst.function(
-                    "draw-yaxis-ticks",
-                    pos=["left"],
-                    named={
-                        "show-ticks": typst.boolean(tick_left),
-                        "show-labels": typst.boolean(label_left),
-                    },
-                    inline=True,
-                )(f"..{self.name}")
-            )
-        if tick_right or label_right:
-            calls.append(
-                typst.function(
-                    "draw-yaxis-ticks",
-                    pos=["right"],
-                    named={
-                        "show-ticks": typst.boolean(tick_right),
-                        "show-labels": typst.boolean(label_right),
-                    },
-                    inline=True,
-                )(f"..{self.name}")
-            )
-
-        if calls:
-            s += "\n".join(calls)
-            s += "\n"
-
-        return s
 
 
 class Axis:
