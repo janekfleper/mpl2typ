@@ -31,6 +31,14 @@ def template(index: int, ax: mpl.axes.Axes):
     title = Title(ax)
     s += textwrap.indent(title.export(), "  ")
 
+    transform = ax.transAxes.inverted()
+    if ax.get_xlabel():
+        xlabel = Text("xaxis-label", ax.xaxis.get_label(), transform)
+        s += textwrap.indent(xlabel.export(), "  ") + "\n\n"
+    if ax.get_ylabel():
+        ylabel = Text("yaxis-label", ax.yaxis.get_label(), transform)
+        s += textwrap.indent(ylabel.export(), "  ") + "\n\n"
+
     for i, line in enumerate(ax.lines):
         thickness, stroke = get_stroke(line)
         s += textwrap.indent(f"let thickness = {thickness}pt\n", "  ")
