@@ -64,25 +64,29 @@ def template(index: int, ax: mpl.axes.Axes):
 
 class Title:
     def __init__(self, ax: mpl.axes.Axes):
-        self.center = ax.title if ax.get_title(loc="center") else None
-        self.left = ax._left_title if ax.get_title(loc="left") else None
-        self.right = ax._right_title if ax.get_title(loc="right") else None
-
-        transform = np.linalg.inv(ax.transAxes.get_matrix())
-        offset = np.hstack([ax.titleOffsetTrans.get_matrix()[:2, 2], np.zeros(1)])
-        self.offset = tuple((transform @ offset)[:2])
+        transform = ax.transAxes.inverted()
+        self.center = (
+            Text("title", ax.title, transform) if ax.get_title(loc="center") else None
+        )
+        self.left = (
+            Text("title-left", ax._left_title, transform)
+            if ax.get_title(loc="left")
+            else None
+        )
+        self.right = (
+            Text("title-right", ax._right_title, transform)
+            if ax.get_title(loc="right")
+            else None
+        )
 
     def export(self):
         s = ""
         if self.center is not None:
-            title = Text("title", self.center, offset=self.offset)
-            s += title.export() + "\n\n"
+            s += self.center.export() + "\n\n"
         if self.left is not None:
-            title = Text("title-left", self.left, offset=self.offset)
-            s += title.export() + "\n\n"
+            s += self.left.export() + "\n\n"
         if self.right is not None:
-            title = Text("title-right", self.right, offset=self.offset)
-            s += title.export() + "\n\n"
+            s += self.right.export() + "\n\n"
         return s
 
 

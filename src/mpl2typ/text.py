@@ -8,15 +8,17 @@ class Text:
         self,
         name: str,
         text: mpl.text.Text,
-        offset: tuple[float, float] = (0, 0),
+        transform: mpl.transform.Affine2d,
     ):
         self.name = name
         self.text = text
-        self.offset = offset
+        self.transform = transform
 
     @property
     def position(self) -> tuple[float, float]:
-        return self.text.get_position()
+        return self.transform.transform_point(
+            self.text.get_transform().transform_point(self.text.get_position())
+        )
 
     @property
     def fontsize(self) -> float:
@@ -54,8 +56,8 @@ class Text:
     def export(self) -> str:
         """Exports the Text object to a Typst `place` command string."""
         x, y = self.position
-        dx = f"{round((x + self.offset[0]) * 100, 3)}%"
-        dy = f"{round((1 - y - self.offset[1]) * 100, 3)}%"
+        dx = f"{round(x * 100, 3)}%"
+        dy = f"{round((1 - y) * 100, 3)}%"
 
         outer = typst.function(
             "place",
