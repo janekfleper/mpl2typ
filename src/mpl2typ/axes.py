@@ -1,7 +1,6 @@
 import textwrap
 from abc import ABC, abstractmethod
 
-import numpy as np
 import matplotlib as mpl
 
 from . import typst
@@ -38,6 +37,14 @@ def template(index: int, ax: mpl.axes.Axes):
     if ax.get_ylabel():
         ylabel = Text("yaxis-label", ax.yaxis.get_label(), transform)
         s += textwrap.indent(ylabel.export(), "  ") + "\n\n"
+    xaxis_offset_text = ax.xaxis.get_offset_text()
+    if xaxis_offset_text.get_text():
+        xoffset = Text("xaxis-offset", xaxis_offset_text, transform)
+        s += textwrap.indent(xoffset.export(), "  ") + "\n\n"
+    yaxis_offset_text = ax.yaxis.get_offset_text()
+    if yaxis_offset_text.get_text():
+        yoffset = Text("yaxis-offset", yaxis_offset_text, transform)
+        s += textwrap.indent(yoffset.export(), "  ") + "\n\n"
 
     for i, line in enumerate(ax.lines):
         thickness, stroke = get_stroke(line)
