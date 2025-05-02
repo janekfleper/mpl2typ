@@ -31,7 +31,9 @@ def boolean(value: bool) -> str:
     return "true" if value else "false"
 
 
-def array(elements: list[str]) -> str:
+def array(elements: list[str], squeeze: bool = False) -> str:
+    if len(elements) == 1:
+        return elements[0] if squeeze else f"({elements[0]},)"
     return f"({', '.join(elements)})"
 
 
