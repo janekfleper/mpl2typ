@@ -8,7 +8,7 @@ class Text:
         self,
         name: str,
         text: mpl.text.Text,
-        transform: mpl.transform.Affine2d,
+        transform: mpl.transforms.Affine2D,
     ):
         self.name = name
         self.text = text
