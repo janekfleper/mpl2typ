@@ -37,6 +37,14 @@ def array(elements: list[str], squeeze: bool = False) -> str:
     return f"({', '.join(elements)})"
 
 
+def fractions(values: list[int | float]) -> str:
+    return [f"{v}fr" for v in values]
+
+
+def ratios(values: list[int | float], digits: int = 3) -> str:
+    return [f"{round(v * 100, digits)}%" for v in values]
+
+
 def dictionary(elements: dict[str, str], inline: bool = False) -> str:
     newline = "" if inline else "\n"
     separator = ", " if inline else ",\n"
