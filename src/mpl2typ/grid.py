@@ -58,14 +58,6 @@ class Grid:
     def rows(self):
         return self.grid.get_height_ratios()
 
-    @property
-    def wspace(self):
-        return self.grid.get_subplot_params().wspace
-
-    @property
-    def hspace(self):
-        return self.grid.get_subplot_params().hspace
-
     def _add_axes(self, axes: Axes):
         for cell in self.cells:
             if cell.x == axes.cell["x"] and cell.y == axes.cell["y"]:
@@ -105,23 +97,17 @@ class Grid:
             bottom=ymin,
         )
 
-        # is there any reason to allow multiple values for the gutters?
-        self.column_gutter = np.unique((x0[1:] - x1[:-1]) / (xmax - xmin))[0]
-        self.row_gutter = np.unique((y0[1:] - y1[:-1]) / (ymax - ymin))[0]
+        self.column_gutter = (x0[1:] - x1[:-1]) / (xmax - xmin)
+        self.row_gutter = (y0[1:] - y1[:-1]) / (ymax - ymin)
 
     def export(self):
-        columns = ", ".join([f"{col}fr" for col in self.columns])
-        rows = ", ".join([f"{row}fr" for row in self.rows])
-        column_gutter = f"{round(self.column_gutter * 100, 3)}%"
-        row_gutter = f"{round(self.row_gutter * 100, 3)}%"
-
         grid = typst.function(
             "grid",
             named={
-                "columns": f"({columns})",
-                "rows": f"({rows})",
-                "column-gutter": column_gutter,
-                "row-gutter": row_gutter,
+                "columns": typst.array(typst.fractions(self.columns)),
+                "rows": typst.array(typst.fractions(self.rows)),
+                "column-gutter": typst.array(typst.ratios(self.column_gutter)),
+                "row-gutter": typst.array(typst.ratios(self.row_gutter)),
             },
         )
 
