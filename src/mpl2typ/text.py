@@ -54,23 +54,27 @@ class Text:
             return f"place({self.alignment}, {body})"
 
     def export(self) -> str:
-        """Exports the Text object to a Typst `place` command string."""
         x, y = self.position
         dx = f"{round(x * 100, 3)}%"
         dy = f"{round((1 - y) * 100, 3)}%"
 
-        outer = typst.function(
-            "place",
-            named=dict(dx=dx, dy=dy),
-        )
-
         kwargs = dict(size=f"{self.fontsize}pt", fill=self.color)
         if self.text.get_verticalalignment() in ["center", "bottom"]:
             kwargs["bottom-edge"] = '"descender"'
+
         variable = f"let {self.name} = " + typst.function(
             "text",
             named=kwargs,
+            body=f"[{self.text.get_text()}]",
             inline=True,
-        )(f"[{self.text.get_text()}]")
+        )
 
-        return variable + "\n" + outer(self.inner(self.name))
+        return (
+            variable
+            + "\n"
+            + typst.function(
+                "place",
+                named=dict(dx=dx, dy=dy),
+                body=self.inner(self.name),
+            )
+        )

@@ -202,8 +202,9 @@ class Ticks(ABC):
                     self.draw_function,
                     pos=pos,
                     named=named,
+                    body=f"..{self.name}",
                     inline=True,
-                )(f"..{self.name}")
+                )
         return s
 
 
@@ -315,5 +316,6 @@ class Axes:
             s += typst.block(
                 f"other-axes-{self.index}",
                 self.padding,
-            )(f"axes-{self.index}()")
+                f"axes-{self.index}()",
+            )
         return s

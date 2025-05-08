@@ -121,7 +121,7 @@ header = """
 """
 
 
-def template(width: float, height: float):
+def template(width: float, height: float, body: str | None = None):
     s = ""
     s += f"#let width = {width}cm\n"
     s += f"#let height = {height}cm\n\n"
@@ -133,12 +133,10 @@ def template(width: float, height: float):
             height="height",
             stroke="blue",
         ),
+        body=body,
     )
 
-    def wrapper(body: str):
-        return s + block(body)
-
-    return wrapper
+    return s + block
 
 
 class Figure:
@@ -178,11 +176,6 @@ class Figure:
             f.write(header)
             f.write("\n\n")
 
-            figure = template(
-                width=self.width,
-                height=self.height,
-            )
-
             children = []
             for grid in self.grids:
                 for ax in grid.axes:
@@ -194,4 +187,10 @@ class Figure:
                 f.write(ax.export() + "\n")
                 children.append(f"other-axes-{ax.index}()")
 
-            f.write(figure(typst.make_body(children)))
+            f.write(
+                template(
+                    width=self.width,
+                    height=self.height,
+                    body=typst.make_body(children),
+                )
+            )

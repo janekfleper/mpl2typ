@@ -1,5 +1,4 @@
 import textwrap
-from typing import Callable
 
 
 def make_body(elements: list[str]) -> str:
@@ -65,61 +64,56 @@ def function(
     *,
     pos: list[str] | tuple[str, ...] | None = None,
     named: dict[str, str] | None = None,
+    body: str | None = None,
     comment: str = "",
     inline: bool = False,
-) -> Callable[[str], str]:
+) -> str:
     if pos is None:
         pos = []
     if named is None:
         named = {}
+
     args = list(pos) + [f"{k}: {v}" for k, v in named.items()]
+    if body is not None:
+        args.append(body)
+    if not args:
+        return f"{'// ' + comment + '\n' if comment else ''}" + f"{name}()"
 
     newline = "" if inline else "\n"
     separator = ", " if inline else ",\n"
     indent = "" if inline else "  "
 
-    def wrapper(body: str):
-        return (
-            f"{'// ' + comment + '\n' if comment and inline else ''}"
-            + f"{name}({' // ' + comment if comment and not inline else ''}{newline}"
-            + textwrap.indent(separator.join(args), indent)
-            + separator
-            + textwrap.indent(body, indent)
-            + f"{newline})"
-        )
-
-    return wrapper
-
-
-def block(name: str, padding: dict[str, float]):
-    s = ""
-    s += "let padding = (\n"
-    s += f"  left: {round(padding['left'] * 100, 3)}%,\n"
-    s += f"  right: {round(padding['right'] * 100, 3)}%,\n"
-    s += f"  top: {round(padding['top'] * 100, 3)}%,\n"
-    s += f"  bottom: {round(padding['bottom'] * 100, 3)}%,\n"
-    s += ")\n\n"
-
-    place = function(
-        "place",
-        named=dict(dx="padding.left", dy="padding.top"),
+    return (
+        f"{'// ' + comment + '\n' if comment and inline else ''}"
+        + f"{name}({' // ' + comment if comment and not inline else ''}{newline}"
+        + textwrap.indent(separator.join(args), indent)
+        + f"{separator})"
     )
 
-    block = function(
+
+def block(name: str, padding: dict[str, float], body: str | None = None):
+    padding = {k: f"{round(v * 100, 3)}%" for k, v in padding.items()}
+    s = "let padding = " + dictionary(padding, inline=True) + "\n\n"
+
+    inner = function(
         "block",
         named=dict(
             width="100% - padding.right - padding.left",
             height="100% - padding.top - padding.bottom",
             stroke="green",
         ),
+        body=body,
     )
 
-    def wrapper(body: str):
-        return (
-            f"#let {name}() = {{\n"
-            + textwrap.indent(s, "  ")
-            + textwrap.indent(place(block(body)), "  ")
-            + "\n}\n\n"
-        )
+    place = function(
+        "place",
+        named=dict(dx="padding.left", dy="padding.top"),
+        body=inner,
+    )
 
-    return wrapper
+    return (
+        f"#let {name}() = {{\n"
+        + textwrap.indent(s, "  ")
+        + textwrap.indent(place, "  ")
+        + "\n}\n\n"
+    )

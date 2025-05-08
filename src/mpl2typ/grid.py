@@ -22,7 +22,8 @@ class Cell:
                 height="100%",
                 stroke="red",
             ),
-        )(typst.make_body(axes))
+            body=typst.make_body(axes),
+        )
 
         return typst.function(
             "grid.cell",
@@ -32,7 +33,8 @@ class Cell:
                 colspan=self.colspan,
                 rowspan=self.rowspan,
             ),
-        )(body)
+            body=body,
+        )
 
 
 class Grid:
@@ -101,6 +103,10 @@ class Grid:
         self.row_gutter = (y0[1:] - y1[:-1]) / (ymax - ymin)
 
     def export(self):
+        cells = []
+        for cell in self.cells:
+            cells.append(cell.export())
+
         grid = typst.function(
             "grid",
             named={
@@ -109,13 +115,11 @@ class Grid:
                 "column-gutter": typst.array(typst.ratios(self.column_gutter)),
                 "row-gutter": typst.array(typst.ratios(self.row_gutter)),
             },
+            body=",\n".join(cells),
         )
-
-        body = []
-        for cell in self.cells:
-            body.append(cell.export())
 
         return typst.block(
             f"grid-{self.index}",
             self.padding,
-        )(grid(",\n".join(body)))
+            grid,
+        )
