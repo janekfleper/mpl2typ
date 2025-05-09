@@ -110,10 +110,10 @@ class Grid:
         grid = typst.function(
             "grid",
             named={
-                "columns": typst.array(typst.fractions(self.columns)),
-                "rows": typst.array(typst.fractions(self.rows)),
-                "column-gutter": typst.array(typst.ratios(self.column_gutter)),
-                "row-gutter": typst.array(typst.ratios(self.row_gutter)),
+                "columns": typst.array(typst.fraction(self.columns)),
+                "rows": typst.array(typst.fraction(self.rows)),
+                "column-gutter": typst.array(typst.ratio(self.column_gutter)),
+                "row-gutter": typst.array(typst.ratio(self.row_gutter)),
             },
             body=",\n".join(cells),
         )

@@ -1,4 +1,5 @@
 import textwrap
+from typing import overload
 
 
 def make_body(elements: list[str]) -> str:
@@ -36,14 +37,6 @@ def array(elements: list[str], squeeze: bool = False) -> str:
     return f"({', '.join(elements)})"
 
 
-def fractions(values: list[int | float]) -> str:
-    return [f"{v}fr" for v in values]
-
-
-def ratios(values: list[int | float], digits: int = 3) -> str:
-    return [f"{round(v * 100, digits)}%" for v in values]
-
-
 def dictionary(elements: dict[str, str], inline: bool = False) -> str:
     newline = "" if inline else "\n"
     separator = ", " if inline else ",\n"
@@ -57,6 +50,128 @@ def dictionary(elements: dict[str, str], inline: bool = False) -> str:
         )
         + f"{separator if not inline else ''})"
     )
+
+
+@overload
+def length(
+    values: int | float,
+    unit: str,
+    *,
+    scale: int | float | None = ...,
+    digits: int | None = ...,
+) -> str: ...
+
+
+@overload
+def length(
+    values: list[int | float],
+    unit: str,
+    *,
+    scale: int | float | None = ...,
+    digits: int | None = ...,
+) -> list[str]: ...
+
+
+@overload
+def length(
+    values: dict[str, int | float],
+    unit: str,
+    *,
+    scale: int | float | None = ...,
+    digits: int | None = ...,
+) -> dict[str, str]: ...
+
+
+def length(
+    values: int | float | list[int | float] | dict[str, int | float],
+    unit: str,
+    *,
+    scale: int | float | None = None,
+    digits: int | None = 3,
+) -> str | list[str] | dict[str, str]:
+    if isinstance(values, dict):
+        return dict(
+            zip(
+                values.keys(),
+                length(list(values.values()), unit=unit, scale=scale, digits=digits),
+            )
+        )
+    elif isinstance(values, (int, float)):
+        if scale is not None:
+            values = values * scale
+        if digits is not None:
+            values = round(values, digits)
+        return f"{values}{unit}"
+
+    if scale is not None:
+        values = [v * scale for v in values]
+    if digits is not None:
+        values = [round(v, digits) for v in values]
+    return [f"{v}{unit}" for v in values]
+
+
+@overload
+def fraction(
+    values: int | float,
+    scale: int | float | None = ...,
+    digits: int = ...,
+) -> str: ...
+
+
+@overload
+def fraction(
+    values: list[int | float],
+    scale: int | float | None = ...,
+    digits: int = ...,
+) -> list[str]: ...
+
+
+@overload
+def fraction(
+    values: dict[str, int | float],
+    scale: int | float | None = ...,
+    digits: int = ...,
+) -> dict[str, str]: ...
+
+
+def fraction(
+    values: int | float | list[int | float] | dict[str, int | float],
+    scale: int | float | None = None,
+    digits: int = 3,
+) -> str | list[str] | dict[str, str]:
+    return length(values, "fr", scale=scale, digits=digits)
+
+
+@overload
+def ratio(
+    values: int | float,
+    scale: int | float = ...,
+    digits: int = ...,
+) -> str: ...
+
+
+@overload
+def ratio(
+    values: list[int | float],
+    scale: int | float = ...,
+    digits: int = ...,
+) -> list[str]: ...
+
+
+@overload
+def ratio(
+    values: dict[str, int | float],
+    scale: int | float = ...,
+    digits: int = ...,
+) -> dict[str, str]: ...
+
+
+def ratio(
+    values: int | float | list[int | float] | dict[str, int | float],
+    scale: int | float = 100,
+    digits: int = 3,
+) -> str | list[str] | dict[str, str]:
+    return length(values, "%", scale=scale, digits=digits)
 
 
 def function(
@@ -92,8 +207,7 @@ def function(
 
 
 def block(name: str, padding: dict[str, float], body: str | None = None):
-    padding = {k: f"{round(v * 100, 3)}%" for k, v in padding.items()}
-    s = "let padding = " + dictionary(padding, inline=True) + "\n\n"
+    s = "let padding = " + dictionary(fraction(padding), inline=True) + "\n\n"
 
     inner = function(
         "block",
