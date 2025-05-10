@@ -1,8 +1,9 @@
 import textwrap
 from typing import overload
+from collections.abc import Mapping, Sequence
 
 
-def make_body(elements: list[str]) -> str:
+def make_body(elements: Sequence[str]) -> str:
     """
     Join elements into a valid Typst body
 
@@ -31,13 +32,13 @@ def boolean(value: bool) -> str:
     return "true" if value else "false"
 
 
-def array(elements: list[str], squeeze: bool = False) -> str:
+def array(elements: Sequence[str], squeeze: bool = False) -> str:
     if len(elements) == 1:
         return elements[0] if squeeze else f"({elements[0]},)"
     return f"({', '.join(elements)})"
 
 
-def dictionary(elements: dict[str, str], inline: bool = False) -> str:
+def dictionary(elements: Mapping[str, str], inline: bool = False) -> str:
     newline = "" if inline else "\n"
     separator = ", " if inline else ",\n"
     indent = "" if inline else "  "
@@ -64,7 +65,7 @@ def length(
 
 @overload
 def length(
-    values: list[int | float],
+    values: Sequence[int | float],
     unit: str,
     *,
     scale: int | float | None = ...,
@@ -74,7 +75,7 @@ def length(
 
 @overload
 def length(
-    values: dict[str, int | float],
+    values: Mapping[str, int | float],
     unit: str,
     *,
     scale: int | float | None = ...,
@@ -83,13 +84,13 @@ def length(
 
 
 def length(
-    values: int | float | list[int | float] | dict[str, int | float],
+    values: int | float | Sequence[int | float] | Mapping[str, int | float],
     unit: str,
     *,
     scale: int | float | None = None,
     digits: int | None = 3,
 ) -> str | list[str] | dict[str, str]:
-    if isinstance(values, dict):
+    if isinstance(values, Mapping):
         return dict(
             zip(
                 values.keys(),
@@ -120,7 +121,7 @@ def fraction(
 
 @overload
 def fraction(
-    values: list[int | float],
+    values: Sequence[int | float],
     scale: int | float | None = ...,
     digits: int = ...,
 ) -> list[str]: ...
@@ -128,14 +129,14 @@ def fraction(
 
 @overload
 def fraction(
-    values: dict[str, int | float],
+    values: Mapping[str, int | float],
     scale: int | float | None = ...,
     digits: int = ...,
 ) -> dict[str, str]: ...
 
 
 def fraction(
-    values: int | float | list[int | float] | dict[str, int | float],
+    values: int | float | Sequence[int | float] | Mapping[str, int | float],
     scale: int | float | None = None,
     digits: int = 3,
 ) -> str | list[str] | dict[str, str]:
@@ -152,7 +153,7 @@ def ratio(
 
 @overload
 def ratio(
-    values: list[int | float],
+    values: Sequence[int | float],
     scale: int | float = ...,
     digits: int = ...,
 ) -> list[str]: ...
@@ -160,14 +161,14 @@ def ratio(
 
 @overload
 def ratio(
-    values: dict[str, int | float],
+    values: Mapping[str, int | float],
     scale: int | float = ...,
     digits: int = ...,
 ) -> dict[str, str]: ...
 
 
 def ratio(
-    values: int | float | list[int | float] | dict[str, int | float],
+    values: int | float | Sequence[int | float] | Mapping[str, int | float],
     scale: int | float = 100,
     digits: int = 3,
 ) -> str | list[str] | dict[str, str]:
@@ -177,8 +178,8 @@ def ratio(
 def function(
     name: str,
     *,
-    pos: list[str] | tuple[str, ...] | None = None,
-    named: dict[str, str] | None = None,
+    pos: Sequence[str | int | float] | None = None,
+    named: Mapping[str, str | int | float] | None = None,
     body: str | None = None,
     comment: str = "",
     inline: bool = False,
@@ -188,7 +189,7 @@ def function(
     if named is None:
         named = {}
 
-    args = list(pos) + [f"{k}: {v}" for k, v in named.items()]
+    args = [f"{p}" for p in pos] + [f"{k}: {v}" for k, v in named.items()]
     if body is not None:
         args.append(body)
     if not args:
