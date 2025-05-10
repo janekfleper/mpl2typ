@@ -130,7 +130,7 @@ class Grid:
                 "column-gutter": typst.array(typst.ratio(self.column_gutter)),
                 "row-gutter": typst.array(typst.ratio(self.row_gutter)),
             },
-            body=",\n".join(cells),
+            body=",\n".join(cells) if cells else None,
         )
 
         return typst.block(
