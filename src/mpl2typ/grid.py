@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib as mpl
+import matplotlib.gridspec
 
 from . import typst
 from .axes import Axes
@@ -41,7 +41,7 @@ class Grid:
     def __init__(
         self,
         index: int,
-        grid: mpl.gridspec.GridSpec,
+        grid: matplotlib.gridspec.GridSpec,
         axes: list[Axes],
     ):
         self.index = index

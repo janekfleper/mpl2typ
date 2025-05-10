@@ -1,4 +1,5 @@
-import matplotlib as mpl
+import matplotlib.text
+import matplotlib.transforms
 
 from . import typst
 
@@ -7,8 +8,8 @@ class Text:
     def __init__(
         self,
         name: str,
-        text: mpl.text.Text,
-        transform: mpl.transforms.Affine2D,
+        text: matplotlib.text.Text,
+        transform: matplotlib.transforms.Affine2D,
     ):
         self.name = name
         self.text = text

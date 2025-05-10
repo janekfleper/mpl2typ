@@ -1,7 +1,8 @@
 import textwrap
 from abc import ABC, abstractmethod
-
-import matplotlib as mpl
+from collections.abc import Sequence
+import matplotlib.axes
+import matplotlib.axis
 
 from . import typst
 from .line import get_stroke, get_marker
@@ -20,7 +21,7 @@ header = """
 """
 
 
-def template(index: int, ax: mpl.axes.Axes):
+def template(index: int, ax: matplotlib.axes.Axes):
     xlim = f"({ax.get_xlim()[0]}, {ax.get_xlim()[1]})"
     ylim = f"({ax.get_ylim()[0]}, {ax.get_ylim()[1]})"
 
@@ -78,7 +79,7 @@ def template(index: int, ax: mpl.axes.Axes):
 
 
 class Title:
-    def __init__(self, ax: mpl.axes.Axes):
+    def __init__(self, ax: matplotlib.axes.Axes):
         transform = ax.transAxes.inverted()
         self.center = (
             Text("title", ax.title, transform) if ax.get_title(loc="center") else None
@@ -106,7 +107,7 @@ class Title:
 
 
 class Ticks(ABC):
-    def __init__(self, name: str, ticks: list[mpl.axis.Tick], params: dict):
+    def __init__(self, name: str, ticks: Sequence[matplotlib.axis.Tick], params: dict):
         self.name = name
         self.ticks = ticks
         self.params = params
@@ -251,7 +252,7 @@ class YTicks(Ticks):
 
 
 class Axis:
-    def __init__(self, ax: mpl.axes.Axes):
+    def __init__(self, ax: matplotlib.axes.Axes):
         self.ticks: list[Ticks] = []
         if ticks := ax.xaxis.get_major_ticks():
             params = ax.xaxis.get_tick_params(which="major")
@@ -277,7 +278,7 @@ class Axis:
 
 
 class Axes:
-    def __init__(self, index: int, ax: mpl.axes.Axes, standalone: bool = False):
+    def __init__(self, index: int, ax: matplotlib.axes.Axes, standalone: bool = False):
         self.index = index
         self.ax = ax
         self.standalone = standalone

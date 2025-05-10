@@ -1,5 +1,5 @@
 import pathlib
-import matplotlib as mpl
+import matplotlib.figure
 
 from . import typst
 from .axes import Axes
@@ -140,7 +140,7 @@ def template(width: float, height: float, body: str | None = None):
 
 
 class Figure:
-    def __init__(self, fig: mpl.figure.Figure):
+    def __init__(self, fig: matplotlib.figure.Figure):
         self.fig = fig
         self.grids: list[Grid] = []
         self.other_axes: list[Axes] = []
