@@ -31,6 +31,7 @@ class XTickParams:
     labelbottom: bool
     top: bool
     labeltop: bool
+    gridOn: bool
 
 
 @dataclass
@@ -39,6 +40,7 @@ class YTickParams:
     labelleft: bool
     right: bool
     labelright: bool
+    gridOn: bool
 
 
 TickParams = TypeVar("TickParams", XTickParams, YTickParams)
