@@ -1,4 +1,6 @@
 import numpy as np
+import numpy.typing as npt
+
 import matplotlib.gridspec
 
 from . import typst
@@ -13,7 +15,7 @@ class Cell:
         self.rowspan = rowspan
         self.axes: list[Axes] = []
 
-    def export(self):
+    def export(self) -> str:
         axes = [f"axes-{axes.index}()" for axes in self.axes]
         body = typst.function(
             "block",
@@ -53,14 +55,14 @@ class Grid:
         self.parse()
 
     @property
-    def columns(self):
-        return self.grid.get_width_ratios()
+    def columns(self) -> list[float]:
+        return list(np.array(self.grid.get_width_ratios()))
 
     @property
-    def rows(self):
-        return self.grid.get_height_ratios()
+    def rows(self) -> list[float]:
+        return list(np.array(self.grid.get_height_ratios()))
 
-    def _add_axes(self, axes: Axes):
+    def _add_axes(self, axes: Axes) -> None:
         for cell in self.cells:
             if cell.x == axes.cell["x"] and cell.y == axes.cell["y"]:
                 cell.axes.append(axes)
@@ -70,9 +72,18 @@ class Grid:
         cell.axes.append(axes)
         self.cells.append(cell)
 
-    def parse(self):
-        # find the outer bounding box of all axes
-        x0, x1, y0, y1 = [], [], [], []
+    def _parse_axes(
+        self,
+    ) -> tuple[
+        npt.NDArray[np.float64],
+        npt.NDArray[np.float64],
+        npt.NDArray[np.float64],
+        npt.NDArray[np.float64],
+    ]:
+        x0: list[float] = []
+        x1: list[float] = []
+        y0: list[float] = []
+        y1: list[float] = []
 
         for axes in self.axes:
             position = axes.position
@@ -80,13 +91,16 @@ class Grid:
             x1.append(position.x1)
             y0.append(position.y0)
             y1.append(position.y1)
-            self._add_axes(axes)
 
-        x0 = np.unique(np.array(x0))
-        x1 = np.unique(np.array(x1))
-        y0 = np.unique(np.array(y0))
-        y1 = np.unique(np.array(y1))
+        return (
+            np.unique(np.array(x0)),
+            np.unique(np.array(x1)),
+            np.unique(np.array(y0)),
+            np.unique(np.array(y1)),
+        )
 
+    def parse(self):
+        x0, x1, y0, y1 = self._parse_axes()
         xmin = x0.min()
         xmax = x1.max()
         ymin = y0.min()
@@ -99,11 +113,11 @@ class Grid:
             bottom=ymin,
         )
 
-        self.column_gutter = (x0[1:] - x1[:-1]) / (xmax - xmin)
-        self.row_gutter = (y0[1:] - y1[:-1]) / (ymax - ymin)
+        self.column_gutter = list((x0[1:] - x1[:-1]) / (xmax - xmin))
+        self.row_gutter = list((y0[1:] - y1[:-1]) / (ymax - ymin))
 
     def export(self):
-        cells = []
+        cells: list[str] = []
         for cell in self.cells:
             cells.append(cell.export())
 

@@ -1,5 +1,7 @@
 import pathlib
+
 import matplotlib.figure
+import matplotlib.gridspec
 
 from . import typst
 from .axes import Axes
@@ -121,7 +123,7 @@ header = """
 """
 
 
-def template(width: float, height: float, body: str | None = None):
+def template(width: float, height: float, body: str | None = None) -> str:
     s = ""
     s += f"#let width = {width}cm\n"
     s += f"#let height = {height}cm\n\n"
@@ -147,16 +149,16 @@ class Figure:
         self.parse()
 
     @property
-    def width(self):
-        return self.fig.get_size_inches()[0] * 2.54
+    def width(self) -> float:
+        return self.fig.get_figwidth() * 2.54
 
     @property
-    def height(self):
-        return self.fig.get_size_inches()[1] * 2.54
+    def height(self) -> float:
+        return self.fig.get_figheight() * 2.54
 
-    def parse(self):
-        grid_axes = []
-        gridspecs = []
+    def parse(self) -> None:
+        grid_axes: list[list[Axes]] = []
+        gridspecs: list[matplotlib.gridspec.GridSpec] = []
         for i, ax in enumerate(self.fig.get_axes()):
             gs = ax.get_gridspec()
             if gs is None:
@@ -170,13 +172,13 @@ class Figure:
         for i in range(len(gridspecs)):
             self.grids.append(Grid(i, gridspecs[i], grid_axes[i]))
 
-    def export(self, path: str | pathlib.Path):
+    def export(self, path: str | pathlib.Path) -> None:
         with open(path, "w") as f:
             f.write("#set page(width: auto, height: auto, margin: 0.9mm)\n")
             f.write(header)
             f.write("\n\n")
 
-            children = []
+            children: list[str] = []
             for grid in self.grids:
                 for ax in grid.axes:
                     f.write(ax.export() + "\n")

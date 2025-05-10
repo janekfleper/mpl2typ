@@ -9,7 +9,7 @@ class Text:
         self,
         name: str,
         text: matplotlib.text.Text,
-        transform: matplotlib.transforms.Affine2D,
+        transform: matplotlib.transforms.Transform,
     ):
         self.name = name
         self.text = text
@@ -17,13 +17,13 @@ class Text:
 
     @property
     def position(self) -> tuple[float, float]:
-        return self.transform.transform_point(
-            self.text.get_transform().transform_point(self.text.get_position())
+        return self.transform.transform_point(  # type: ignore
+            self.text.get_transform().transform_point(self.text.get_position())  # type: ignore
         )
 
     @property
     def fontsize(self) -> float:
-        return self.text.get_fontsize()
+        return float(self.text.get_fontsize())
 
     @property
     def color(self) -> str:

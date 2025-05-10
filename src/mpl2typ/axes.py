@@ -1,6 +1,10 @@
 import textwrap
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import TypeVar, Generic
+
+import numpy as np
 import matplotlib.axes
 import matplotlib.axis
 
@@ -19,6 +23,25 @@ header = """
     return (x * xscale + xshift, y * yscale + yshift)
   }
 """
+
+
+@dataclass
+class XTickParams:
+    bottom: bool
+    labelbottom: bool
+    top: bool
+    labeltop: bool
+
+
+@dataclass
+class YTickParams:
+    left: bool
+    labelleft: bool
+    right: bool
+    labelright: bool
+
+
+TickParams = TypeVar("TickParams", XTickParams, YTickParams)
 
 
 def template(index: int, ax: matplotlib.axes.Axes):
@@ -60,7 +83,7 @@ def template(index: int, ax: matplotlib.axes.Axes):
             s += textwrap.indent(f"let marker-{i} = {marker}\n\n", "  ")
 
     for i, line in enumerate(ax.lines):
-        points = line.get_xydata()
+        points = np.array(line.get_xydata())
         s += f"  let data-{i} = (\n"
         for x, y in points:
             s += f"    ({x}, {y}),\n"
@@ -85,12 +108,12 @@ class Title:
             Text("title", ax.title, transform) if ax.get_title(loc="center") else None
         )
         self.left = (
-            Text("title-left", ax._left_title, transform)
+            Text("title-left", ax._left_title, transform)  # type: ignore
             if ax.get_title(loc="left")
             else None
         )
         self.right = (
-            Text("title-right", ax._right_title, transform)
+            Text("title-right", ax._right_title, transform)  # type: ignore
             if ax.get_title(loc="right")
             else None
         )
@@ -106,11 +129,15 @@ class Title:
         return s
 
 
-class Ticks(ABC):
-    def __init__(self, name: str, ticks: Sequence[matplotlib.axis.Tick], params: dict):
+class Ticks(ABC, Generic[TickParams]):
+    def __init__(
+        self,
+        name: str,
+        ticks: Sequence[matplotlib.axis.Tick],
+    ):
         self.name = name
         self.ticks = ticks
-        self.params = params
+        self.params: TickParams
 
     @property
     def locs(self):
@@ -209,7 +236,16 @@ class Ticks(ABC):
         return s
 
 
-class XTicks(Ticks):
+class XTicks(Ticks[XTickParams]):
+    def __init__(
+        self,
+        name: str,
+        ticks: Sequence[matplotlib.axis.Tick],
+        params: Mapping[str, bool],
+    ):
+        super().__init__(name, ticks)
+        self.params = XTickParams(**params)
+
     @property
     def line_angle(self) -> str:
         return "90deg"
@@ -225,12 +261,21 @@ class XTicks(Ticks):
     @property
     def positions(self) -> dict[str, dict[str, bool]]:
         return dict(
-            bottom=dict(ticks=self.params["bottom"], labels=self.params["labelbottom"]),
-            top=dict(ticks=self.params["top"], labels=self.params["labeltop"]),
+            bottom=dict(ticks=self.params.bottom, labels=self.params.labelbottom),
+            top=dict(ticks=self.params.top, labels=self.params.labeltop),
         )
 
 
-class YTicks(Ticks):
+class YTicks(Ticks[YTickParams]):
+    def __init__(
+        self,
+        name: str,
+        ticks: Sequence[matplotlib.axis.Tick],
+        params: Mapping[str, bool],
+    ):
+        super().__init__(name, ticks)
+        self.params = YTickParams(**params)
+
     @property
     def line_angle(self) -> str:
         return "0deg"
@@ -246,31 +291,33 @@ class YTicks(Ticks):
     @property
     def positions(self) -> dict[str, dict[str, bool]]:
         return dict(
-            left=dict(ticks=self.params["left"], labels=self.params["labelleft"]),
-            right=dict(ticks=self.params["right"], labels=self.params["labelright"]),
+            left=dict(ticks=self.params.left, labels=self.params.labelleft),
+            right=dict(ticks=self.params.right, labels=self.params.labelright),
         )
 
 
 class Axis:
     def __init__(self, ax: matplotlib.axes.Axes):
-        self.ticks: list[Ticks] = []
+        self.xticks: list[XTicks] = []
+        self.yticks: list[YTicks] = []
+
         if ticks := ax.xaxis.get_major_ticks():
             params = ax.xaxis.get_tick_params(which="major")
-            self.ticks.append(XTicks("xaxis-major-ticks", ticks, params))
+            self.xticks.append(XTicks("xaxis-major-ticks", ticks, params))
         if ticks := ax.xaxis.get_minor_ticks():
             params = ax.xaxis.get_tick_params(which="minor")
-            self.ticks.append(XTicks("xaxis-minor-ticks", ticks, params))
+            self.xticks.append(XTicks("xaxis-minor-ticks", ticks, params))
         if ticks := ax.yaxis.get_major_ticks():
             params = ax.yaxis.get_tick_params(which="major")
-            self.ticks.append(YTicks("yaxis-major-ticks", ticks, params))
+            self.yticks.append(YTicks("yaxis-major-ticks", ticks, params))
         if ticks := ax.yaxis.get_minor_ticks():
             params = ax.yaxis.get_tick_params(which="minor")
-            self.ticks.append(YTicks("yaxis-minor-ticks", ticks, params))
+            self.yticks.append(YTicks("yaxis-minor-ticks", ticks, params))
 
-    def export(self):
-        definitions = []
-        draws = []
-        for ticks in self.ticks:
+    def export(self) -> str:
+        definitions: list[str] = []
+        draws: list[str] = []
+        for ticks in self.xticks + self.yticks:
             definitions.append(ticks.definition)
             draws.append(ticks.draw)
 
@@ -305,6 +352,8 @@ class Axes:
     @property
     def cell(self):
         sps = self.ax.get_subplotspec()
+        if sps is None:
+            raise ValueError("Axes is not part of a grid")
         x = sps.colspan.start
         y = sps.rowspan.start
         colspan = sps.colspan.stop - x
