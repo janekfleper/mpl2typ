@@ -91,6 +91,7 @@ class Grid:
             x1.append(position.x1)
             y0.append(position.y0)
             y1.append(position.y1)
+            self._add_axes(axes)
 
         return (
             np.unique(np.array(x0)),

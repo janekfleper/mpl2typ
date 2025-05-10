@@ -208,7 +208,7 @@ def function(
 
 
 def block(name: str, padding: dict[str, float], body: str | None = None):
-    s = "let padding = " + dictionary(fraction(padding), inline=True) + "\n\n"
+    s = "let padding = " + dictionary(ratio(padding), inline=True) + "\n\n"
 
     inner = function(
         "block",
