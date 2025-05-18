@@ -5,13 +5,13 @@ from . import typst
 
 # https://matplotlib.org/stable/gallery/lines_bars_and_markers/marker_reference.html
 MARKERS = {
-    ".": "circle(\n  radius: d / 2,\n  fill: {fill},\n  stroke: {stroke}\n)",
-    "o": "circle(\n  radius: d,\n  fill: {fill},\n  stroke: {stroke}\n)",
-    "v": "polygon(\n  (-d, -d), (0pt, d), (d, -d),\n  fill: {fill},\n  stroke: {stroke}\n)",
-    "^": "polygon(\n  (0pt, -d), (-d, d), (d, d),\n  fill: {fill},\n  stroke: {stroke}\n)",
-    "<": "polygon(\n  (d, -d), (-d, 0pt), (d, d),\n  fill: {fill},\n  stroke: {stroke}\n)",
-    ">": "polygon(\n  (-d, -d), (-d, d), (d, 0pt),\n  fill: {fill},\n  stroke: {stroke}\n)",
-    "8": "polygon(\n  (-d/2, -d), (-d, -d/2), (-d, d/2), (-d/2, d), (d/2, d), (d, d/2), (d, -d/2), (d/2, -d),\n  fill: {fill},\n  stroke: {stroke}\n)",
+    ".": "marker-dot",
+    "o": "marker-circle",
+    "v": "marker-triangle-down",
+    "^": "marker-triangle-up",
+    "<": "marker-triangle-left",
+    ">": "marker-triangle-right",
+    "8": "marker-octagon",
 }
 
 
@@ -86,11 +86,19 @@ class Marker:
         return f"{self.edge_color} + {self.edge_width}"
 
     def export(self) -> str:
-        if self.line.get_marker() == "None":
+        marker = self.line.get_marker()
+        if marker in ["none", "None", " ", ""]:
             return "none"
-        return MARKERS[self.line.get_marker()].format(
-            fill=self.face_color,
-            stroke=self.stroke,
+        if marker not in MARKERS:
+            raise ValueError(f"Unknown marker '{marker}'")
+
+        return typst.function(
+            MARKERS[marker],
+            pos=[self.size],
+            named=dict(
+                fill=self.face_color,
+                stroke=self.stroke,
+            ),
         )
 
 
@@ -111,7 +119,6 @@ class Line2D:
     def definition(self) -> str:
         return (
             f"let stroke-{self.index} = {self.stroke.export()}\n\n"
-            + f"let d = {self.marker.size}\n"
             + f"let marker-{self.index} = {self.marker.export()}\n\n"
             + f"let data-{self.index} = {self.data}\n"
         )
