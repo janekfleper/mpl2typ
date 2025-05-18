@@ -115,6 +115,7 @@ class Ticks(ABC, Generic[TickParams]):
     def tick_style(self):
         tick = self.ticks[0]
         line = tick.tick1line
+        stroke = f"{typst.color(str(line.get_color()), line.get_alpha())} + {line.get_markeredgewidth()}pt"
         return typst.dictionary(
             dict(
                 direction=f'"{tick.get_tickdir()}"',
@@ -122,7 +123,7 @@ class Ticks(ABC, Generic[TickParams]):
                     dict(
                         length=f"{line.get_markersize()}pt",
                         angle=self.line_angle,
-                        stroke=f"{line.get_color()} + {line.get_markeredgewidth()}pt",
+                        stroke=stroke,
                     ),
                     inline=True,
                 ),
@@ -141,7 +142,7 @@ class Ticks(ABC, Generic[TickParams]):
                 text=typst.dictionary(
                     dict(
                         size=f"{text.get_fontsize()}pt",
-                        fill=f"{text.get_color()}",
+                        fill=typst.color(str(text.get_color()), text.get_alpha()),
                     ),
                     inline=True,
                 ),

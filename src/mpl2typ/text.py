@@ -27,11 +27,7 @@ class Text:
 
     @property
     def color(self) -> str:
-        color = self.text.get_color()
-        alpha = self.text.get_alpha()
-        if alpha is not None:
-            color += f".transparentize({round((1 - alpha) * 100, 3)}%)"
-        return color
+        return typst.color(str(self.text.get_color()), self.text.get_alpha())
 
     @property
     def alignment(self) -> str:

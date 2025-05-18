@@ -2,6 +2,8 @@ import textwrap
 from typing import overload
 from collections.abc import Mapping, Sequence
 
+COLORS = {"k": "black"}
+
 
 def make_body(elements: Sequence[str]) -> str:
     """
@@ -240,3 +242,17 @@ def block(name: str, padding: dict[str, float], body: str | None = None):
         + textwrap.indent(place, "  ")
         + "\n}\n\n"
     )
+
+
+def color(color: str, alpha: float | None = None) -> str:
+    try:
+        color = f"color.luma({round(float(color) * 100, 3)}%)"
+    except ValueError:
+        if color in COLORS:
+            color = COLORS[color]
+        elif color.startswith("#"):
+            color = f'color.rgb("{color}")'
+
+    if alpha is None:
+        return color
+    return f"{color}.transparentize({round((1 - alpha) * 100, 3)}%)"

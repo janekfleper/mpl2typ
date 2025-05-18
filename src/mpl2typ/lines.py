@@ -21,7 +21,7 @@ class Stroke:
 
     @property
     def color(self) -> str:
-        return f'color.rgb("{self.line.get_color()}")'
+        return typst.color(str(self.line.get_color()), self.line.get_alpha())
 
     @property
     def thickness(self) -> str:
@@ -71,21 +71,11 @@ class Marker:
 
     @property
     def face_color(self) -> str:
-        color = self.line.get_markerfacecolor()
-        if color == "k":
-            color = "#000000"
-        if (alpha := self.line.get_alpha()) is not None:
-            color += f"{int(alpha * 255):x}"
-        return f'color.rgb("{color}")'
+        return typst.color(str(self.line.get_markerfacecolor()), self.line.get_alpha())
 
     @property
     def edge_color(self) -> str:
-        color = self.line.get_markeredgecolor()
-        if color == "k":
-            color = "#000000"
-        if (alpha := self.line.get_alpha()) is not None:
-            color += f"{int(alpha * 255):x}"
-        return f'color.rgb("{color}")'
+        return typst.color(str(self.line.get_markeredgecolor()), self.line.get_alpha())
 
     @property
     def edge_width(self) -> str:
