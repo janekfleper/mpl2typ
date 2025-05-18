@@ -211,7 +211,7 @@ def function(
         f"{'// ' + comment + '\n' if comment and inline else ''}"
         + f"{name}({' // ' + comment if comment and not inline else ''}{newline}"
         + textwrap.indent(separator.join(args), indent)
-        + f"{separator})"
+        + f"{separator if not inline else ''})"
     )
 
 
