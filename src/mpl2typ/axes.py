@@ -8,7 +8,7 @@ import matplotlib.axes
 import matplotlib.axis
 
 from . import typst
-from .line import Line2D
+from .lines import Line2D
 from .text import Text
 
 header = """
