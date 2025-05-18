@@ -1,3 +1,8 @@
+import numpy as np
+import matplotlib.lines
+
+from . import typst
+
 # https://matplotlib.org/stable/gallery/lines_bars_and_markers/marker_reference.html
 MARKERS = {
     ".": "circle(\n  radius: d / 2,\n  fill: {fill},\n  stroke: {stroke}\n)",
@@ -10,58 +15,120 @@ MARKERS = {
 }
 
 
-def get_stroke(line):
-    alpha = line.get_alpha()
-    color = line.get_color()
-    if alpha is not None:
-        color += f"{int(alpha * 255):x}"
-    color = f'color.rgb("{color}")'
+class Stroke:
+    def __init__(self, line: matplotlib.lines.Line2D):
+        self.line = line
 
-    capstyle = line.get_dash_capstyle()
-    if capstyle == "projecting":
-        capstyle = "square"  # this is the equivalent cap style in Typst
-    joinstyle = line.get_dash_joinstyle()
+    @property
+    def color(self) -> str:
+        return f'color.rgb("{self.line.get_color()}")'
 
-    offset, pattern = line._unscaled_dash_pattern
-    if pattern is None:
-        dash = '"solid"'
-    else:
-        array = ", ".join([f"{step} * thickness" for step in pattern])
-        phase = f"{offset} * thickness"
-        dash = f"(array: ({array}), phase: {phase})"
+    @property
+    def thickness(self) -> str:
+        return f"{self.line.get_linewidth()}pt"
 
-    args = (
-        f"paint: {color}",
-        "thickness: thickness",
-        f'cap: "{capstyle}"',
-        f'join: "{joinstyle}"',
-        f"dash: {dash}",
-    )
+    @property
+    def capstyle(self) -> str:
+        capstyle = self.line.get_dash_capstyle()
+        if capstyle == "projecting":
+            capstyle = "square"  # this is the equivalent cap style in Typst
+        return f'"{capstyle}"'
 
-    return (
-        line.get_linewidth(),
-        f"stroke(\n  {',\n  '.join(args)},\n)",
-    )
+    @property
+    def joinstyle(self) -> str:
+        return f'"{self.line.get_dash_joinstyle()}"'
+
+    @property
+    def dash(self) -> str:
+        offset, pattern = self.line._dash_pattern
+        if pattern is None:
+            return '"solid"'
+        else:
+            array = typst.array(typst.length(pattern, "pt"))
+            phase = f"{offset}pt"
+            return f"(array: {array}, phase: {phase})"
+
+    def export(self) -> str:
+        return typst.function(
+            "stroke",
+            named=dict(
+                paint=self.color,
+                thickness=self.thickness,
+                cap=self.capstyle,
+                join=self.joinstyle,
+                dash=self.dash,
+            ),
+        )
 
 
-def get_marker(line):
-    alpha = line.get_alpha()
-    edgecolor = line.get_markeredgecolor()
-    if edgecolor == "k":
-        edgecolor = "#000000"
-    facecolor = line.get_markerfacecolor()
-    if facecolor == "k":
-        facecolor = "#000000"
-    if alpha is not None:
-        edgecolor += f"{int(alpha * 255):x}"
-        facecolor += f"{int(alpha * 255):x}"
-    edgewidth = line.get_markeredgewidth()
+class Marker:
+    def __init__(self, line: matplotlib.lines.Line2D):
+        self.line = line
 
-    stroke = f'color.rgb("{edgecolor}") + {edgewidth}pt'
-    return (
-        line.get_markersize() / 2,
-        MARKERS[line.get_marker()].format(
-            fill=f'color.rgb("{facecolor}")',
-            stroke=stroke,
-        ),
-    )
+    @property
+    def size(self) -> str:
+        return f"{self.line.get_markersize() / 2}pt"
+
+    @property
+    def face_color(self) -> str:
+        color = self.line.get_markerfacecolor()
+        if color == "k":
+            color = "#000000"
+        if (alpha := self.line.get_alpha()) is not None:
+            color += f"{int(alpha * 255):x}"
+        return f'color.rgb("{color}")'
+
+    @property
+    def edge_color(self) -> str:
+        color = self.line.get_markeredgecolor()
+        if color == "k":
+            color = "#000000"
+        if (alpha := self.line.get_alpha()) is not None:
+            color += f"{int(alpha * 255):x}"
+        return f'color.rgb("{color}")'
+
+    @property
+    def edge_width(self) -> str:
+        return f"{self.line.get_markeredgewidth()}pt"
+
+    @property
+    def stroke(self) -> str:
+        return f"{self.edge_color} + {self.edge_width}"
+
+    def export(self) -> str:
+        if self.line.get_marker() == "None":
+            return "none"
+        return MARKERS[self.line.get_marker()].format(
+            fill=self.face_color,
+            stroke=self.stroke,
+        )
+
+
+class Line2D:
+    def __init__(self, index: int, line: matplotlib.lines.Line2D):
+        self.index = index
+        self.line = line
+        self.stroke = Stroke(line)
+        self.marker = Marker(line)
+
+    @property
+    def data(self) -> str:
+        points = np.array(self.line.get_xydata())
+        data = typst.array([f"({x}, {y})" for x, y in points], inline=False)
+        return data + ".map(point => transform(point))"
+
+    @property
+    def definition(self) -> str:
+        return (
+            f"let stroke-{self.index} = {self.stroke.export()}\n\n"
+            + f"let d = {self.marker.size}\n"
+            + f"let marker-{self.index} = {self.marker.export()}\n\n"
+            + f"let data-{self.index} = {self.data}\n"
+        )
+
+    @property
+    def draw(self) -> str:
+        return (
+            f"draw-line(data-{self.index}, stroke: stroke-{self.index})\n"
+            + f"draw-marker(data-{self.index}, marker: marker-{self.index})\n"
+        )

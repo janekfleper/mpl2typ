@@ -4,12 +4,11 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TypeVar, Generic
 
-import numpy as np
 import matplotlib.axes
 import matplotlib.axis
 
 from . import typst
-from .line import get_stroke, get_marker
+from .line import Line2D
 from .text import Text
 
 header = """
@@ -72,29 +71,15 @@ def template(index: int, ax: matplotlib.axes.Axes):
         yoffset = Text("yaxis-offset", yaxis_offset_text, transform)
         s += textwrap.indent(yoffset.export(), "  ") + "\n\n"
 
-    for i, line in enumerate(ax.lines):
-        thickness, stroke = get_stroke(line)
-        s += textwrap.indent(f"let thickness = {thickness}pt\n", "  ")
-        s += textwrap.indent(f"let stroke-{i} = {stroke}\n\n", "  ")
+    definitions: list[str] = []
+    draws: list[str] = []
+    for i, _line in enumerate(ax.lines):
+        line = Line2D(i, _line)
+        definitions.append(line.definition)
+        draws.append(line.draw)
 
-        if line.get_marker() == "None":
-            s += textwrap.indent(f"let marker-{i} = none\n\n", "  ")
-        else:
-            size, marker = get_marker(line)
-            s += textwrap.indent(f"let d = {size}pt\n", "  ")
-            s += textwrap.indent(f"let marker-{i} = {marker}\n\n", "  ")
-
-    for i, line in enumerate(ax.lines):
-        points = np.array(line.get_xydata())
-        s += f"  let data-{i} = (\n"
-        for x, y in points:
-            s += f"    ({x}, {y}),\n"
-        s += "  ).map(point => transform(point))\n\n"
-
-    for i, line in enumerate(ax.lines):
-        s += f"  draw-line(data-{i}, stroke: stroke-{i})\n"
-        s += f"  draw-marker(data-{i}, marker: marker-{i})\n"
-    s += "\n"
+    s += textwrap.indent("\n".join(definitions) + "\n", "  ")
+    s += textwrap.indent("\n".join(draws) + "\n", "  ")
 
     axis = Axis(ax)
     s += textwrap.indent(axis.export(), "  ")
