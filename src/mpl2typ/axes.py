@@ -55,22 +55,6 @@ def template(index: int, ax: matplotlib.axes.Axes):
     title = Title(ax)
     s += textwrap.indent(title.export(), "  ")
 
-    transform = ax.transAxes.inverted()
-    if ax.get_xlabel():
-        xlabel = Text("xaxis-label", ax.xaxis.get_label(), transform)
-        s += textwrap.indent(xlabel.export(), "  ") + "\n\n"
-    if ax.get_ylabel():
-        ylabel = Text("yaxis-label", ax.yaxis.get_label(), transform)
-        s += textwrap.indent(ylabel.export(), "  ") + "\n\n"
-    xaxis_offset_text = ax.xaxis.get_offset_text()
-    if xaxis_offset_text.get_text():
-        xoffset = Text("xaxis-offset", xaxis_offset_text, transform)
-        s += textwrap.indent(xoffset.export(), "  ") + "\n\n"
-    yaxis_offset_text = ax.yaxis.get_offset_text()
-    if yaxis_offset_text.get_text():
-        yoffset = Text("yaxis-offset", yaxis_offset_text, transform)
-        s += textwrap.indent(yoffset.export(), "  ") + "\n\n"
-
     definitions: list[str] = []
     draws: list[str] = []
     for i, _line in enumerate(ax.lines):
@@ -285,6 +269,7 @@ class YTicks(Ticks[YTickParams]):
 
 class Axis:
     def __init__(self, ax: matplotlib.axes.Axes):
+        self.ax = ax
         self.xticks: list[XTicks] = []
         self.yticks: list[YTicks] = []
 
@@ -301,6 +286,58 @@ class Axis:
             params = ax.yaxis.get_tick_params(which="minor")
             self.yticks.append(YTicks("yaxis-minor-ticks", ticks, params))
 
+    @property
+    def transform(self):
+        return self.ax.transAxes.inverted()
+
+    @property
+    def xlabel(self):
+        if self.ax.get_xlabel():
+            xlabel = Text("xaxis-label", self.ax.xaxis.get_label(), self.transform)
+            return xlabel.export()
+        return ""
+
+    @property
+    def ylabel(self):
+        if self.ax.get_ylabel():
+            ylabel = Text("yaxis-label", self.ax.yaxis.get_label(), self.transform)
+            return ylabel.export()
+        return ""
+
+    @property
+    def xoffset(self):
+        xaxis_offset_text = self.ax.xaxis.get_offset_text()
+        if xaxis_offset_text.get_text():
+            xoffset = Text("xaxis-offset", xaxis_offset_text, self.transform)
+            return xoffset.export()
+        return ""
+
+    @property
+    def yoffset(self):
+        yaxis_offset_text = self.ax.yaxis.get_offset_text()
+        if yaxis_offset_text.get_text():
+            yoffset = Text("yaxis-offset", yaxis_offset_text, self.transform)
+            return yoffset.export()
+        return ""
+
+    @property
+    def labels(self):
+        s = ""
+        if xlabel := self.xlabel:
+            s += xlabel + "\n"
+        if ylabel := self.ylabel:
+            s += ylabel + "\n"
+        return s
+
+    @property
+    def offsets(self):
+        s = ""
+        if xoffset := self.xoffset:
+            s += xoffset + "\n"
+        if yoffset := self.yoffset:
+            s += yoffset + "\n"
+        return s
+
     def export(self) -> str:
         definitions: list[str] = []
         draws: list[str] = []
@@ -308,7 +345,14 @@ class Axis:
             definitions.append(ticks.definition)
             draws.append(ticks.draw)
 
-        return "\n".join(definitions) + "\n" + "\n".join(draws) + "\n"
+        return (
+            self.labels
+            + self.offsets
+            + "\n".join(definitions)
+            + "\n"
+            + "\n".join(draws)
+            + "\n"
+        )
 
 
 class Axes:
