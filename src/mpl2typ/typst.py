@@ -32,10 +32,18 @@ def boolean(value: bool) -> str:
     return "true" if value else "false"
 
 
-def array(elements: Sequence[str], squeeze: bool = False) -> str:
+def array(elements: Sequence[str], squeeze: bool = False, inline: bool = True) -> str:
+    newline = "" if inline else "\n"
+    separator = ", " if inline else ",\n"
+    indent = "" if inline else "  "
+
     if len(elements) == 1:
         return elements[0] if squeeze else f"({elements[0]},)"
-    return f"({', '.join(elements)})"
+    return (
+        f"({newline}"
+        + textwrap.indent(separator.join(elements), indent)
+        + f"{separator if not inline else ''})"
+    )
 
 
 def dictionary(elements: Mapping[str, str], inline: bool = False) -> str:
