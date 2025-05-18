@@ -45,33 +45,6 @@ class YTickParams:
 TickParams = TypeVar("TickParams", XTickParams, YTickParams)
 
 
-def template(index: int, ax: matplotlib.axes.Axes):
-    xlim = f"({ax.get_xlim()[0]}, {ax.get_xlim()[1]})"
-    ylim = f"({ax.get_ylim()[0]}, {ax.get_ylim()[1]})"
-
-    s = f"#let axes-{index}(xlim: {xlim}, ylim: {ylim}) = {{"
-    s += header + "\n"
-
-    title = Title(ax)
-    s += textwrap.indent(title.export(), "  ")
-
-    definitions: list[str] = []
-    draws: list[str] = []
-    for i, _line in enumerate(ax.lines):
-        line = Line2D(i, _line)
-        definitions.append(line.definition)
-        draws.append(line.draw)
-
-    s += textwrap.indent("\n".join(definitions) + "\n", "  ")
-    s += textwrap.indent("\n".join(draws) + "\n", "  ")
-
-    axis = Axis(ax)
-    s += textwrap.indent(axis.export(), "  ")
-
-    s += "}\n\n"
-    return s
-
-
 class Title:
     def __init__(self, ax: matplotlib.axes.Axes):
         transform = ax.transAxes.inverted()
@@ -361,6 +334,9 @@ class Axes:
         self.ax = ax
         self.standalone = standalone
 
+        self.title = Title(ax)
+        self.axis = Axis(ax)
+
     @property
     def position(self):
         return self.ax.get_position()
@@ -391,8 +367,33 @@ class Axes:
         rowspan = sps.rowspan.stop - y
         return dict(x=x, y=y, colspan=colspan, rowspan=rowspan)
 
+    @property
+    def xlim(self):
+        return f"({self.ax.get_xlim()[0]}, {self.ax.get_xlim()[1]})"
+
+    @property
+    def ylim(self):
+        return f"({self.ax.get_ylim()[0]}, {self.ax.get_ylim()[1]})"
+
+    @property
+    def data(self):
+        definitions: list[str] = []
+        draws: list[str] = []
+        for i, _line in enumerate(self.ax.lines):
+            line = Line2D(i, _line)
+            definitions.append(line.definition)
+            draws.append(line.draw)
+
+        return "\n".join(definitions) + "\n" + "\n".join(draws) + "\n"
+
     def export(self):
-        s = template(self.index, self.ax)
+        s = f"#let axes-{self.index}(xlim: {self.xlim}, ylim: {self.ylim}) = {{"
+        s += header + "\n"
+        s += textwrap.indent(self.title.export(), "  ")
+        s += textwrap.indent(self.data, "  ")
+        s += textwrap.indent(self.axis.export(), "  ")
+        s += "}\n\n"
+
         if self.standalone:
             s += typst.block(
                 f"other-axes-{self.index}",
