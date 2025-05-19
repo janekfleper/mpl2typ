@@ -8,7 +8,7 @@ import matplotlib.axes
 import matplotlib.axis
 
 from . import typst
-from .lines import Line2D
+from .lines import Stroke, Line2D
 from .text import Text
 
 header = """
@@ -103,6 +103,11 @@ class Ticks(ABC, Generic[TickParams]):
 
     @property
     @abstractmethod
+    def grid_function(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
     def transform_function(self) -> str:
         pass
 
@@ -137,6 +142,11 @@ class Ticks(ABC, Generic[TickParams]):
         )
 
     @property
+    def grid_style(self):
+        line = self.ticks[0].gridline
+        return typst.dictionary(dict(stroke=Stroke(line).export()), inline=True)
+
+    @property
     def label_style(self):
         tick = self.ticks[0]
         text = self.ticks[0].label1
@@ -157,14 +167,15 @@ class Ticks(ABC, Generic[TickParams]):
 
     @property
     def definition(self):
-        return f"let {self.name} = " + typst.dictionary(
-            {
-                "locs": f"{self.locs}.{self.transform_function}",
-                "labels": self.labels,
-                "tick-style": self.tick_style,
-                "label-style": self.label_style,
-            },
-        )
+        items = {
+            "locs": f"{self.locs}.{self.transform_function}",
+            "labels": self.labels,
+            "tick-style": self.tick_style,
+            "label-style": self.label_style,
+        }
+        if self.params.gridOn:
+            items["grid-style"] = self.grid_style
+        return f"let {self.name} = " + typst.dictionary(items)
 
     @property
     def draw(self):
@@ -172,12 +183,17 @@ class Ticks(ABC, Generic[TickParams]):
             "show-ticks": typst.array(self.tick_positions),
             "show-labels": typst.array(self.label_positions),
         }
-        return typst.function(
+
+        s = typst.function(
             self.draw_function,
             named=named,
             body=f"..{self.name}",
             inline=True,
         )
+        if self.params.gridOn:
+            s += "\n"
+            s += typst.function(self.grid_function, body=f"..{self.name}", inline=True)
+        return s
 
 
 class XTicks(Ticks[XTickParams]):
@@ -188,6 +204,8 @@ class XTicks(Ticks[XTickParams]):
         params: Mapping[str, bool],
     ):
         super().__init__(name, ticks)
+        keys = ["bottom", "top", "labelbottom", "labeltop", "gridOn"]
+        params = {k: v for k, v in params.items() if k in keys}
         self.params = XTickParams(**params)
 
     @property
@@ -197,6 +215,10 @@ class XTicks(Ticks[XTickParams]):
     @property
     def draw_function(self) -> str:
         return "draw-xaxis-ticks"
+
+    @property
+    def grid_function(self) -> str:
+        return "draw-xaxis-grid"
 
     @property
     def transform_function(self) -> str:
@@ -225,6 +247,8 @@ class YTicks(Ticks[YTickParams]):
         params: Mapping[str, bool],
     ):
         super().__init__(name, ticks)
+        keys = ["left", "right", "labelleft", "labelright", "gridOn"]
+        params = {k: v for k, v in params.items() if k in keys}
         self.params = YTickParams(**params)
 
     @property
@@ -234,6 +258,10 @@ class YTicks(Ticks[YTickParams]):
     @property
     def draw_function(self) -> str:
         return "draw-yaxis-ticks"
+
+    @property
+    def grid_function(self) -> str:
+        return "draw-yaxis-grid"
 
     @property
     def transform_function(self) -> str:

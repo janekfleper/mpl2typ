@@ -140,3 +140,15 @@
     place(right, dy: loc, tick-right + label-right(label))
   }
 }
+
+#let draw-xaxis-grid(..args) = {
+  let (grid-style, locs) = args.named()
+  let grid-line = rotate(-90deg, reflow: true, line(length: 100%, ..grid-style))
+  for loc in locs { if (loc > 0%) and (loc < 100%) { place(dx: loc, grid-line) } }
+}
+
+#let draw-yaxis-grid(..args) = {
+  let (grid-style, locs) = args.named()
+  let grid-line = line(length: 100%, ..grid-style)
+  for loc in locs { if (loc > 0%) and (loc < 100%) { place(dy: loc, grid-line) } }
+}
