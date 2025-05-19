@@ -108,7 +108,12 @@ class Ticks(ABC, Generic[TickParams]):
 
     @property
     @abstractmethod
-    def positions(self) -> dict[str, dict[str, bool]]:
+    def tick_positions(self) -> list[str]:
+        pass
+
+    @property
+    @abstractmethod
+    def label_positions(self) -> list[str]:
         pass
 
     @property
@@ -163,11 +168,9 @@ class Ticks(ABC, Generic[TickParams]):
 
     @property
     def draw(self):
-        show_ticks = [k for k, show in self.positions["ticks"].items() if show]
-        show_labels = [k for k, show in self.positions["labels"].items() if show]
         named = {
-            "show-ticks": typst.array(show_ticks),
-            "show-labels": typst.array(show_labels),
+            "show-ticks": typst.array(self.tick_positions),
+            "show-labels": typst.array(self.label_positions),
         }
         return typst.function(
             self.draw_function,
@@ -200,11 +203,18 @@ class XTicks(Ticks[XTickParams]):
         return "map(x => (x, 0)).map(transform).map(point => point.at(0))"
 
     @property
-    def positions(self) -> dict[str, dict[str, bool]]:
-        return dict(
-            ticks=dict(bottom=self.params.bottom, top=self.params.top),
-            labels=dict(bottom=self.params.labelbottom, top=self.params.labeltop),
-        )
+    def tick_positions(self) -> list[str]:
+        return [
+            "bottom" if self.params.bottom else "",
+            "top" if self.params.top else "",
+        ]
+
+    @property
+    def label_positions(self) -> list[str]:
+        return [
+            "bottom" if self.params.labelbottom else "",
+            "top" if self.params.labeltop else "",
+        ]
 
 
 class YTicks(Ticks[YTickParams]):
@@ -230,11 +240,18 @@ class YTicks(Ticks[YTickParams]):
         return "map(y => (0, y)).map(transform).map(point => point.at(1))"
 
     @property
-    def positions(self) -> dict[str, dict[str, bool]]:
-        return dict(
-            ticks=dict(left=self.params.left, right=self.params.right),
-            labels=dict(left=self.params.labelleft, right=self.params.labelright),
-        )
+    def tick_positions(self) -> list[str]:
+        return [
+            "left" if self.params.left else "",
+            "right" if self.params.right else "",
+        ]
+
+    @property
+    def label_positions(self) -> list[str]:
+        return [
+            "left" if self.params.labelleft else "",
+            "right" if self.params.labelright else "",
+        ]
 
 
 class Axis:
