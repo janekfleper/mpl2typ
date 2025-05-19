@@ -69,93 +69,74 @@
   )
 }
 
-
-#let draw-xaxis-ticks(alignment, show-ticks: true, show-labels: true, ..args) = {
+#let draw-xaxis-ticks(show-ticks: (), show-labels: (), ..args) = {
   let (tick-style, label-style, locs, labels) = args.named()
   if labels == () { labels = locs.len() * ("",) }
-  set line(..tick-style.line)
   set text(..label-style.text)
 
-  let (tick-alignment, tick-dy) = if tick-style.direction == "in" {
-    (if alignment == bottom { bottom } else { top }, 0pt)
-  } else if tick-style.direction == "out" {
-    (if alignment == bottom { top } else { bottom }, tick-style.line.length)
-  } else if tick-style.direction == "inout" {
-    (horizon, tick-style.line.length / 2)
+  let (tick-alignment, tick-dy) = (
+    "in": (bottom, 0pt),
+    "out": (top, tick-style.line.length),
+    "inout": (horizon, tick-style.line.length / 2),
+  ).at(tick-style.direction)
+  let tick-line = line(..tick-style.line)
+  let tick-bottom = if bottom in show-ticks { place(tick-alignment, tick-line) } else { none }
+  let tick-top = if top in show-ticks { place(tick-alignment.inv(), tick-line) } else { none }
+
+  let label-alignment = center + top
+  let label-dy = label-style.pad + tick-dy
+  let label-rotate = rotate.with(label-style.rotation, reflow: true)
+  let label-bottom = if bottom in show-labels {
+    label => { place(label-alignment, dy: label-dy, label-rotate(label)) }
   } else {
-    panic("Unknown tick direction '" + tick-style.direction + "'")
+    label => { none }
+  }
+  let label-top = if top in show-labels {
+    label => { place(label-alignment.inv(), dy: -label-dy, label-rotate(label)) }
+  } else {
+    label => { none }
   }
 
-  let label-alignment = center + if alignment == bottom { top } else { bottom }
-  let label-dy = label-style.pad + tick-dy
-  if alignment == top { label-dy = -label-dy }
-
-  place(
-    alignment,
-    block(
-      width: 100%,
-      locs
-        .zip(labels)
-        .map(tick => {
-          let (loc, label) = tick
-          if (loc < 0%) or (loc > 100%) { return }
-          place(
-            dx: loc,
-            {
-              if show-ticks { place(tick-alignment, line()) }
-              if show-labels {
-                let body = rotate(label-style.rotation, reflow: true, label)
-                place(label-alignment, dy: label-dy, body)
-              }
-            },
-          )
-        })
-        .join([]),
-    ),
-  )
+  for tick in locs.zip(labels) {
+    let (loc, label) = tick
+    if (loc < 0%) or (loc > 100%) { continue }
+    place(bottom, dx: loc, tick-bottom + label-bottom(label))
+    place(top, dx: loc, tick-top + label-top(label))
+  }
 }
 
-#let draw-yaxis-ticks(alignment, show-ticks: true, show-labels: true, ..args) = {
+#let draw-yaxis-ticks(show-ticks: (), show-labels: (), ..args) = {
   let (tick-style, label-style, locs, labels) = args.named()
   if labels == () { labels = locs.len() * ("",) }
-  set line(..tick-style.line)
   set text(..label-style.text)
 
-  let (tick-alignment, tick-dx) = if tick-style.direction == "in" {
-    (if alignment == left { left } else { right }, 0pt)
-  } else if tick-style.direction == "out" {
-    (if alignment == left { right } else { left }, tick-style.line.length)
-  } else if tick-style.direction == "inout" {
-    (horizon, tick-style.line.length / 2)
+  let (tick-alignment, tick-dx) = (
+    "in": (left, 0pt),
+    "out": (right, tick-style.line.length),
+    "inout": (center, tick-style.line.length / 2),
+  ).at(tick-style.direction)
+  let tick-line = line(..tick-style.line)
+  let tick-left = if left in show-ticks { place(tick-alignment, tick-line) } else { none }
+  let tick-right = if right in show-ticks { place(tick-alignment.inv(), tick-line) } else { none }
+
+  let label-alignment = horizon + right
+  let label-dx = label-style.pad + tick-dx
+  let label-rotate = rotate.with(label-style.rotation)
+  let label-left = if left in show-labels {
+    label => { place(dx: -label-dx, label-rotate(place(label-alignment, label))) }
   } else {
-    panic("Unknown tick direction '" + tick-style.direction + "'")
+    label => { none }
+  }
+  let label-right = if right in show-labels {
+    label => { place(dx: label-dx, label-rotate(place(label-alignment.inv(), label))) }
+  } else {
+    label => { none }
   }
 
-  let label-alignment = horizon + if alignment == left { right } else { left }
-  let label-dx = label-style.pad + tick-dx
-  if alignment == left { label-dx = -label-dx }
-
-  place(
-    alignment,
-    block(
-      height: 100%,
-      locs
-        .zip(labels)
-        .map(tick => {
-          let (loc, label) = tick
-          if (loc < 0%) or (loc > 100%) { return }
-          place(
-            dy: loc,
-            {
-              if show-ticks { place(tick-alignment, line()) }
-              if show-labels {
-                let body = place(label-alignment, label)
-                place(dx: label-dx, rotate(label-style.rotation, body))
-              }
-            },
-          )
-        })
-        .join([]),
-    ),
-  )
+  for tick in locs.zip(labels) {
+    let (loc, label) = tick
+    if (loc < 0%) or (loc > 100%) { continue }
+    place(left, dy: loc, tick-left + label-left(label))
+    place(right, dy: loc, tick-right + label-right(label))
+  }
 }

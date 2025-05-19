@@ -163,22 +163,18 @@ class Ticks(ABC, Generic[TickParams]):
 
     @property
     def draw(self):
-        s = ""
-        for position, show in self.positions.items():
-            if show["ticks"] or show["labels"]:
-                pos = [position]
-                named = {
-                    "show-ticks": typst.boolean(show["ticks"]),
-                    "show-labels": typst.boolean(show["labels"]),
-                }
-                s += typst.function(
-                    self.draw_function,
-                    pos=pos,
-                    named=named,
-                    body=f"..{self.name}",
-                    inline=True,
-                )
-        return s
+        show_ticks = [k for k, show in self.positions["ticks"].items() if show]
+        show_labels = [k for k, show in self.positions["labels"].items() if show]
+        named = {
+            "show-ticks": typst.array(show_ticks),
+            "show-labels": typst.array(show_labels),
+        }
+        return typst.function(
+            self.draw_function,
+            named=named,
+            body=f"..{self.name}",
+            inline=True,
+        )
 
 
 class XTicks(Ticks[XTickParams]):
@@ -206,8 +202,8 @@ class XTicks(Ticks[XTickParams]):
     @property
     def positions(self) -> dict[str, dict[str, bool]]:
         return dict(
-            bottom=dict(ticks=self.params.bottom, labels=self.params.labelbottom),
-            top=dict(ticks=self.params.top, labels=self.params.labeltop),
+            ticks=dict(bottom=self.params.bottom, top=self.params.top),
+            labels=dict(bottom=self.params.labelbottom, top=self.params.labeltop),
         )
 
 
@@ -236,8 +232,8 @@ class YTicks(Ticks[YTickParams]):
     @property
     def positions(self) -> dict[str, dict[str, bool]]:
         return dict(
-            left=dict(ticks=self.params.left, labels=self.params.labelleft),
-            right=dict(ticks=self.params.right, labels=self.params.labelright),
+            ticks=dict(left=self.params.left, right=self.params.right),
+            labels=dict(left=self.params.labelleft, right=self.params.labelright),
         )
 
 
