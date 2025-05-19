@@ -93,7 +93,7 @@ class Ticks(ABC, Generic[TickParams]):
 
     @property
     @abstractmethod
-    def line_angle(self) -> str:
+    def tick_angle(self) -> str:
         pass
 
     @property
@@ -122,7 +122,7 @@ class Ticks(ABC, Generic[TickParams]):
                 line=typst.dictionary(
                     dict(
                         length=f"{line.get_markersize()}pt",
-                        angle=self.line_angle,
+                        angle=self.tick_angle,
                         stroke=stroke,
                     ),
                     inline=True,
@@ -188,7 +188,7 @@ class XTicks(Ticks[XTickParams]):
         self.params = XTickParams(**params)
 
     @property
-    def line_angle(self) -> str:
+    def tick_angle(self) -> str:
         return "90deg"
 
     @property
@@ -218,7 +218,7 @@ class YTicks(Ticks[YTickParams]):
         self.params = YTickParams(**params)
 
     @property
-    def line_angle(self) -> str:
+    def tick_angle(self) -> str:
         return "0deg"
 
     @property
