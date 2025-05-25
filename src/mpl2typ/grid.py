@@ -115,7 +115,7 @@ class Grid:
         )
 
         self.column_gutter = list((x0[1:] - x1[:-1]) / (xmax - xmin))
-        self.row_gutter = list((y0[1:] - y1[:-1]) / (ymax - ymin))
+        self.row_gutter = list((y0[1:] - y1[:-1]) / (ymax - ymin))[::-1]
 
     def export(self):
         cells: list[str] = []
