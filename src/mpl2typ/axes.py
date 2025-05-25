@@ -226,17 +226,21 @@ class XTicks(Ticks[XTickParams]):
 
     @property
     def tick_positions(self) -> list[str]:
-        return [
-            "bottom" if self.params.bottom else "",
-            "top" if self.params.top else "",
-        ]
+        pos: list[str] = []
+        if self.params.bottom:
+            pos.append("bottom")
+        if self.params.top:
+            pos.append("top")
+        return pos
 
     @property
     def label_positions(self) -> list[str]:
-        return [
-            "bottom" if self.params.labelbottom else "",
-            "top" if self.params.labeltop else "",
-        ]
+        pos: list[str] = []
+        if self.params.labelbottom:
+            pos.append("bottom")
+        if self.params.labeltop:
+            pos.append("top")
+        return pos
 
 
 class YTicks(Ticks[YTickParams]):
@@ -269,17 +273,21 @@ class YTicks(Ticks[YTickParams]):
 
     @property
     def tick_positions(self) -> list[str]:
-        return [
-            "left" if self.params.left else "",
-            "right" if self.params.right else "",
-        ]
+        pos: list[str] = []
+        if self.params.left:
+            pos.append("left")
+        if self.params.right:
+            pos.append("right")
+        return pos
 
     @property
     def label_positions(self) -> list[str]:
-        return [
-            "left" if self.params.labelleft else "",
-            "right" if self.params.labelright else "",
-        ]
+        pos: list[str] = []
+        if self.params.labelleft:
+            pos.append("left")
+        if self.params.labelright:
+            pos.append("right")
+        return pos
 
 
 class Axis:
