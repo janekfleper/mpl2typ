@@ -49,6 +49,8 @@ class Stroke:
             return f"(array: {array}, phase: {phase})"
 
     def export(self) -> str:
+        if self.line.get_linestyle() in ["none", "None", " ", ""]:
+            return "none"
         return typst.function(
             "stroke",
             named=dict(
