@@ -48,25 +48,25 @@
 )
 
 
-#let draw-marker(points, marker: none) = {
-  if marker == none { return }
+#let draw-line(points, stroke: none, marker: none) = {
+  if stroke != none {
+    let (first, ..other) = points
+    place(
+      curve(
+        stroke: stroke,
+        curve.move(first),
+        ..other.map(point => curve.line(point)),
+      ),
+    )
+  }
 
-  let dx = if marker.has("height") { marker.height / 2 } else { 0pt }
-  let dy = if marker.has("width") { marker.width / 2 } else { 0pt }
-  points.map(point => place(dx: point.at(0) - dx, dy: point.at(1) - dy, marker)).join([])
-}
-
-#let draw-line(points, stroke: none) = {
-  if stroke == none { return }
-
-  let (first, ..points) = points
-  place(
-    curve(
-      stroke: stroke,
-      curve.move(first),
-      ..points.map(point => curve.line(point)),
-    ),
-  )
+  if marker != none {
+    let dx = if marker.has("height") { marker.height / 2 } else { 0pt }
+    let dy = if marker.has("width") { marker.width / 2 } else { 0pt }
+    for point in points {
+      place(dx: point.at(0) - dx, dy: point.at(1) - dy, marker)
+    }
+  }
 }
 
 #let draw-xaxis-ticks(show-ticks: (), show-labels: (), ..args) = {

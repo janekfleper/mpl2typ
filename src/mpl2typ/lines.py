@@ -127,7 +127,4 @@ class Line2D:
 
     @property
     def draw(self) -> str:
-        return (
-            f"draw-line(data-{self.index}, stroke: stroke-{self.index})\n"
-            + f"draw-marker(data-{self.index}, marker: marker-{self.index})\n"
-        )
+        return f"draw-line(data-{self.index}, stroke: stroke-{self.index}, marker: marker-{self.index})\n"
