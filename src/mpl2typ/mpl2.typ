@@ -69,6 +69,15 @@
   }
 }
 
+
+#let draw-path-collection(path, data, transform) = {
+  for (offset, ..props) in data {
+    let (x, y) = transform(offset)
+    place(dx: x, dy: y, path(..props))
+  }
+}
+
+
 #let draw-xaxis-ticks(show-ticks: (), show-labels: (), ..args) = {
   let (tick-style, label-style, locs, labels) = args.named()
   if labels == () { labels = locs.len() * ("",) }

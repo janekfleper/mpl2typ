@@ -6,9 +6,12 @@ from typing import TypeVar, Generic
 
 import matplotlib.axes
 import matplotlib.axis
+import matplotlib.lines
+import matplotlib.collections
 
 from . import typst
 from .lines import Stroke, Line2D
+from .collections import PathCollection
 from .text import Text
 
 header = """
@@ -429,11 +432,15 @@ class Axes:
     def data(self):
         definitions: list[str] = []
         draws: list[str] = []
-        for i, _line in enumerate(self.ax.lines):
-            line = Line2D(i, _line)
-            definitions.append(line.definition)
-            draws.append(line.draw)
-
+        for i, child in enumerate(self.ax.get_children()):
+            if isinstance(child, matplotlib.lines.Line2D):
+                line = Line2D(i, child)
+                definitions.append(line.definition)
+                draws.append(line.draw)
+            elif isinstance(child, matplotlib.collections.PathCollection):
+                collection = PathCollection(i, child)
+                definitions.append(collection.definition)
+                draws.append(collection.draw)
         return "\n".join(definitions) + "\n" + "\n".join(draws) + "\n"
 
     def export(self):
