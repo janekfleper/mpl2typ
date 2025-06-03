@@ -58,7 +58,7 @@ class Figure:
             self.grids.append(Grid(i, gridspecs[i], grid_axes[i]))
 
     def export(self, path: str | pathlib.Path) -> None:
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write('#import "/mpl2.typ": *\n\n')
             f.write("#set page(width: auto, height: auto, margin: 0.9mm)\n")
             f.write("\n\n")
