@@ -199,19 +199,19 @@ def function(
     if named is None:
         named = {}
 
+    comment = f"// {comment}\n" if comment else ""
     args = [f"{p}" for p in pos] + [f"{k}: {v}" for k, v in named.items()]
     if body is not None:
         args.append(body)
     if not args:
-        return f"{'// ' + comment + '\n' if comment else ''}" + f"{name}()"
+        return f"{comment}{name}()"
 
     newline = "" if inline else "\n"
     separator = ", " if inline else ",\n"
     indent = "" if inline else "  "
 
     return (
-        f"{'// ' + comment + '\n' if comment and inline else ''}"
-        + f"{name}({' // ' + comment if comment and not inline else ''}{newline}"
+        f"{comment}{name}({newline}"
         + textwrap.indent(separator.join(args), indent)
         + f"{separator if not inline else ''})"
     )
