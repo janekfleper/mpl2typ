@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.path
 import matplotlib.collections
 
+import textwrap
 from collections.abc import Sequence
 
 from . import typst
@@ -31,7 +32,7 @@ def curve_components(path: matplotlib.path.Path):
             continue
 
         x, y = list(np.array(vertex, dtype=float))
-        position = typst.array(typst.length([x, -y], " * scale"), inline=True)
+        position = typst.array(typst.length([x, -y], " * s"), inline=True)
         if code == path.MOVETO:
             function = "curve.move"
         elif code == path.LINETO:
@@ -100,35 +101,36 @@ class PathCollection:
     @property
     def data(self):
         points: list[str] = []
-        offsets = np.array(self.collection.get_offsets(), dtype=np.float64)
-        scales = np.sqrt(self.collection.get_sizes())  # type: ignore
-        for (x, y), scale in zip(offsets, scales):
-            points.append(
-                typst.dictionary(
-                    dict(
-                        offset=f"({x}, {y})",
-                        scale=typst.length(float(scale), "pt"),
-                    ),
-                    inline=True,
-                )
-            )
+        offsets = np.array(self.collection.get_offsets(), dtype=float)
+        sizes = np.array(self.collection.get_sizes(), dtype=float)  # type: ignore
+        for (x, y), size in zip(offsets, sizes):
+            point = dict(offset=f"({x}, {y})", size=str(size))
+            points.append(typst.dictionary(point, inline=True))
         return typst.array(points, inline=False)
 
     @property
     def definition(self):
-        curve = typst.function(
+        signature = typst.function(
+            f"path-{self.index}",
+            named=dict(size="0", scale="1pt", fill=self.facecolor, stroke=self.stroke),
+            inline=False,
+        )
+        path = typst.function(
             "curve",
             pos=curve_components(self.collection.get_paths()[0]),
             named=dict(fill="fill", stroke="stroke"),
             inline=False,
         )
-        return (
-            f"let curve-{self.index}(scale: 0pt, fill: {self.facecolor}, stroke: {self.stroke}) = {curve}\n\n"
-            + f"let data-{self.index} = {self.data}\n"
-        )
+
+        s = f"let {signature} = {{\n"
+        s += textwrap.indent("let s = calc.sqrt(size) * scale\n", "  ")
+        s += textwrap.indent(path, "  ")
+        s += "\n}\n\n"
+        s += f"let data-{self.index} = {self.data}\n"
+        return s
 
     @property
     def draw(self):
         return (
-            f"draw-path-collection(curve-{self.index}, data-{self.index}, transform)\n"
+            f"draw-path-collection(path-{self.index}, data-{self.index}, transform)\n"
         )
