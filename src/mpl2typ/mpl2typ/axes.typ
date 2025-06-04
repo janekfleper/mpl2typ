@@ -1,4 +1,4 @@
-#let draw-xaxis-ticks(show-ticks: (), show-labels: (), ..args) = {
+#let xaxis-ticks(show-ticks: (), show-labels: (), ..args) = {
   let (tick-style, label-style, locs, labels) = args.named()
   if labels == () { labels = locs.len() * ("",) }
   set text(..label-style.text)
@@ -34,7 +34,7 @@
   }
 }
 
-#let draw-yaxis-ticks(show-ticks: (), show-labels: (), ..args) = {
+#let yaxis-ticks(show-ticks: (), show-labels: (), ..args) = {
   let (tick-style, label-style, locs, labels) = args.named()
   if labels == () { labels = locs.len() * ("",) }
   set text(..label-style.text)
@@ -70,13 +70,13 @@
   }
 }
 
-#let draw-xaxis-grid(..args) = {
+#let xaxis-grid(..args) = {
   let (grid-style, locs) = args.named()
   let grid-line = rotate(-90deg, reflow: true, line(length: 100%, ..grid-style))
   for loc in locs { if (loc > 0%) and (loc < 100%) { place(dx: loc, grid-line) } }
 }
 
-#let draw-yaxis-grid(..args) = {
+#let yaxis-grid(..args) = {
   let (grid-style, locs) = args.named()
   let grid-line = line(length: 100%, ..grid-style)
   for loc in locs { if (loc > 0%) and (loc < 100%) { place(dy: loc, grid-line) } }
