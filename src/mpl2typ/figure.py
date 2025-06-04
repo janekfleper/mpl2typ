@@ -59,7 +59,7 @@ class Figure:
 
     def export(self, path: str | pathlib.Path) -> None:
         with open(path, "w", encoding="utf-8") as f:
-            f.write('#import "/mpl2.typ": *\n\n')
+            f.write('#import "/mpl2typ/lib.typ": *\n\n')
             f.write("#set page(width: auto, height: auto, margin: 0.9mm)\n")
             f.write("\n\n")
 

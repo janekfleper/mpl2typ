@@ -132,7 +132,7 @@ class PathCollection:
     @property
     def draw(self):
         return (
-            f"draw-path-collection(path-{self.index}, data-{self.index}, transform)\n"
+            f"draw.path-collection(path-{self.index}, data-{self.index}, transform)\n"
         )
 
 
@@ -176,4 +176,4 @@ class QuadMesh:
 
     @property
     def draw(self) -> str:
-        return f"draw-quad-mesh(vertices-{self.index}, data-{self.index}, colormap-{self.index}, transform)\n"
+        return f"draw.quad-mesh(vertices-{self.index}, data-{self.index}, colormap-{self.index}, transform)\n"

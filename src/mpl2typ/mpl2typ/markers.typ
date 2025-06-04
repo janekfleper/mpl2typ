@@ -1,6 +1,6 @@
-#let dot(d, fill: none, stroke: none) = sym.circle(radius: d / 2, fill: fill, stroke: stroke)
+#let point(d, fill: none, stroke: none) = std.circle(radius: d / 2, fill: fill, stroke: stroke)
 
-#let circle(d, fill: none, stroke: none) = sym.circle(radius: d, fill: fill, stroke: stroke)
+#let circle(d, fill: none, stroke: none) = std.circle(radius: d, fill: fill, stroke: stroke)
 
 #let triangle-down(d, fill: none, stroke: none) = polygon(
   (-d, -d),

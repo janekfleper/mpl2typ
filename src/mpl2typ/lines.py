@@ -5,13 +5,13 @@ from . import typst
 
 # https://matplotlib.org/stable/gallery/lines_bars_and_markers/marker_reference.html
 MARKERS = {
-    ".": "marker-dot",
-    "o": "marker-circle",
-    "v": "marker-triangle-down",
-    "^": "marker-triangle-up",
-    "<": "marker-triangle-left",
-    ">": "marker-triangle-right",
-    "8": "marker-octagon",
+    ".": "markers.point",
+    "o": "markers.circle",
+    "v": "markers.triangle-down",
+    "^": "markers.triangle-up",
+    "<": "markers.triangle-left",
+    ">": "markers.triangle-right",
+    "8": "markers.octagon",
 }
 
 
@@ -127,4 +127,4 @@ class Line2D:
 
     @property
     def draw(self) -> str:
-        return f"draw-line(data-{self.index}, stroke: stroke-{self.index}, marker: marker-{self.index})\n"
+        return f"draw.line(data-{self.index}, stroke: stroke-{self.index}, marker: marker-{self.index})\n"

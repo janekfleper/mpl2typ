@@ -217,11 +217,11 @@ class XTicks(Ticks[XTickParams]):
 
     @property
     def draw_function(self) -> str:
-        return "draw-xaxis-ticks"
+        return "axes.xaxis-ticks"
 
     @property
     def grid_function(self) -> str:
-        return "draw-xaxis-grid"
+        return "axes.xaxis-grid"
 
     @property
     def transform_function(self) -> str:
@@ -264,11 +264,11 @@ class YTicks(Ticks[YTickParams]):
 
     @property
     def draw_function(self) -> str:
-        return "draw-yaxis-ticks"
+        return "axes.yaxis-ticks"
 
     @property
     def grid_function(self) -> str:
-        return "draw-yaxis-grid"
+        return "axes.yaxis-grid"
 
     @property
     def transform_function(self) -> str:
