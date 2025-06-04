@@ -1,6 +1,9 @@
 import textwrap
-from typing import overload
+from typing import Any, overload
 from collections.abc import Mapping, Sequence
+
+import numpy as np
+import numpy.typing as npt
 
 COLORS = {"k": "black"}
 
@@ -46,6 +49,12 @@ def array(elements: Sequence[str], squeeze: bool = False, inline: bool = True) -
         + textwrap.indent(separator.join(elements), indent)
         + f"{separator if not inline else ''})"
     )
+
+
+def ndarray(a: npt.NDArray[Any]) -> str:
+    if np.ndim(a) == 1:
+        return np.array2string(a, separator=", ").replace("[", "(").replace("]", ")")
+    return "(\n" + textwrap.indent(",\n".join([ndarray(_a) for _a in a]), "  ") + ",\n)"
 
 
 def dictionary(elements: Mapping[str, str], inline: bool = False) -> str:
