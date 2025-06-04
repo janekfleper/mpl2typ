@@ -1,4 +1,6 @@
-#let line(points, stroke: none, marker: none) = {
+#let line(points, stroke: none, marker: none, transform) = {
+  points = points.map(transform)
+
   if stroke != none {
     let (first, ..other) = points
     place(

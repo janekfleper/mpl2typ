@@ -114,8 +114,7 @@ class Line2D:
     @property
     def data(self) -> str:
         points = np.array(self.line.get_xydata())
-        data = typst.array([f"({x}, {y})" for x, y in points], inline=False)
-        return data + ".map(point => transform(point))"
+        return typst.array([f"({x}, {y})" for x, y in points], inline=False)
 
     @property
     def definition(self) -> str:
@@ -127,4 +126,4 @@ class Line2D:
 
     @property
     def draw(self) -> str:
-        return f"draw.line(data-{self.index}, stroke: stroke-{self.index}, marker: marker-{self.index})\n"
+        return f"draw.line(data-{self.index}, stroke: stroke-{self.index}, marker: marker-{self.index}, transform)\n"

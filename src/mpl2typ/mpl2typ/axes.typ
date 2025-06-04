@@ -1,5 +1,6 @@
-#let xaxis-ticks(show-ticks: (), show-labels: (), ..args) = {
+#let xaxis-ticks(show-ticks: (), show-labels: (), ..args, transform) = {
   let (tick-style, label-style, locs, labels) = args.named()
+  locs = locs.map(x => (x, 0)).map(transform).map(point => point.at(0))
   if labels == () { labels = locs.len() * ("",) }
   set text(..label-style.text)
 
@@ -34,8 +35,9 @@
   }
 }
 
-#let yaxis-ticks(show-ticks: (), show-labels: (), ..args) = {
+#let yaxis-ticks(show-ticks: (), show-labels: (), ..args, transform) = {
   let (tick-style, label-style, locs, labels) = args.named()
+  locs = locs.map(y => (0, y)).map(transform).map(point => point.at(1))
   if labels == () { labels = locs.len() * ("",) }
   set text(..label-style.text)
 
@@ -70,14 +72,16 @@
   }
 }
 
-#let xaxis-grid(..args) = {
+#let xaxis-grid(..args, transform) = {
   let (grid-style, locs) = args.named()
+  locs = locs.map(x => (x, 0)).map(transform).map(point => point.at(0))
   let grid-line = rotate(-90deg, reflow: true, line(length: 100%, ..grid-style))
   for loc in locs { if (loc > 0%) and (loc < 100%) { place(dx: loc, grid-line) } }
 }
 
-#let yaxis-grid(..args) = {
+#let yaxis-grid(..args, transform) = {
   let (grid-style, locs) = args.named()
+  locs = locs.map(y => (0, y)).map(transform).map(point => point.at(1))
   let grid-line = line(length: 100%, ..grid-style)
   for loc in locs { if (loc > 0%) and (loc < 100%) { place(dy: loc, grid-line) } }
 }

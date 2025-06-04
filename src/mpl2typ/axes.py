@@ -111,11 +111,6 @@ class Ticks(ABC, Generic[TickParams]):
 
     @property
     @abstractmethod
-    def transform_function(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
     def tick_positions(self) -> list[str]:
         pass
 
@@ -171,7 +166,7 @@ class Ticks(ABC, Generic[TickParams]):
     @property
     def definition(self):
         items = {
-            "locs": f"{self.locs}.{self.transform_function}",
+            "locs": self.locs,
             "labels": self.labels,
             "tick-style": self.tick_style,
             "label-style": self.label_style,
@@ -190,12 +185,16 @@ class Ticks(ABC, Generic[TickParams]):
         s = typst.function(
             self.draw_function,
             named=named,
-            body=f"..{self.name}",
+            body=f"..{self.name}, transform",
             inline=True,
         )
         if self.params.gridOn:
             s += "\n"
-            s += typst.function(self.grid_function, body=f"..{self.name}", inline=True)
+            s += typst.function(
+                self.grid_function,
+                body=f"..{self.name}, transform",
+                inline=True,
+            )
         return s
 
 
@@ -222,10 +221,6 @@ class XTicks(Ticks[XTickParams]):
     @property
     def grid_function(self) -> str:
         return "axes.xaxis-grid"
-
-    @property
-    def transform_function(self) -> str:
-        return "map(x => (x, 0)).map(transform).map(point => point.at(0))"
 
     @property
     def tick_positions(self) -> list[str]:
@@ -269,10 +264,6 @@ class YTicks(Ticks[YTickParams]):
     @property
     def grid_function(self) -> str:
         return "axes.yaxis-grid"
-
-    @property
-    def transform_function(self) -> str:
-        return "map(y => (0, y)).map(transform).map(point => point.at(1))"
 
     @property
     def tick_positions(self) -> list[str]:
