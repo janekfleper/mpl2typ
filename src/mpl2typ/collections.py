@@ -134,3 +134,46 @@ class PathCollection:
         return (
             f"draw-path-collection(path-{self.index}, data-{self.index}, transform)\n"
         )
+
+
+class QuadMesh:
+    def __init__(self, index: int, collection: matplotlib.collections.QuadMesh):
+        self.index = index
+        self.collection = collection
+
+    @property
+    def colormap(self) -> str:
+        norm = self.collection.norm
+        cmap = self.collection.get_cmap()
+        gradient = f"gradient.linear(..color.map.{cmap.name})"
+        signature = typst.function(
+            f"colormap-{self.index}",
+            pos=["v"],
+            named=dict(vmin=norm.vmin, vmax=norm.vmax),
+            inline=True,
+        )
+        return (
+            f"let gradient-{self.index} = {gradient}\n"
+            + f"let {signature} = gradient-{self.index}.sample((v - vmin) / (vmax - vmin) * 99%)"
+        )
+
+    @property
+    def vertices(self) -> str:
+        return typst.ndarray(np.array(self.collection.get_coordinates(), dtype=float))
+
+    @property
+    def data(self) -> str:
+        return typst.ndarray(np.array(self.collection.get_array(), dtype=float))  # type: ignore
+
+    @property
+    def definition(self) -> str:
+        return (
+            self.colormap
+            + "\n"
+            + f"let vertices-{self.index} = {self.vertices}\n"
+            + f"let data-{self.index} = {self.data}\n"
+        )
+
+    @property
+    def draw(self) -> str:
+        return f"draw-quad-mesh(vertices-{self.index}, data-{self.index}, colormap-{self.index}, transform)\n"

@@ -77,6 +77,24 @@
   }
 }
 
+#let draw-quad-mesh(vertices, data, colormap, transform) = {
+  for (i, row) in data.enumerate() {
+    for (j, value) in row.enumerate() {
+      let color = colormap(value)
+      place(
+        curve(
+          fill: color,
+          curve.move(transform(vertices.at(i).at(j))),
+          curve.line(transform(vertices.at(i).at(j + 1))),
+          curve.line(transform(vertices.at(i + 1).at(j + 1))),
+          curve.line(transform(vertices.at(i + 1).at(j))),
+          curve.close(),
+        ),
+      )
+    }
+  }
+}
+
 
 #let draw-xaxis-ticks(show-ticks: (), show-labels: (), ..args) = {
   let (tick-style, label-style, locs, labels) = args.named()
