@@ -3,7 +3,7 @@ import matplotlib.path
 import matplotlib.collections
 
 import textwrap
-from collections.abc import Sequence
+from abc import abstractmethod
 
 from . import typst
 
@@ -44,8 +44,8 @@ def curve_components(path: matplotlib.path.Path):
     return components
 
 
-class LineCollection:
-    def __init__(self, index: int, collection: matplotlib.collections.LineCollection):
+class Collection:
+    def __init__(self, index: int, collection: matplotlib.collections.Collection):
         self.index = index
         self.collection = collection
 
@@ -72,6 +72,31 @@ class LineCollection:
                 inline=True,
             )
             for color in edgecolors
+        ]
+
+    @property
+    def facecolor(self) -> str | None:
+        facecolor = self.collection.get_facecolor()
+        if len(facecolor) == 1:
+            return typst.function(
+                "color.rgb",
+                pos=typst.ratio(facecolor[0]),
+                inline=True,
+            )
+        return None
+
+    @property
+    def facecolors(self) -> list[str] | None:
+        facecolors = self.collection.get_facecolor()
+        if len(facecolors) == 1:
+            return None
+        return [
+            typst.function(
+                "color.rgb",
+                pos=typst.ratio(color),
+                inline=True,
+            )
+            for color in facecolors
         ]
 
     @property
@@ -106,6 +131,26 @@ class LineCollection:
         if isinstance(linestyles, (str, float)) or len(linestyles) == 1:
             return None
         return [typst.dash(offset, pattern) for offset, pattern in linestyles]  # type: ignore
+
+    @property
+    @abstractmethod
+    def stroke(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def definition(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def draw(self) -> str:
+        pass
+
+
+class LineCollection(Collection):
+    def __init__(self, index: int, collection: matplotlib.collections.LineCollection):
+        super().__init__(index, collection)
 
     @property
     def stroke(self):
@@ -150,32 +195,9 @@ class LineCollection:
         )
 
 
-class PathCollection:
+class PathCollection(Collection):
     def __init__(self, index: int, collection: matplotlib.collections.PathCollection):
-        self.index = index
-        self.collection = collection
-
-    @property
-    def linewidth(self) -> str:
-        linewidth = self.collection.get_linewidth()
-        if isinstance(linewidth, (Sequence, np.ndarray)):
-            return f"{linewidth[0]}pt"
-        return f"{linewidth}pt"
-
-    @property
-    def linestyle(self):
-        offset, pattern = self.collection.get_linestyle()[0]  # type: ignore
-        return typst.dash(offset, pattern)  # type: ignore
-
-    @property
-    def facecolor(self) -> str:
-        color = self.collection.get_facecolor()[0]
-        return typst.function("color.rgb", pos=typst.ratio(color), inline=True)
-
-    @property
-    def edgecolor(self) -> str:
-        color = self.collection.get_edgecolor()[0]
-        return typst.function("color.rgb", pos=typst.ratio(color), inline=True)
+        super().__init__(index, collection)
 
     @property
     def stroke(self) -> str:
@@ -183,14 +205,14 @@ class PathCollection:
         if dash == '"solid"':
             return f"{self.linewidth} + {self.edgecolor}"
 
-        return typst.function(
-            "stroke",
-            named=dict(
-                paint=self.edgecolor,
-                thickness=self.linewidth,
-                dash=dash,
-            ),
-        )
+        named: dict[str, str] = {}
+        if (edgecolor := self.edgecolor) is not None:
+            named["paint"] = edgecolor
+        if (linewidth := self.linewidth) is not None:
+            named["thickness"] = linewidth
+        if (dash := self.linestyle) is not None:
+            named["dash"] = dash
+        return typst.function("stroke", named=named)
 
     @property
     def data(self):
@@ -204,9 +226,13 @@ class PathCollection:
 
     @property
     def definition(self):
+        named: dict[str, str] = dict(size="0", scale="1pt")
+        if (facecolor := self.facecolor) is not None:
+            named["fill"] = facecolor
+        named["stroke"] = self.stroke
         signature = typst.function(
             f"path-{self.index}",
-            named=dict(size="0", scale="1pt", fill=self.facecolor, stroke=self.stroke),
+            named=named,
             inline=False,
         )
         path = typst.function(
