@@ -113,7 +113,7 @@ class Line2D:
 
     @property
     def data(self) -> str:
-        points = np.array(self.line.get_xydata())
+        points = np.array(self.line.get_path().vertices)
         return typst.array([f"({x}, {y})" for x, y in points], inline=False)
 
     @property
