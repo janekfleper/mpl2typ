@@ -26,20 +26,27 @@ def curve_components(path: matplotlib.path.Path):
     The y-position has to be inverted to match the Typst coordinate system.
     """
     components: list[str] = []
-    for vertex, code in path.iter_segments():  # type: ignore
+    for segment, code in path.iter_segments():  # type: ignore
         if code == path.CLOSEPOLY:
             components.append("curve.close()")
             continue
 
-        x, y = list(np.array(vertex, dtype=float))
-        position = typst.array(typst.length([x, -y], " * s"), inline=True)
+        segment[1::2] *= -1  # flip the y-coordinates
+        points = [
+            typst.array(typst.length(list(point), " * s"), inline=True)
+            for point in np.array(segment, dtype=float).reshape(-1, 2)
+        ]
         if code == path.MOVETO:
             function = "curve.move"
         elif code == path.LINETO:
             function = "curve.line"
+        elif code == path.CURVE3:
+            function = "curve.quad"
+        elif code == path.CURVE4:
+            function = "curve.cubic"
         else:
-            continue
-        components.append(typst.function(function, pos=[position], inline=True))
+            raise ValueError(f"Unknown path code: {code}")
+        components.append(typst.function(function, pos=points, inline=True))
 
     return components
 
