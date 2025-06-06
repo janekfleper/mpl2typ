@@ -38,12 +38,15 @@ def boolean(value: bool) -> str:
 
 
 def array(elements: Sequence[str], squeeze: bool = False, inline: bool = True) -> str:
+    if not elements:
+        return "()"
+    elif len(elements) == 1:
+        return elements[0] if squeeze else f"({elements[0]},)"
+
     newline = "" if inline else "\n"
     separator = ", " if inline else ",\n"
     indent = "" if inline else "  "
 
-    if len(elements) == 1:
-        return elements[0] if squeeze else f"({elements[0]},)"
     return (
         f"({newline}"
         + textwrap.indent(separator.join(elements), indent)
@@ -58,6 +61,9 @@ def ndarray(a: npt.NDArray[Any]) -> str:
 
 
 def dictionary(elements: Mapping[str, str], inline: bool = False) -> str:
+    if not elements:
+        return "(:)"
+
     newline = "" if inline else "\n"
     separator = ", " if inline else ",\n"
     indent = "" if inline else "  "
