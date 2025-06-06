@@ -273,11 +273,19 @@ def color(color: str, alpha: float | None = None) -> str:
     return f"{color}.transparentize({round((1 - alpha) * 100, 3)}%)"
 
 
-def dash(pattern: str | None | Sequence[float], offset: float) -> str:
+def dash(
+    offset: str | int | np.integer | float | Any,
+    pattern: str | None | Sequence[float] | Any,
+) -> str:
     if pattern is None:
         return '"solid"'
     elif isinstance(pattern, str):
         return pattern
+
+    if not isinstance(pattern, Sequence):
+        raise TypeError(f"Unknown pattern type '{type(pattern)}'")
+    if not isinstance(offset, (str, int, np.integer, float)):
+        raise TypeError(f"Unknown offset type '{type(offset)}'")
 
     pattern = list(np.array(pattern, dtype=float))
     return dictionary(

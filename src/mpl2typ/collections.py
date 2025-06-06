@@ -97,7 +97,7 @@ class LineCollection:
             return linestyle
         if len(linestyle) == 1:
             offset, pattern = linestyle[0]  # type: ignore
-            return typst.dash(pattern, float(offset))
+            return typst.dash(offset, pattern)
         return None
 
     @property
@@ -105,7 +105,7 @@ class LineCollection:
         linestyles = self.collection.get_linestyle()
         if isinstance(linestyles, (str, float)) or len(linestyles) == 1:
             return None
-        return [typst.dash(pattern, float(offset)) for offset, pattern in linestyles]  # type: ignore
+        return [typst.dash(offset, pattern) for offset, pattern in linestyles]  # type: ignore
 
     @property
     def stroke(self):
@@ -165,12 +165,7 @@ class PathCollection:
     @property
     def linestyle(self):
         offset, pattern = self.collection.get_linestyle()[0]  # type: ignore
-        if not isinstance(offset, (str, int, np.integer, float)):
-            raise TypeError(f"Unknown offset type '{type(offset)}'")  # type: ignore
-        if not (isinstance(pattern, (str, Sequence)) or pattern is None):
-            raise TypeError(f"Unknown pattern type '{type(pattern)}'")  # type: ignore
-        pattern = list(np.array(pattern, dtype=float)) if pattern is not None else None
-        return offset, pattern
+        return typst.dash(offset, pattern)  # type: ignore
 
     @property
     def facecolor(self) -> str:
@@ -184,17 +179,10 @@ class PathCollection:
 
     @property
     def stroke(self) -> str:
-        offset, pattern = self.linestyle
-        if pattern is None:
+        dash = self.linestyle
+        if dash == '"solid"':
             return f"{self.linewidth} + {self.edgecolor}"
 
-        dash = typst.dictionary(
-            dict(
-                array=typst.array(typst.length(pattern, "pt")),
-                phase=f"{offset}pt",
-            ),
-            inline=True,
-        )
         return typst.function(
             "stroke",
             named=dict(
