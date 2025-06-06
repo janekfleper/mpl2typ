@@ -44,6 +44,112 @@ def curve_components(path: matplotlib.path.Path):
     return components
 
 
+class LineCollection:
+    def __init__(self, index: int, collection: matplotlib.collections.LineCollection):
+        self.index = index
+        self.collection = collection
+
+    @property
+    def edgecolor(self) -> str | None:
+        edgecolor = self.collection.get_edgecolor()
+        if len(edgecolor) == 1:
+            return typst.function(
+                "color.rgb",
+                pos=typst.ratio(edgecolor[0]),
+                inline=True,
+            )
+        return None
+
+    @property
+    def edgecolors(self) -> list[str] | None:
+        edgecolors = self.collection.get_edgecolor()
+        if len(edgecolors) == 1:
+            return None
+        return [
+            typst.function(
+                "color.rgb",
+                pos=typst.ratio(color),
+                inline=True,
+            )
+            for color in edgecolors
+        ]
+
+    @property
+    def linewidth(self) -> str | None:
+        linewidth = self.collection.get_linewidth()
+        if isinstance(linewidth, (float, int)):
+            return f"{linewidth}pt"
+        if len(linewidth) == 1:
+            return f"{linewidth[0]}pt"
+        return None
+
+    @property
+    def linewidths(self) -> list[str] | None:
+        linewidths = self.collection.get_linewidth()
+        if isinstance(linewidths, (float, int)) or len(linewidths) == 1:
+            return None
+        return [f"{lw}pt" for lw in linewidths]
+
+    @property
+    def linestyle(self) -> str | None:
+        linestyle = self.collection.get_linestyle()
+        if isinstance(linestyle, (str, float)):
+            return linestyle
+        if len(linestyle) == 1:
+            offset, pattern = linestyle[0]  # type: ignore
+            return typst.dash(pattern, float(offset))
+        return None
+
+    @property
+    def linestyles(self) -> list[str] | None:
+        linestyles = self.collection.get_linestyle()
+        if isinstance(linestyles, (str, float)) or len(linestyles) == 1:
+            return None
+        return [typst.dash(pattern, float(offset)) for offset, pattern in linestyles]  # type: ignore
+
+    @property
+    def stroke(self):
+        named: dict[str, str] = {}
+        if (edgecolor := self.edgecolor) is not None:
+            named["paint"] = edgecolor
+        if (linewidth := self.linewidth) is not None:
+            named["thickness"] = linewidth
+        if (linestyle := self.linestyle) is not None:
+            named["dash"] = linestyle
+        return typst.dictionary(
+            named,
+            inline=False,
+        )
+
+    @property
+    def definition(self):
+        edgecolors = self.edgecolors
+        linewidths = self.linewidths
+        linestyles = self.linestyles
+
+        paths: list[str] = []
+        for i, path in enumerate(self.collection.get_paths()):
+            point = dict(path=typst.ndarray(np.array(path.vertices, dtype=float)))
+            if edgecolors is not None:
+                point["paint"] = edgecolors[i]
+            if linewidths is not None:
+                point["thickness"] = linewidths[i]
+            if linestyles is not None:
+                point["dash"] = linestyles[i]
+            paths.append(typst.dictionary(point, inline=False))
+
+        return (
+            f"let stroke-{self.index} = {self.stroke}\n"
+            + f"let data-{self.index} = {typst.array(paths, inline=False)}\n"
+        )
+
+    @property
+    def draw(self):
+        return (
+            f"draw.line-collection(data-{self.index}, stroke-{self.index}, transform)\n"
+        )
+
+
 class PathCollection:
     def __init__(self, index: int, collection: matplotlib.collections.PathCollection):
         self.index = index

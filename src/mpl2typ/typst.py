@@ -265,3 +265,16 @@ def color(color: str, alpha: float | None = None) -> str:
     if alpha is None:
         return color
     return f"{color}.transparentize({round((1 - alpha) * 100, 3)}%)"
+
+
+def dash(pattern: str | None | Sequence[float], offset: float) -> str:
+    if pattern is None:
+        return '"solid"'
+    elif isinstance(pattern, str):
+        return pattern
+
+    pattern = list(np.array(pattern, dtype=float))
+    return dictionary(
+        dict(array=array(length(pattern, "pt")), phase=f"{offset}pt"),
+        inline=True,
+    )

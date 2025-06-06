@@ -21,6 +21,18 @@
   }
 }
 
+#let line-collection(data, stroke, transform) = {
+  for (path, ..props) in data {
+    let (first, ..other) = path.map(transform)
+    place(
+      curve(
+        stroke: stroke + props,
+        curve.move(first),
+        ..other.map(curve.line),
+      ),
+    )
+  }
+}
 
 #let path-collection(path, data, transform) = {
   for (offset, ..props) in data {
