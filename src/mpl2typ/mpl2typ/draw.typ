@@ -21,16 +21,63 @@
   }
 }
 
-#let line-collection(data, stroke, transform) = {
-  for (path, ..props) in data {
-    let (first, ..other) = path.map(transform)
-    place(
-      curve(
-        stroke: stroke + props,
-        curve.move(first),
-        ..other.map(curve.line),
-      ),
-    )
+#let draw-line(points, stroke) = {
+  let (first, ..other) = points
+  place(
+    curve(
+      stroke: stroke,
+      curve.move(first),
+      ..other.map(curve.line),
+    ),
+  )
+}
+
+#let update-stroke(i, props) = {
+  if "strokes" not in props.keys() { return (:) }
+  let strokes = props.at("strokes")
+
+  if "paint" in strokes.keys() {
+    let paint = strokes.at("paint")
+    (paint: paint.at(calc.rem-euclid(i, paint.len())))
+  }
+  if "thickness" in strokes.keys() {
+    let thickness = strokes.at("thickness")
+    (thickness: thickness.at(calc.rem-euclid(i, thickness.len())))
+  }
+  if "dash" in strokes.keys() {
+    let dash = strokes.at("dash")
+    (dash: dash.at(calc.rem-euclid(i, dash.len())))
+  }
+}
+
+#let line-collection(data, path: none, offset: none, fill: none, stroke: none, transform) = {
+  if offset != none {
+    let apply-offset(point) = (point.at(0) + offset.at(0), point.at(1) + offset.at(1))
+    if path != none {
+      let (..props) = data
+      let stroke = stroke + update-stroke(0, props)
+      draw-line(path.map(apply-offset).map(transform), stroke)
+    } else {
+      let (paths, ..props) = data
+      for (i, path) in paths.enumerate() {
+        let stroke = stroke + update-stroke(i, props)
+        draw-line(path.map(apply-offset).map(transform), stroke)
+      }
+    }
+  } else {
+    let (offsets, ..data) = data
+    for (i, offset) in offsets.enumerate() {
+      let apply-offset(point) = (point.at(0) + offset.at(0), point.at(1) + offset.at(1))
+      if path != none {
+        let stroke = stroke + update-stroke(i, data)
+        draw-line(path.map(apply-offset).map(transform), stroke)
+      } else {
+        let (paths, ..props) = data
+        let path = paths.at(calc.rem-euclid(i, paths.len()))
+        let stroke = stroke + update-stroke(i, props)
+        draw-line(path.map(apply-offset).map(transform), stroke)
+      }
+    }
   }
 }
 

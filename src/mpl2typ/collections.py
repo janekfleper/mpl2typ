@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.path
 import matplotlib.collections
-
+import matplotlib.transforms
 import textwrap
 from abc import abstractmethod
 
@@ -55,6 +55,44 @@ class Collection:
     def __init__(self, index: int, collection: matplotlib.collections.Collection):
         self.index = index
         self.collection = collection
+
+    @property
+    def offsets(self):
+        """
+        Get the offsets in data coordinates
+
+        According to the Matplotlib documentation, the offsets are applied to
+        the lines/paths/patches in screen (pixel) coordinates after rendering.
+        All the internal transformations of the lines/paths/patches are already
+        applied before the offsets are taken into account.
+        If the offset is [0, 0] and there is no offset transformation, nothing
+        has to be done and the lines/paths/patches can be placed directly.
+        If an offset has to be applied, we have to compute the offset in data
+        coordinates to make it work with the transform to relative coordinates
+        in Typst.
+
+        Applying the offset transform to the offsets will return the offsets
+        in units of pixels. We therefore need to use the axes transform to get
+        the offsets in relative axes coordinates, and then we need the limits
+        transform to get the offsets in data coordinates. Only the scales of
+        the latter two (inverse) transforms are applied. Also including the
+        translations would return wrong offsets.
+        """
+        offsets = np.array(self.collection.get_offsets(), dtype=float)
+        offset_transform = self.collection.get_offset_transform()
+        if isinstance(offset_transform, matplotlib.transforms.IdentityTransform):
+            return offsets
+
+        axes = self.collection.axes
+        if axes is None:
+            raise ValueError(f"The collection {self.index} is not part of an Axes")
+
+        axes_transform = np.array(axes.transAxes.get_matrix(), dtype=float)  # type: ignore
+        axes_scale = np.diag(axes_transform[:2, :2])
+        limits_transform = np.array(axes.transLimits.get_matrix(), dtype=float)  # type: ignore
+        limits_scale = np.diag(limits_transform[:2, :2])
+        offsets = np.array(offset_transform.transform(offsets), dtype=float)  # type: ignore
+        return offsets / axes_scale / limits_scale
 
     @property
     def edgecolor(self) -> str | None:
@@ -141,7 +179,7 @@ class Collection:
 
     @property
     @abstractmethod
-    def stroke(self) -> str:
+    def stroke(self) -> str | None:
         pass
 
     @property
@@ -160,7 +198,7 @@ class LineCollection(Collection):
         super().__init__(index, collection)
 
     @property
-    def stroke(self):
+    def stroke(self) -> str | None:
         named: dict[str, str] = {}
         if (edgecolor := self.edgecolor) is not None:
             named["paint"] = edgecolor
@@ -168,38 +206,65 @@ class LineCollection(Collection):
             named["thickness"] = linewidth
         if (linestyle := self.linestyle) is not None:
             named["dash"] = linestyle
+
+        if not named:
+            return None
         return typst.dictionary(
             named,
             inline=False,
         )
 
     @property
-    def definition(self):
-        edgecolors = self.edgecolors
-        linewidths = self.linewidths
-        linestyles = self.linestyles
+    def strokes(self) -> str | None:
+        strokes: dict[str, str] = {}
+        if (edgecolors := self.edgecolors) is not None:
+            strokes["paint"] = typst.array(edgecolors, inline=False)
+        if (linewidths := self.linewidths) is not None:
+            strokes["thickness"] = typst.array(linewidths, inline=False)
+        if (linestyles := self.linestyles) is not None:
+            strokes["dash"] = typst.array(linestyles, inline=False)
 
-        paths: list[str] = []
-        for i, path in enumerate(self.collection.get_paths()):
-            point = dict(path=typst.ndarray(np.array(path.vertices, dtype=float)))
-            if edgecolors is not None:
-                point["paint"] = edgecolors[i]
-            if linewidths is not None:
-                point["thickness"] = linewidths[i]
-            if linestyles is not None:
-                point["dash"] = linestyles[i]
-            paths.append(typst.dictionary(point, inline=False))
+        if not strokes:
+            return None
+        return typst.dictionary(strokes, inline=False)
+
+    @property
+    def definition(self):
+        data: dict[str, str] = {}
+
+        paths = self.collection.get_paths()
+        if len(paths) == 1:
+            path = f"{typst.ndarray(np.array(paths[0].vertices, dtype=float))}"
+        else:
+            path = "none"
+            data["paths"] = typst.array(
+                [typst.ndarray(np.array(path.vertices, dtype=float)) for path in paths],
+                inline=False,
+            )
+
+        offsets = self.offsets
+        if len(offsets) == 1:
+            offset = f"{typst.ndarray(offsets[0])}"
+        else:
+            offset = "none"
+            data["offsets"] = typst.array(
+                [typst.ndarray(offset) for offset in offsets],
+                inline=False,
+            )
+
+        if (strokes := self.strokes) is not None:
+            data["strokes"] = strokes
 
         return (
-            f"let stroke-{self.index} = {self.stroke}\n"
-            + f"let data-{self.index} = {typst.array(paths, inline=False)}\n"
+            f"let path-{self.index} = {path}\n"
+            + f"let offset-{self.index} = {offset}\n"
+            + f"let stroke-{self.index} = {self.stroke}\n"
+            + f"let data-{self.index} = {typst.dictionary(data, inline=False)}\n"
         )
 
     @property
     def draw(self):
-        return (
-            f"draw.line-collection(data-{self.index}, stroke-{self.index}, transform)\n"
-        )
+        return f"draw.line-collection(data-{self.index}, path: path-{self.index}, offset: offset-{self.index}, stroke: stroke-{self.index}, transform)\n"
 
 
 class PathCollection(Collection):
