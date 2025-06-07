@@ -70,7 +70,7 @@ class Collection:
     @property
     def edgecolors(self) -> list[str] | None:
         edgecolors = self.collection.get_edgecolor()
-        if len(edgecolors) == 1:
+        if len(edgecolors) <= 1:
             return None
         return [
             typst.function(
@@ -95,7 +95,7 @@ class Collection:
     @property
     def facecolors(self) -> list[str] | None:
         facecolors = self.collection.get_facecolor()
-        if len(facecolors) == 1:
+        if len(facecolors) <= 1:
             return None
         return [
             typst.function(
@@ -118,7 +118,7 @@ class Collection:
     @property
     def linewidths(self) -> list[str] | None:
         linewidths = self.collection.get_linewidth()
-        if isinstance(linewidths, (float, int)) or len(linewidths) == 1:
+        if isinstance(linewidths, (float, int)) or len(linewidths) <= 1:
             return None
         return [f"{lw}pt" for lw in linewidths]
 
@@ -135,7 +135,7 @@ class Collection:
     @property
     def linestyles(self) -> list[str] | None:
         linestyles = self.collection.get_linestyle()
-        if isinstance(linestyles, (str, float)) or len(linestyles) == 1:
+        if isinstance(linestyles, (str, float)) or len(linestyles) <= 1:
             return None
         return [typst.dash(offset, pattern) for offset, pattern in linestyles]  # type: ignore
 
