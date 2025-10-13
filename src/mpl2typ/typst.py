@@ -292,3 +292,24 @@ def dash(
         dict(array=array(length(pattern, "pt")), phase=f"{offset}pt"),
         inline=True,
     )
+
+
+def transform(
+    scale: Sequence[float] | Sequence[str] | None = None,
+    shift: Sequence[float] | Sequence[str] | None = None,
+    unit: Sequence[str] | None = None,
+):
+    x = "x"
+    y = "y"
+    if scale is not None:
+        x = f"x * {scale[0]}"
+        y = f"y * {scale[1]}"
+    if shift is not None:
+        x = f"{x} + {shift[0]}"
+        y = f"{y} + {shift[1]}"
+    if unit is not None:
+        x = f"({x}) * {unit[0]}"
+        y = f"({y}) * {unit[1]}"
+    transformed = f"({x}, {y})"
+    body = "let (x, y) = point\n" + transformed
+    return "{\n" + textwrap.indent(body, "  ") + "\n}"

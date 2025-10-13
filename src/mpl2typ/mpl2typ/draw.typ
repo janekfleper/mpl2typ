@@ -21,9 +21,12 @@
   }
 }
 
-#let draw-line(points, stroke) = {
+#let draw-line(points, offset, stroke) = {
   let (first, ..other) = points
+  let (dx, dy) = offset
   place(
+    dx: dx,
+    dy: -dy,
     curve(
       stroke: stroke,
       curve.move(first),
@@ -50,32 +53,30 @@
   }
 }
 
-#let line-collection(data, path: none, offset: none, fill: none, stroke: none, transform) = {
+#let line-collection(data, path: none, offset: none, fill: none, stroke: none, transform, offset-transform) = {
   if offset != none {
-    let apply-offset(point) = (point.at(0) + offset.at(0), point.at(1) + offset.at(1))
     if path != none {
       let (..props) = data
       let stroke = stroke + update-stroke(0, props)
-      draw-line(path.map(apply-offset).map(transform), stroke)
+      draw-line(path.map(transform), offset-transform(offset), stroke)
     } else {
       let (paths, ..props) = data
       for (i, path) in paths.enumerate() {
         let stroke = stroke + update-stroke(i, props)
-        draw-line(path.map(apply-offset).map(transform), stroke)
+        draw-line(path.map(transform), offset-transform(offset), stroke)
       }
     }
   } else {
     let (offsets, ..data) = data
     for (i, offset) in offsets.enumerate() {
-      let apply-offset(point) = (point.at(0) + offset.at(0), point.at(1) + offset.at(1))
       if path != none {
         let stroke = stroke + update-stroke(i, data)
-        draw-line(path.map(apply-offset).map(transform), stroke)
+        draw-line(path.map(transform), offset-transform(offset), stroke)
       } else {
         let (paths, ..props) = data
         let path = paths.at(calc.rem-euclid(i, paths.len()))
         let stroke = stroke + update-stroke(i, props)
-        draw-line(path.map(apply-offset).map(transform), stroke)
+        draw-line(path.map(transform), offset-transform(offset), stroke)
       }
     }
   }

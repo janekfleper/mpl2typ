@@ -57,9 +57,9 @@ class Collection:
         self.collection = collection
 
     @property
-    def offsets(self):
+    def offset_transform(self) -> str:
         """
-        Get the offsets in data coordinates
+        Set up the offset transformation function
 
         According to the Matplotlib documentation, the offsets are applied to
         the lines/paths/patches in screen (pixel) coordinates after rendering.
@@ -67,32 +67,31 @@ class Collection:
         applied before the offsets are taken into account.
         If the offset is [0, 0] and there is no offset transformation, nothing
         has to be done and the lines/paths/patches can be placed directly.
-        If an offset has to be applied, we have to compute the offset in data
-        coordinates to make it work with the transform to relative coordinates
-        in Typst.
+        If an offset has to be applied, we transform it to the unit points (pt)
+        to replicate the Matplotlib behavior.
 
-        Applying the offset transform to the offsets will return the offsets
-        in units of pixels. We therefore need to use the axes transform to get
-        the offsets in relative axes coordinates, and then we need the limits
-        transform to get the offsets in data coordinates. Only the scales of
-        the latter two (inverse) transforms are applied. Also including the
-        translations would return wrong offsets.
+        Matplotlib itself is slightly inconsistent here since the DPI depends
+        on the file format of the figure that is saved. For vector formats, the
+        DPI is (always) 72, whereas for raster formats, the DPI can be set in
+        the figure (defaults to 100). This can lead to a mismatch between the
+        offsets in different file formats if the offset transformation does not
+        already take the DPI into account.
         """
-        offsets = np.array(self.collection.get_offsets(), dtype=float)
-        offset_transform = self.collection.get_offset_transform()
-        if isinstance(offset_transform, matplotlib.transforms.IdentityTransform):
-            return offsets
-
         axes = self.collection.axes
         if axes is None:
             raise ValueError(f"The collection {self.index} is not part of an Axes")
 
-        axes_transform = np.array(axes.transAxes.get_matrix(), dtype=float)  # type: ignore
-        axes_scale = np.diag(axes_transform[:2, :2])
-        limits_transform = np.array(axes.transLimits.get_matrix(), dtype=float)  # type: ignore
-        limits_scale = np.diag(limits_transform[:2, :2])
-        offsets = np.array(offset_transform.transform(offsets), dtype=float)  # type: ignore
-        return offsets / axes_scale / limits_scale
+        offset_transform = self.collection.get_offset_transform()
+        offset_matrix = np.array(offset_transform.get_matrix(), dtype=float)  # type: ignore
+        offset_scale = np.diag(offset_matrix[:2, :2])
+        offset_shift = offset_matrix[:2, 2]
+
+        dpi = axes.figure.dpi
+        return typst.transform(
+            list(offset_scale / dpi),
+            list(offset_shift / dpi),
+            unit=["72pt", "72pt"],
+        )
 
     @property
     def edgecolor(self) -> str | None:
@@ -242,7 +241,7 @@ class LineCollection(Collection):
                 inline=False,
             )
 
-        offsets = self.offsets
+        offsets = np.array(self.collection.get_offsets(), dtype=float)
         if len(offsets) == 1:
             offset = f"{typst.ndarray(offsets[0])}"
         else:
@@ -252,19 +251,24 @@ class LineCollection(Collection):
                 inline=False,
             )
 
+        stroke = self.stroke
+        if stroke is None:
+            stroke = "none"
+
         if (strokes := self.strokes) is not None:
             data["strokes"] = strokes
 
         return (
             f"let path-{self.index} = {path}\n"
             + f"let offset-{self.index} = {offset}\n"
-            + f"let stroke-{self.index} = {self.stroke}\n"
+            + f"let offset-transform-{self.index}(point) = {self.offset_transform}\n"
+            + f"let stroke-{self.index} = {stroke}\n"
             + f"let data-{self.index} = {typst.dictionary(data, inline=False)}\n"
         )
 
     @property
     def draw(self):
-        return f"draw.line-collection(data-{self.index}, path: path-{self.index}, offset: offset-{self.index}, stroke: stroke-{self.index}, transform)\n"
+        return f"draw.line-collection(data-{self.index}, path: path-{self.index}, offset: offset-{self.index}, stroke: stroke-{self.index}, transform, offset-transform-{self.index})\n"
 
 
 class PathCollection(Collection):
