@@ -157,6 +157,8 @@ class Collection:
             data["paths"] = typst.array(path, inline=False)
         if len(offset := self.offset) > 1:
             data["offsets"] = typst.array(offset, inline=False)
+        if len(facecolor := self.facecolor) > 1:
+            data["fills"] = typst.array(facecolor, inline=False)
 
         strokes: dict[str, str] = {}
         if len(edgecolors := self.edgecolor) > 1:
@@ -191,6 +193,8 @@ class LineCollection(Collection):
         path = path[0] if len(path) == 1 else "none"
         offset = self.offset
         offset = offset[0] if len(offset) == 1 else "none"
+        fill = self.facecolor
+        fill = fill[0] if len(fill) == 1 else "none"
         stroke = self.stroke
         stroke = stroke if stroke is not None else "none"
 
@@ -198,13 +202,14 @@ class LineCollection(Collection):
             f"let path-{self.index} = {path}\n"
             + f"let offset-{self.index} = {offset}\n"
             + f"let offset-transform-{self.index}(point) = {self.offset_transform}\n"
+            + f"let fill-{self.index} = {fill}\n"
             + f"let stroke-{self.index} = {stroke}\n"
             + f"let data-{self.index} = {self.data}\n"
         )
 
     @property
     def draw(self):
-        return f"draw.line-collection(data-{self.index}, path: path-{self.index}, offset: offset-{self.index}, stroke: stroke-{self.index}, transform, offset-transform-{self.index})\n"
+        return f"draw.line-collection(data-{self.index}, path: path-{self.index}, offset: offset-{self.index}, fill: fill-{self.index}, stroke: stroke-{self.index}, transform, offset-transform-{self.index})\n"
 
 
 class PathCollection(Collection):
