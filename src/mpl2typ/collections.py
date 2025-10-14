@@ -2,8 +2,6 @@ import numpy as np
 import matplotlib.path
 import matplotlib.collections
 import matplotlib.transforms
-import textwrap
-from abc import abstractmethod
 
 from . import typst
 
@@ -217,16 +215,6 @@ class Collection:
             "offset-transform": f"offset-transform-{self.index}",
         }
         return typst.function("draw.collection", named=kwargs, inline=False)
-
-
-class LineCollection(Collection):
-    def __init__(self, index: int, collection: matplotlib.collections.LineCollection):
-        super().__init__(index, collection)
-
-
-class PathCollection(Collection):
-    def __init__(self, index: int, collection: matplotlib.collections.PathCollection):
-        super().__init__(index, collection)
 
 
 class QuadMesh:

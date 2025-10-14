@@ -102,8 +102,6 @@
   }
 }
 
-}
-
 #let quad-mesh(vertices, data, colormap, transform) = {
   for (i, row) in data.enumerate() {
     for (j, value) in row.enumerate() {

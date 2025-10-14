@@ -11,7 +11,7 @@ import matplotlib.collections
 
 from . import typst
 from .lines import Stroke, Line2D
-from .collections import LineCollection, PathCollection, QuadMesh
+from .collections import Collection, QuadMesh
 from .text import Text
 
 header = """
@@ -430,12 +430,8 @@ class Axes:
                 line = Line2D(i, child)
                 definitions.append(line.definition)
                 draws.append(line.draw)
-            elif isinstance(child, matplotlib.collections.LineCollection):
-                collection = LineCollection(i, child)
-                definitions.append(collection.definition)
-                draws.append(collection.draw)
-            elif isinstance(child, matplotlib.collections.PathCollection):
-                collection = PathCollection(i, child)
+            elif isinstance(child, matplotlib.collections.Collection):
+                collection = Collection(i, child)
                 definitions.append(collection.definition)
                 draws.append(collection.draw)
             elif isinstance(child, matplotlib.collections.QuadMesh):
