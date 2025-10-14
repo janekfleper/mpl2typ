@@ -57,6 +57,20 @@ class Collection:
         self.collection = collection
 
     @property
+    def path(self) -> list[str]:
+        return [
+            typst.ndarray(np.array(path.vertices, dtype=float))
+            for path in self.collection.get_paths()
+        ]
+
+    @property
+    def offset(self) -> list[str]:
+        return [
+            typst.ndarray(offset)
+            for offset in np.array(self.collection.get_offsets(), dtype=float)
+        ]
+
+    @property
     def offset_transform(self) -> str:
         """
         Set up the offset transformation function
@@ -94,92 +108,67 @@ class Collection:
         )
 
     @property
-    def edgecolor(self) -> str | None:
-        edgecolor = self.collection.get_edgecolor()
-        if len(edgecolor) == 1:
-            return typst.function(
-                "color.rgb",
-                pos=typst.ratio(edgecolor[0]),
-                inline=True,
-            )
-        return None
-
-    @property
-    def edgecolors(self) -> list[str] | None:
-        edgecolors = self.collection.get_edgecolor()
-        if len(edgecolors) <= 1:
-            return None
+    def edgecolor(self) -> list[str]:
         return [
-            typst.function(
-                "color.rgb",
-                pos=typst.ratio(color),
-                inline=True,
-            )
-            for color in edgecolors
+            typst.function("color.rgb", pos=typst.ratio(color), inline=True)
+            for color in self.collection.get_edgecolor()
         ]
 
     @property
-    def facecolor(self) -> str | None:
-        facecolor = self.collection.get_facecolor()
-        if len(facecolor) == 1:
-            return typst.function(
-                "color.rgb",
-                pos=typst.ratio(facecolor[0]),
-                inline=True,
-            )
-        return None
-
-    @property
-    def facecolors(self) -> list[str] | None:
-        facecolors = self.collection.get_facecolor()
-        if len(facecolors) <= 1:
-            return None
+    def facecolor(self) -> list[str]:
         return [
-            typst.function(
-                "color.rgb",
-                pos=typst.ratio(color),
-                inline=True,
-            )
-            for color in facecolors
+            typst.function("color.rgb", pos=typst.ratio(color), inline=True)
+            for color in self.collection.get_facecolor()
         ]
 
     @property
-    def linewidth(self) -> str | None:
+    def linewidth(self) -> list[str]:
         linewidth = self.collection.get_linewidth()
         if isinstance(linewidth, (float, int)):
-            return f"{linewidth}pt"
-        if len(linewidth) == 1:
-            return f"{linewidth[0]}pt"
-        return None
+            return [f"{linewidth}pt"]
+        return [f"{lw}pt" for lw in linewidth]
 
     @property
-    def linewidths(self) -> list[str] | None:
-        linewidths = self.collection.get_linewidth()
-        if isinstance(linewidths, (float, int)) or len(linewidths) <= 1:
-            return None
-        return [f"{lw}pt" for lw in linewidths]
-
-    @property
-    def linestyle(self) -> str | None:
+    def linestyle(self) -> list[str]:
         linestyle = self.collection.get_linestyle()
         if isinstance(linestyle, (str, float)):
-            return linestyle
-        if len(linestyle) == 1:
-            offset, pattern = linestyle[0]  # type: ignore
-            return typst.dash(offset, pattern)
-        return None
+            return [f"{linestyle}"]
+        return [typst.dash(offset, pattern) for offset, pattern in linestyle]  # type: ignore
 
     @property
-    def linestyles(self) -> list[str] | None:
-        linestyles = self.collection.get_linestyle()
-        if isinstance(linestyles, (str, float)) or len(linestyles) <= 1:
-            return None
-        return [typst.dash(offset, pattern) for offset, pattern in linestyles]  # type: ignore
-
-    @property
-    @abstractmethod
     def stroke(self) -> str | None:
-        pass
+        named: dict[str, str] = {}
+        if len(edgecolor := self.edgecolor) == 1:
+            named["paint"] = edgecolor[0]
+        if len(linewidth := self.linewidth) == 1:
+            named["thickness"] = linewidth[0]
+        if len(linestyle := self.linestyle) == 1:
+            named["dash"] = linestyle[0]
+
+        if not named:
+            return None
+        return typst.dictionary(named, inline=False)
+
+    @property
+    def data(self) -> str:
+        data: dict[str, str] = {}
+
+        if len(path := self.path) > 1:
+            data["paths"] = typst.array(path, inline=False)
+        if len(offset := self.offset) > 1:
+            data["offsets"] = typst.array(offset, inline=False)
+
+        strokes: dict[str, str] = {}
+        if len(edgecolors := self.edgecolor) > 1:
+            strokes["paint"] = typst.array(edgecolors, inline=False)
+        if len(linewidths := self.linewidth) > 1:
+            strokes["thickness"] = typst.array(linewidths, inline=False)
+        if len(linestyles := self.linestyle) > 1:
+            strokes["dash"] = typst.array(linestyles, inline=False)
+        if strokes:
+            data["strokes"] = typst.dictionary(strokes, inline=False)
+
+        return typst.dictionary(data, inline=False)
 
     @property
     @abstractmethod
@@ -197,73 +186,20 @@ class LineCollection(Collection):
         super().__init__(index, collection)
 
     @property
-    def stroke(self) -> str | None:
-        named: dict[str, str] = {}
-        if (edgecolor := self.edgecolor) is not None:
-            named["paint"] = edgecolor
-        if (linewidth := self.linewidth) is not None:
-            named["thickness"] = linewidth
-        if (linestyle := self.linestyle) is not None:
-            named["dash"] = linestyle
-
-        if not named:
-            return None
-        return typst.dictionary(
-            named,
-            inline=False,
-        )
-
-    @property
-    def strokes(self) -> str | None:
-        strokes: dict[str, str] = {}
-        if (edgecolors := self.edgecolors) is not None:
-            strokes["paint"] = typst.array(edgecolors, inline=False)
-        if (linewidths := self.linewidths) is not None:
-            strokes["thickness"] = typst.array(linewidths, inline=False)
-        if (linestyles := self.linestyles) is not None:
-            strokes["dash"] = typst.array(linestyles, inline=False)
-
-        if not strokes:
-            return None
-        return typst.dictionary(strokes, inline=False)
-
-    @property
     def definition(self):
-        data: dict[str, str] = {}
-
-        paths = self.collection.get_paths()
-        if len(paths) == 1:
-            path = f"{typst.ndarray(np.array(paths[0].vertices, dtype=float))}"
-        else:
-            path = "none"
-            data["paths"] = typst.array(
-                [typst.ndarray(np.array(path.vertices, dtype=float)) for path in paths],
-                inline=False,
-            )
-
-        offsets = np.array(self.collection.get_offsets(), dtype=float)
-        if len(offsets) == 1:
-            offset = f"{typst.ndarray(offsets[0])}"
-        else:
-            offset = "none"
-            data["offsets"] = typst.array(
-                [typst.ndarray(offset) for offset in offsets],
-                inline=False,
-            )
-
+        path = self.path
+        path = path[0] if len(path) == 1 else "none"
+        offset = self.offset
+        offset = offset[0] if len(offset) == 1 else "none"
         stroke = self.stroke
-        if stroke is None:
-            stroke = "none"
-
-        if (strokes := self.strokes) is not None:
-            data["strokes"] = strokes
+        stroke = stroke if stroke is not None else "none"
 
         return (
             f"let path-{self.index} = {path}\n"
             + f"let offset-{self.index} = {offset}\n"
             + f"let offset-transform-{self.index}(point) = {self.offset_transform}\n"
             + f"let stroke-{self.index} = {stroke}\n"
-            + f"let data-{self.index} = {typst.dictionary(data, inline=False)}\n"
+            + f"let data-{self.index} = {self.data}\n"
         )
 
     @property
