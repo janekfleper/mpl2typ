@@ -27,14 +27,18 @@
   place(
     dx: dx,
     dy: -dy,
-    curve(
-      fill: fill,
-      stroke: stroke,
-      curve.move(first),
-      ..other.map(curve.line),
+    scale(
+      curve(
+        fill: fill,
+        stroke: stroke,
+        curve.move(first),
+        ..other.map(curve.line),
+      ),
     ),
   )
 }
+
+#let rescale(point, scale: scale) = point.map(x => x * scale)
 
 #let update-stroke(i, props) = {
   if "paint" in props.keys() {
@@ -51,49 +55,53 @@
   }
 }
 
-#let line-collection(
+#let collection(
   data: (:),
   path: none,
+  size: none,
   offset: none,
   fill: none,
   stroke: none,
   transform: none,
+  compute-scale: none,
   offset-transform: none,
 ) = {
-  assert(transform != none, message: "Parameter transform must not be none")
-  assert(offset-transform != none, message: "Parameter offset-transform must not be none")
+  assert.ne(transform, none, message: "Parameter transform must not be none")
+  assert.ne(offset-transform, none, message: "Parameter offset-transform must not be none")
+  if compute-scale == none { compute-scale = size => size }
 
   if data == (:) { return draw-line(path.map(transform), offset-transform(offset), fill, stroke) }
 
   let paths = data.remove("paths", default: ())
+  let sizes = data.remove("sizes", default: ())
   let offsets = data.remove("offsets", default: ())
   let length = calc.max(paths.len(), offsets.len())
   let fills = data.remove("fills", default: ())
   let strokes = data.remove("strokes", default: (:))
 
   if length == 0 {
+    size = sizes.at(0, default: size)
+    if size != none { path = path.map(rescale.with(scale: compute-scale(size))) }
     draw-line(
       path.map(transform),
       offset-transform(offset),
-      fill + fills.at(0, default: none),
+      fills.at(0, default: fill),
       stroke + update-stroke(0, strokes),
     )
   } else {
     for i in range(length) {
-      let offset = if offsets.len() > 0 { offsets.at(calc.rem-euclid(i, offsets.len())) } else { offset }
       let path = if paths.len() > 0 { paths.at(calc.rem-euclid(i, paths.len())) } else { path }
+      let size = if sizes.len() > 0 { sizes.at(calc.rem-euclid(i, sizes.len())) } else { size }
+      let offset = if offsets.len() > 0 { offsets.at(calc.rem-euclid(i, offsets.len())) } else { offset }
       let fill = if fills.len() > 0 { fills.at(calc.rem-euclid(i, fills.len())) } else { fill }
       let stroke = stroke + update-stroke(i, strokes)
+
+      if size != none { path = path.map(rescale.with(scale: compute-scale(size))) }
       draw-line(path.map(transform), offset-transform(offset), fill, stroke)
     }
   }
 }
 
-#let path-collection(path, data, transform) = {
-  for (offset, ..props) in data {
-    let (x, y) = transform(offset)
-    place(dx: x, dy: y, path(..props))
-  }
 }
 
 #let quad-mesh(vertices, data, colormap, transform) = {

@@ -24,6 +24,8 @@ header = """
     let (x, y) = point
     return (x * xscale + xshift, y * yscale + yshift)
   }
+
+  let compute-scale(size) = calc.sqrt(size) * dpi / 72
 """
 
 
@@ -443,7 +445,7 @@ class Axes:
         return "\n".join(definitions) + "\n" + "\n".join(draws) + "\n"
 
     def export(self):
-        s = f"#let axes-{self.index}(xlim: {self.xlim}, ylim: {self.ylim}) = {{"
+        s = f"#let axes-{self.index}(xlim: {self.xlim}, ylim: {self.ylim}, dpi: {self.ax.figure.dpi}) = {{"
         s += header + "\n"
         s += textwrap.indent(self.title.export(), "  ")
         s += textwrap.indent(self.data, "  ")

@@ -64,6 +64,12 @@ class Collection:
         ]
 
     @property
+    def size(self) -> list[str]:
+        if isinstance(self.collection, matplotlib.collections._CollectionWithSizes):  # type: ignore
+            return [f"{s}" for s in self.collection.get_sizes()]
+        return []
+
+    @property
     def offset(self) -> list[str]:
         return [
             typst.ndarray(offset)
@@ -155,6 +161,8 @@ class Collection:
 
         if len(path := self.path) > 1:
             data["paths"] = typst.array(path, inline=False)
+        if len(size := self.size) > 1:
+            data["sizes"] = typst.array(size, inline=False)
         if len(offset := self.offset) > 1:
             data["offsets"] = typst.array(offset, inline=False)
         if len(facecolor := self.facecolor) > 1:
@@ -173,24 +181,11 @@ class Collection:
         return typst.dictionary(data, inline=False)
 
     @property
-    @abstractmethod
-    def definition(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def draw(self) -> str:
-        pass
-
-
-class LineCollection(Collection):
-    def __init__(self, index: int, collection: matplotlib.collections.LineCollection):
-        super().__init__(index, collection)
-
-    @property
     def definition(self):
         path = self.path
         path = path[0] if len(path) == 1 else "none"
+        size = self.size
+        size = size[0] if len(size) == 1 else "none"
         offset = self.offset
         offset = offset[0] if len(offset) == 1 else "none"
         fill = self.facecolor
@@ -200,6 +195,7 @@ class LineCollection(Collection):
 
         return (
             f"let path-{self.index} = {path}\n"
+            + f"let size-{self.index} = {size}\n"
             + f"let offset-{self.index} = {offset}\n"
             + f"let offset-transform-{self.index}(point) = {self.offset_transform}\n"
             + f"let fill-{self.index} = {fill}\n"
@@ -212,74 +208,25 @@ class LineCollection(Collection):
         kwargs = {
             "data": f"data-{self.index}",
             "path": f"path-{self.index}",
+            "size": f"size-{self.index}",
             "offset": f"offset-{self.index}",
             "fill": f"fill-{self.index}",
             "stroke": f"stroke-{self.index}",
             "transform": "transform",
+            "compute-scale": "compute-scale",
             "offset-transform": f"offset-transform-{self.index}",
         }
-        return typst.function("draw.line-collection", named=kwargs, inline=False)
+        return typst.function("draw.collection", named=kwargs, inline=False)
+
+
+class LineCollection(Collection):
+    def __init__(self, index: int, collection: matplotlib.collections.LineCollection):
+        super().__init__(index, collection)
 
 
 class PathCollection(Collection):
     def __init__(self, index: int, collection: matplotlib.collections.PathCollection):
         super().__init__(index, collection)
-
-    @property
-    def stroke(self) -> str:
-        dash = self.linestyle
-        if dash == '"solid"':
-            return f"{self.linewidth} + {self.edgecolor}"
-
-        named: dict[str, str] = {}
-        if (edgecolor := self.edgecolor) is not None:
-            named["paint"] = edgecolor
-        if (linewidth := self.linewidth) is not None:
-            named["thickness"] = linewidth
-        if (dash := self.linestyle) is not None:
-            named["dash"] = dash
-        return typst.function("stroke", named=named)
-
-    @property
-    def data(self):
-        points: list[str] = []
-        offsets = np.array(self.collection.get_offsets(), dtype=float)
-        sizes = np.array(self.collection.get_sizes(), dtype=float)  # type: ignore
-        for (x, y), size in zip(offsets, sizes):
-            point = dict(offset=f"({x}, {y})", size=str(size))
-            points.append(typst.dictionary(point, inline=True))
-        return typst.array(points, inline=False)
-
-    @property
-    def definition(self):
-        named: dict[str, str] = dict(size="0", scale="1pt")
-        if (facecolor := self.facecolor) is not None:
-            named["fill"] = facecolor
-        named["stroke"] = self.stroke
-        signature = typst.function(
-            f"path-{self.index}",
-            named=named,
-            inline=False,
-        )
-        path = typst.function(
-            "curve",
-            pos=curve_components(self.collection.get_paths()[0]),
-            named=dict(fill="fill", stroke="stroke"),
-            inline=False,
-        )
-
-        s = f"let {signature} = {{\n"
-        s += textwrap.indent("let s = calc.sqrt(size) * scale\n", "  ")
-        s += textwrap.indent(path, "  ")
-        s += "\n}\n\n"
-        s += f"let data-{self.index} = {self.data}\n"
-        return s
-
-    @property
-    def draw(self):
-        return (
-            f"draw.path-collection(path-{self.index}, data-{self.index}, transform)\n"
-        )
 
 
 class QuadMesh:
