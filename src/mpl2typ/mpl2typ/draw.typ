@@ -51,7 +51,18 @@
   }
 }
 
-#let line-collection(data, path: none, offset: none, fill: none, stroke: none, transform, offset-transform) = {
+#let line-collection(
+  data: (:),
+  path: none,
+  offset: none,
+  fill: none,
+  stroke: none,
+  transform: none,
+  offset-transform: none,
+) = {
+  assert(transform != none, message: "Parameter transform must not be none")
+  assert(offset-transform != none, message: "Parameter offset-transform must not be none")
+
   if data == (:) { return draw-line(path.map(transform), offset-transform(offset), fill, stroke) }
 
   let paths = data.remove("paths", default: ())

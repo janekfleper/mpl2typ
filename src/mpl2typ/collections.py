@@ -209,7 +209,16 @@ class LineCollection(Collection):
 
     @property
     def draw(self):
-        return f"draw.line-collection(data-{self.index}, path: path-{self.index}, offset: offset-{self.index}, fill: fill-{self.index}, stroke: stroke-{self.index}, transform, offset-transform-{self.index})\n"
+        kwargs = {
+            "data": f"data-{self.index}",
+            "path": f"path-{self.index}",
+            "offset": f"offset-{self.index}",
+            "fill": f"fill-{self.index}",
+            "stroke": f"stroke-{self.index}",
+            "transform": "transform",
+            "offset-transform": f"offset-transform-{self.index}",
+        }
+        return typst.function("draw.line-collection", named=kwargs, inline=False)
 
 
 class PathCollection(Collection):
