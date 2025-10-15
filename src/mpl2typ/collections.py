@@ -75,6 +75,35 @@ class Collection:
         ]
 
     @property
+    def transform(self) -> str:
+        axes = self.collection.axes
+        if axes is None:
+            raise ValueError(f"The collection {self.index} is not part of an Axes")
+
+        transform = self.collection.get_transform()
+        if transform == axes.transData:
+            return "transform"
+
+        matrix = np.array(transform.get_matrix(), dtype=float)
+        scale = np.diag(matrix[:2, :2])
+        shift = matrix[:2, 2]
+        return "point => " + typst.transform(
+            list(scale), list(shift), unit=["1pt", "1pt"]
+        )
+
+    @property
+    def compute_scale(self) -> str:
+        axes = self.collection.axes
+        if axes is None:
+            raise ValueError(f"The collection {self.index} is not part of an Axes")
+
+        transform = self.collection.get_transform()
+        if transform == axes.transData:
+            return "compute-scale"
+
+        return "size => calc.sqrt(size)"
+
+    @property
     def offset_transform(self) -> str:
         """
         Set up the offset transformation function
@@ -100,15 +129,18 @@ class Collection:
             raise ValueError(f"The collection {self.index} is not part of an Axes")
 
         offset_transform = self.collection.get_offset_transform()
+        if offset_transform == axes.transData:
+            return "transform"
+
         offset_matrix = np.array(offset_transform.get_matrix(), dtype=float)  # type: ignore
         offset_scale = np.diag(offset_matrix[:2, :2])
         offset_shift = offset_matrix[:2, 2]
 
         dpi = axes.figure.dpi
-        return typst.transform(
+        return "point => " + typst.transform(
             list(offset_scale / dpi),
             list(offset_shift / dpi),
-            unit=["72pt", "72pt"],
+            unit=["72pt", "-72pt"],
         )
 
     @property
@@ -195,10 +227,12 @@ class Collection:
             f"let path-{self.index} = {path}\n"
             + f"let size-{self.index} = {size}\n"
             + f"let offset-{self.index} = {offset}\n"
-            + f"let offset-transform-{self.index}(point) = {self.offset_transform}\n"
             + f"let fill-{self.index} = {fill}\n"
             + f"let stroke-{self.index} = {stroke}\n"
             + f"let data-{self.index} = {self.data}\n"
+            + f"let transform-{self.index} = {self.transform}\n"
+            + f"let compute-scale-{self.index} = {self.compute_scale}\n"
+            + f"let offset-transform-{self.index} = {self.offset_transform}\n"
         )
 
     @property
@@ -210,8 +244,8 @@ class Collection:
             "offset": f"offset-{self.index}",
             "fill": f"fill-{self.index}",
             "stroke": f"stroke-{self.index}",
-            "transform": "transform",
-            "compute-scale": "compute-scale",
+            "transform": f"transform-{self.index}",
+            "compute-scale": f"compute-scale-{self.index}",
             "offset-transform": f"offset-transform-{self.index}",
         }
         return typst.function("draw.collection", named=kwargs, inline=False)

@@ -26,7 +26,7 @@
   let (dx, dy) = offset
   place(
     dx: dx,
-    dy: -dy,
+    dy: dy,
     scale(
       curve(
         fill: fill,
