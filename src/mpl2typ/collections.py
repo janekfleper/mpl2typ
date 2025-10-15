@@ -88,7 +88,7 @@ class Collection:
         scale = np.diag(matrix[:2, :2])
         shift = matrix[:2, 2]
         return "point => " + typst.transform(
-            list(scale), list(shift), unit=["1pt", "1pt"]
+            list(scale), list(shift), unit=["1pt", "-1pt"]
         )
 
     @property

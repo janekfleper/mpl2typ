@@ -16,13 +16,13 @@ from .text import Text
 
 header = """
   let xscale = 1 / (xlim.at(1) - xlim.at(0)) * 100%
-  let yscale = -1 / (ylim.at(1) - ylim.at(0)) * 100%
+  let yscale = 1 / (ylim.at(1) - ylim.at(0)) * 100%
   let xshift = 50% - (xlim.at(0) + xlim.at(1)) / 2 * xscale
   let yshift = 50% - (ylim.at(0) + ylim.at(1)) / 2 * yscale
 
   let transform(point) = {
     let (x, y) = point
-    return (x * xscale + xshift, y * yscale + yshift)
+    return (x * xscale + xshift, 100% - (y * yscale + yshift))
   }
 
   let compute-scale(size) = calc.sqrt(size) * dpi / 72
