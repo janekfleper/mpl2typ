@@ -1,9 +1,13 @@
+#let place(position, body) = {
+  std.place(dx: position.at(0), dy: position.at(1), body)
+}
+
 #let line(points, stroke: none, marker: none, transform) = {
   points = points.map(transform)
 
   if stroke != none {
     let (first, ..other) = points
-    place(
+    std.place(
       curve(
         stroke: stroke,
         curve.move(first),
@@ -16,24 +20,20 @@
     let dx = if marker.has("height") { marker.height / 2 } else { 0pt }
     let dy = if marker.has("width") { marker.width / 2 } else { 0pt }
     for point in points {
-      place(dx: point.at(0) - dx, dy: point.at(1) - dy, marker)
+      std.place(dx: point.at(0) - dx, dy: point.at(1) - dy, marker)
     }
   }
 }
 
 #let draw-line(points, offset, fill, stroke) = {
   let (first, ..other) = points
-  let (dx, dy) = offset
   place(
-    dx: dx,
-    dy: dy,
-    scale(
-      curve(
-        fill: fill,
-        stroke: stroke,
-        curve.move(first),
-        ..other.map(curve.line),
-      ),
+    offset,
+    curve(
+      fill: fill,
+      stroke: stroke,
+      curve.move(first),
+      ..other.map(curve.line),
     ),
   )
 }
@@ -106,7 +106,7 @@
   for (i, row) in data.enumerate() {
     for (j, value) in row.enumerate() {
       let color = colormap(value)
-      place(
+      std.place(
         curve(
           fill: color,
           curve.move(transform(vertices.at(i).at(j))),

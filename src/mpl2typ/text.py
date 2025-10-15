@@ -1,25 +1,29 @@
 import matplotlib.text
+import matplotlib.axes
 import matplotlib.transforms
 
 from . import typst
 
 
 class Text:
-    def __init__(
-        self,
-        name: str,
-        text: matplotlib.text.Text,
-        transform: matplotlib.transforms.Transform,
-    ):
+    def __init__(self, name: str, text: matplotlib.text.Text, ax: matplotlib.axes.Axes):
         self.name = name
         self.text = text
-        self.transform = transform
+        self.ax = ax
 
     @property
-    def position(self) -> tuple[float, float]:
-        return self.transform.transform_point(  # type: ignore
-            self.text.get_transform().transform_point(self.text.get_position())  # type: ignore
+    def position(self) -> str:
+        transform = self.text.get_transform()
+        if transform == self.ax.transData:
+            x, y = self.text.get_position()
+            return f"transform({typst.array([str(x), str(y)])})"
+
+        x, y = self.ax.transAxes.inverted().transform_point(  # type: ignore
+            transform.transform_point(self.text.get_position())  # type: ignore
         )
+        dx = f"{round(x * 100, 3)}%"
+        dy = f"{round((1 - y) * 100, 3)}%"
+        return f"({dx}, {dy})"
 
     @property
     def fontsize(self) -> float:
@@ -50,28 +54,25 @@ class Text:
         else:
             return f"place({self.alignment}, {body})"
 
-    def export(self) -> str:
-        x, y = self.position
-        dx = f"{round(x * 100, 3)}%"
-        dy = f"{round((1 - y) * 100, 3)}%"
-
+    @property
+    def definition(self) -> str:
         kwargs = dict(size=f"{self.fontsize}pt", fill=self.color)
         if self.text.get_verticalalignment() in ["center", "bottom"]:
             kwargs["bottom-edge"] = '"descender"'
 
-        variable = f"let {self.name} = " + typst.function(
+        return f"let {self.name} = " + typst.function(
             "text",
             named=kwargs,
             body=f"[{self.text.get_text()}]",
             inline=True,
         )
 
-        return (
-            variable
-            + "\n"
-            + typst.function(
-                "place",
-                named=dict(dx=dx, dy=dy),
-                body=self.inner(self.name),
-            )
+    @property
+    def draw(self) -> str:
+        return typst.function(
+            "draw.place",
+            pos=[self.position, self.inner(self.name)],
         )
+
+    def export(self) -> str:
+        return self.definition + "\n" + self.draw

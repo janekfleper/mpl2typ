@@ -6,6 +6,7 @@ from typing import TypeVar, Generic
 
 import matplotlib.axes
 import matplotlib.axis
+import matplotlib.text
 import matplotlib.lines
 import matplotlib.collections
 
@@ -52,17 +53,16 @@ TickParams = TypeVar("TickParams", XTickParams, YTickParams)
 
 class Title:
     def __init__(self, ax: matplotlib.axes.Axes):
-        transform = ax.transAxes.inverted()
         self.center = (
-            Text("title", ax.title, transform) if ax.get_title(loc="center") else None
+            Text("title", ax.title, ax) if ax.get_title(loc="center") else None
         )
         self.left = (
-            Text("title-left", ax._left_title, transform)  # type: ignore
+            Text("title-left", ax._left_title, ax)  # type: ignore
             if ax.get_title(loc="left")
             else None
         )
         self.right = (
-            Text("title-right", ax._right_title, transform)  # type: ignore
+            Text("title-right", ax._right_title, ax)  # type: ignore
             if ax.get_title(loc="right")
             else None
         )
@@ -312,14 +312,14 @@ class Axis:
     @property
     def xlabel(self):
         if self.ax.get_xlabel():
-            xlabel = Text("xaxis-label", self.ax.xaxis.get_label(), self.transform)
+            xlabel = Text("xaxis-label", self.ax.xaxis.get_label(), self.ax)
             return xlabel.export()
         return ""
 
     @property
     def ylabel(self):
         if self.ax.get_ylabel():
-            ylabel = Text("yaxis-label", self.ax.yaxis.get_label(), self.transform)
+            ylabel = Text("yaxis-label", self.ax.yaxis.get_label(), self.ax)
             return ylabel.export()
         return ""
 
@@ -327,7 +327,7 @@ class Axis:
     def xoffset(self):
         xaxis_offset_text = self.ax.xaxis.get_offset_text()
         if xaxis_offset_text.get_text():
-            xoffset = Text("xaxis-offset", xaxis_offset_text, self.transform)
+            xoffset = Text("xaxis-offset", xaxis_offset_text, self.ax)
             return xoffset.export()
         return ""
 
@@ -335,7 +335,7 @@ class Axis:
     def yoffset(self):
         yaxis_offset_text = self.ax.yaxis.get_offset_text()
         if yaxis_offset_text.get_text():
-            yoffset = Text("yaxis-offset", yaxis_offset_text, self.transform)
+            yoffset = Text("yaxis-offset", yaxis_offset_text, self.ax)
             return yoffset.export()
         return ""
 
@@ -425,7 +425,7 @@ class Axes:
     def data(self):
         definitions: list[str] = []
         draws: list[str] = []
-        for i, child in enumerate(self.ax.get_children()):
+        for i, child in enumerate(self.ax._children):  # type: ignore
             if isinstance(child, matplotlib.lines.Line2D):
                 line = Line2D(i, child)
                 definitions.append(line.definition)
@@ -438,6 +438,10 @@ class Axes:
                 collection = QuadMesh(i, child)
                 definitions.append(collection.definition)
                 draws.append(collection.draw)
+            elif isinstance(child, matplotlib.text.Text):
+                text = Text(f"text-{i}", child, self.ax)
+                definitions.append(text.definition)
+                draws.append(text.draw)
         return "\n".join(definitions) + "\n" + "\n".join(draws) + "\n"
 
     def export(self):
