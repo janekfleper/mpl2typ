@@ -247,6 +247,7 @@ def block(name: str, padding: dict[str, float], body: str | None = None):
 
     place = function(
         "place",
+        pos=["top + left"],
         named=dict(dx="padding.left", dy="padding.top"),
         body=inner,
     )

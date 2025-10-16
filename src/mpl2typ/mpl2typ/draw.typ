@@ -1,5 +1,5 @@
 #let place(position, body) = {
-  std.place(dx: position.at(0), dy: position.at(1), body)
+  std.place(top + left, dx: position.at(0), dy: position.at(1), body)
 }
 
 #let line(points, stroke: none, marker: none, transform) = {
@@ -8,6 +8,7 @@
   if stroke != none {
     let (first, ..other) = points
     std.place(
+      top + left,
       curve(
         stroke: stroke,
         curve.move(first),
