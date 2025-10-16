@@ -1,6 +1,14 @@
-#let point(d, fill: none, stroke: none) = std.circle(radius: d / 2, fill: fill, stroke: stroke)
+#let point(d, fill: none, stroke: none) = move(
+  dx: -d / 2,
+  dy: -d / 2,
+  std.circle(radius: d / 2, fill: fill, stroke: stroke),
+)
 
-#let circle(d, fill: none, stroke: none) = std.circle(radius: d, fill: fill, stroke: stroke)
+#let circle(d, fill: none, stroke: none) = move(
+  dx: -d,
+  dy: -d,
+  std.circle(radius: d, fill: fill, stroke: stroke),
+)
 
 #let triangle-down(d, fill: none, stroke: none) = polygon(
   (-d, -d),
