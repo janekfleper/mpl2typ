@@ -1,12 +1,14 @@
 #import "draw.typ"
 
-#let line2d(stroke: none, marker: none, handle-length: 2.0em) = {
+#let line2d(stroke: none, marker: none, ..style) = {
+  let (handle-length, ..) = style.named()
   let w = handle-length / 2
   if stroke != none { draw.place((50%, 50%), line(start: (-w, 0pt), end: (w, 0pt), stroke: stroke)) }
   if marker != none { draw.place((50%, 50%), marker) }
 }
 
-#let errorbar(data: none, caps: none, bars: none, handle-length: 2.0em, xerr-size: 0.5em, yerr-size: 0.5em) = {
+#let errorbar(data: none, caps: none, bars: none, ..style) = {
+  let (handle-length, xerr-size, yerr-size, ..) = style.named()
   if caps != none {
     let cap-left = caps.at("x", default: caps.at("left", default: none))
     let cap-right = caps.at("x", default: caps.at("right", default: none))
@@ -52,11 +54,20 @@
   frame: block,
   ..items,
 ) = {
+  let handle-style = (
+    handle-length: handle-length,
+    handle-height: handle-height,
+    xerr-size: xerr-size,
+    yerr-size: yerr-size,
+  )
   let legend-handle = block.with(width: handle-length, height: handle-height, inset: 0em, outset: 0em)
   items = items
     .pos()
     .map(item => {
-      let item = (legend-handle(item.at("handle")), item.at("label"))
+      let item = (
+        legend-handle(item.at("handle")(..handle-style)),
+        item.at("label"),
+      )
       if marker-first { item } else { item.rev() }
     })
     .flatten()

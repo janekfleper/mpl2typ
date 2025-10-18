@@ -43,7 +43,7 @@ class LegendHandlerLine2D:
 
     def export(self):
         return typst.function(
-            "legend.line2d",
+            "legend.line2d.with",
             named=dict(stroke=f"stroke-{self.index}", marker=f"marker-{self.index}"),
             inline=True,
         )
@@ -123,7 +123,7 @@ class LegendHandlerErrorbar:
 
     def export(self):
         return typst.function(
-            "legend.errorbar",
+            "legend.errorbar.with",
             named=dict(data=self.data, caps=self.caps, bars=self.bars),
         )
 
