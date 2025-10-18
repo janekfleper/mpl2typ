@@ -260,14 +260,17 @@ def block(name: str, padding: dict[str, float], body: str | None = None):
     )
 
 
-def color(color: str, alpha: float | None = None) -> str:
-    try:
-        color = f"color.luma({round(float(color) * 100, 3)}%)"
-    except ValueError:
-        if color in COLORS:
-            color = COLORS[color]
-        elif color.startswith("#"):
-            color = f'color.rgb("{color}")'
+def color(color: str | tuple[float, ...], alpha: float | None = None) -> str:
+    if isinstance(color, tuple):
+        color = f"color.rgb({', '.join(ratio(color))})"
+    else:
+        try:
+            color = f"color.luma({round(float(color) * 100, 3)}%)"
+        except ValueError:
+            if color in COLORS:
+                color = COLORS[color]
+            elif color.startswith("#"):
+                color = f'color.rgb("{color}")'
 
     if alpha is None:
         return color
