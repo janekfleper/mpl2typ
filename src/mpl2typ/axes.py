@@ -13,6 +13,7 @@ import matplotlib.collections
 from . import typst
 from .lines import Stroke, Line2D
 from .collections import Collection, QuadMesh
+from .legend import Legend
 from .text import Text
 
 header = """
@@ -382,6 +383,7 @@ class Axes:
 
         self.title = Title(ax)
         self.axis = Axis(ax)
+        self.legend = Legend(ax.legend_)
 
     @property
     def position(self):
@@ -450,6 +452,7 @@ class Axes:
         s += textwrap.indent(self.title.export(), "  ")
         s += textwrap.indent(self.data, "  ")
         s += textwrap.indent(self.axis.export(), "  ")
+        s += textwrap.indent(self.legend.export(), "  ")
         s += "}\n\n"
 
         if self.standalone:
