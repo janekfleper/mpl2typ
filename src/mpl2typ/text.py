@@ -60,19 +60,24 @@ class Text:
         if self.text.get_verticalalignment() in ["center", "bottom"]:
             kwargs["bottom-edge"] = '"descender"'
 
-        return f"let {self.name} = " + typst.function(
+        text = typst.function(
             "text",
             named=kwargs,
             body=f"[{self.text.get_text()}]",
             inline=True,
         )
+        return f"let text-{self.name} = {typst.dictionary(dict(position=self.position, body=self.inner(text)))}"
 
     @property
-    def draw(self) -> str:
-        return typst.function(
-            "draw.place",
-            pos=[self.position, self.inner(self.name)],
+    def draw(self) -> tuple[str, float]:
+        return (
+            typst.function(
+                "draw.text",
+                body=f"..text-{self.name}",
+                inline=True,
+            ),
+            self.text.zorder,
         )
 
     def export(self) -> str:
-        return self.definition + "\n" + self.draw
+        return f"let text-{self.name} = " + self.definition + "\n" + self.draw[0]

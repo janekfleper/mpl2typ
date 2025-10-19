@@ -2,6 +2,12 @@
   std.place(top + left, dx: position.at(0), dy: position.at(1), body)
 }
 
+// This is just a wrapper around the place function for now...
+#let text(position: none, body: none) = {
+  assert.ne(position, none, message: "Parameter position must not be none")
+  place(position, body)
+}
+
 #let line(data: (), stroke: none, marker: none, transform: none) = {
   assert.ne(transform, none, message: "Parameter transform must not be none")
   let points = data.map(transform)

@@ -68,15 +68,30 @@ class Title:
             else None
         )
 
-    def export(self):
-        s = ""
+    @property
+    def definition(self):
+        definitions = []
         if self.center is not None:
-            s += self.center.export() + "\n\n"
+            definitions.append(self.center.definition)
         if self.left is not None:
-            s += self.left.export() + "\n\n"
+            definitions.append(self.left.definition)
         if self.right is not None:
-            s += self.right.export() + "\n\n"
-        return s
+            definitions.append(self.right.definition)
+        return "\n".join(definitions)
+
+    @property
+    def draw(self) -> list[tuple[str, float]]:
+        draws = []
+        if self.center is not None:
+            draws.append(self.center.draw)
+        if self.left is not None:
+            draws.append(self.left.draw)
+        if self.right is not None:
+            draws.append(self.right.draw)
+        return draws
+
+    def export(self) -> str:
+        return self.definition + "\n" + "\n".join([draw[0] for draw in self.draw])
 
 
 class Ticks(ABC, Generic[TickParams]):
@@ -179,7 +194,7 @@ class Ticks(ABC, Generic[TickParams]):
         return f"let {self.name} = " + typst.dictionary(items)
 
     @property
-    def draw(self):
+    def draw(self) -> tuple[str, float]:
         named = {
             "show-ticks": typst.array(self.tick_positions),
             "show-labels": typst.array(self.label_positions),
@@ -198,7 +213,7 @@ class Ticks(ABC, Generic[TickParams]):
                 body=f"..{self.name}, transform",
                 inline=True,
             )
-        return s
+        return (s, self.ticks[0].tick1line.zorder)
 
 
 class XTicks(Ticks[XTickParams]):
@@ -307,72 +322,56 @@ class Axis:
             self.yticks.append(YTicks("yaxis-minor-ticks", ticks, params))
 
     @property
-    def transform(self):
-        return self.ax.transAxes.inverted()
-
-    @property
     def xlabel(self):
         if self.ax.get_xlabel():
-            xlabel = Text("xaxis-label", self.ax.xaxis.get_label(), self.ax)
-            return xlabel.export()
-        return ""
+            return Text("xaxis-label", self.ax.xaxis.get_label(), self.ax)
 
     @property
     def ylabel(self):
         if self.ax.get_ylabel():
-            ylabel = Text("yaxis-label", self.ax.yaxis.get_label(), self.ax)
-            return ylabel.export()
-        return ""
+            return Text("yaxis-label", self.ax.yaxis.get_label(), self.ax)
 
     @property
     def xoffset(self):
         xaxis_offset_text = self.ax.xaxis.get_offset_text()
         if xaxis_offset_text.get_text():
-            xoffset = Text("xaxis-offset", xaxis_offset_text, self.ax)
-            return xoffset.export()
-        return ""
+            return Text("xaxis-offset", xaxis_offset_text, self.ax)
 
     @property
     def yoffset(self):
         yaxis_offset_text = self.ax.yaxis.get_offset_text()
         if yaxis_offset_text.get_text():
-            yoffset = Text("yaxis-offset", yaxis_offset_text, self.ax)
-            return yoffset.export()
-        return ""
+            return Text("yaxis-offset", yaxis_offset_text, self.ax)
 
     @property
-    def labels(self):
-        s = ""
-        if xlabel := self.xlabel:
-            s += xlabel + "\n"
-        if ylabel := self.ylabel:
-            s += ylabel + "\n"
-        return s
-
-    @property
-    def offsets(self):
-        s = ""
-        if xoffset := self.xoffset:
-            s += xoffset + "\n"
-        if yoffset := self.yoffset:
-            s += yoffset + "\n"
-        return s
-
-    def export(self) -> str:
+    def definition(self) -> str:
         definitions: list[str] = []
-        draws: list[str] = []
+        if self.xlabel is not None:
+            definitions.append(self.xlabel.definition)
+        if self.ylabel is not None:
+            definitions.append(self.ylabel.definition)
+        if self.xoffset is not None:
+            definitions.append(self.xoffset.definition)
+        if self.yoffset is not None:
+            definitions.append(self.yoffset.definition)
         for ticks in self.xticks + self.yticks:
             definitions.append(ticks.definition)
-            draws.append(ticks.draw)
+        return "\n".join(definitions)
 
-        return (
-            self.labels
-            + self.offsets
-            + "\n".join(definitions)
-            + "\n"
-            + "\n".join(draws)
-            + "\n"
-        )
+    @property
+    def draw(self) -> list[tuple[str, float]]:
+        draws: list[tuple[str, float]] = []
+        if self.xlabel is not None:
+            draws.append(self.xlabel.draw)
+        if self.ylabel is not None:
+            draws.append(self.ylabel.draw)
+        if self.xoffset is not None:
+            draws.append(self.xoffset.draw)
+        if self.yoffset is not None:
+            draws.append(self.yoffset.draw)
+        for ticks in self.xticks + self.yticks:
+            draws.append(ticks.draw)
+        return draws
 
 
 class Axes:
@@ -388,6 +387,9 @@ class Axes:
             self.legend = Legend(ax.legend_)
         else:
             self.legend = None
+
+        self.definitions: list[str] = []
+        self.draws: list[tuple[str, float]] = []
 
     @property
     def position(self):
@@ -427,37 +429,40 @@ class Axes:
     def ylim(self):
         return f"({self.ax.get_ylim()[0]}, {self.ax.get_ylim()[1]})"
 
-    @property
-    def data(self):
-        definitions: list[str] = []
-        draws: list[str] = []
+    def export_data(self):
         for i, child in enumerate(self.ax._children):  # type: ignore
             if isinstance(child, matplotlib.lines.Line2D):
                 line = Line2D(i, child)
-                definitions.append(line.definition)
-                draws.append(line.draw)
+                self.definitions.append(line.definition)
+                self.draws.append(line.draw)
             elif isinstance(child, matplotlib.collections.QuadMesh):
                 collection = QuadMesh(i, child)
-                definitions.append(collection.definition)
-                draws.append(collection.draw)
+                self.definitions.append(collection.definition)
+                self.draws.append(collection.draw)
             elif isinstance(child, matplotlib.collections.Collection):
                 collection = Collection(i, child)
-                definitions.append(collection.definition)
-                draws.append(collection.draw)
+                self.definitions.append(collection.definition)
+                self.draws.append(collection.draw)
             elif isinstance(child, matplotlib.text.Text):
                 text = Text(f"text-{i}", child, self.ax)
-                definitions.append(text.definition)
-                draws.append(text.draw)
-        return "\n".join(definitions) + "\n" + "\n".join(draws) + "\n"
+                self.definitions.append(text.definition)
+                self.draws.append(text.draw)
 
     def export(self):
+        self.definitions.append(self.title.definition)
+        self.draws.extend(self.title.draw)
+        self.definitions.append(self.axis.definition)
+        self.draws.extend(self.axis.draw)
+        self.export_data()
+        if self.legend is not None:
+            self.definitions.append(self.legend.definition)
+            self.draws.append(self.legend.draw)
+        draws = [draw[0] for draw in sorted(self.draws, key=lambda x: x[1])]
+
         s = f"#let axes-{self.index}(xlim: {self.xlim}, ylim: {self.ylim}, dpi: {self.ax.figure.dpi}) = {{"
         s += header + "\n"
-        s += textwrap.indent(self.title.export(), "  ")
-        s += textwrap.indent(self.data, "  ")
-        s += textwrap.indent(self.axis.export(), "  ")
-        if self.legend is not None:
-            s += textwrap.indent(self.legend.export(), "  ")
+        s += textwrap.indent("\n\n".join(self.definitions), "  ") + "\n"
+        s += textwrap.indent("\n".join(draws), "  ") + "\n"
         s += "}\n\n"
 
         if self.standalone:

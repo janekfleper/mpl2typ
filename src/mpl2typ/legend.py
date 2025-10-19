@@ -219,12 +219,15 @@ class Legend:
         )
 
     @property
-    def draw(self) -> str:
-        return typst.function(
-            "legend.legend",
-            body="..legend-style, ..legend-items",
-            inline=True,
+    def draw(self) -> tuple[str, float]:
+        return (
+            typst.function(
+                "legend.legend",
+                body="..legend-style, ..legend-items",
+                inline=True,
+            ),
+            self.legend.zorder,
         )
 
     def export(self) -> str:
-        return self.definition + "\n" + self.draw
+        return self.definition + "\n" + self.draw[0]

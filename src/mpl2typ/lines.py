@@ -160,5 +160,8 @@ class Line2D:
         )
 
     @property
-    def draw(self) -> str:
-        return f"draw.line(..line-{self.index})\n"
+    def draw(self) -> tuple[str, float]:
+        return (
+            typst.function("draw.line", body=f"..line-{self.index}", inline=True),
+            self.line.zorder,
+        )

@@ -249,9 +249,12 @@ class Collection:
         )
 
     @property
-    def draw(self):
-        return typst.function(
-            "draw.collection", body=f"..collection-{self.index}", inline=True
+    def draw(self) -> tuple[str, float]:
+        return (
+            typst.function(
+                "draw.collection", body=f"..collection-{self.index}", inline=True
+            ),
+            self.collection.zorder,
         )
 
 
@@ -303,5 +306,10 @@ class QuadMesh:
         )
 
     @property
-    def draw(self) -> str:
-        return f"draw.quad-mesh(..collection-{self.index})\n"
+    def draw(self) -> tuple[str, float]:
+        return (
+            typst.function(
+                "draw.quad-mesh", body=f"..collection-{self.index}", inline=True
+            ),
+            self.collection.zorder,
+        )
