@@ -81,9 +81,8 @@ class Stroke:
     def export(self) -> str:
         if self.line.get_linestyle() in ["none", "None", " ", ""]:
             return "none"
-        return typst.function(
-            "stroke",
-            named=dict(
+        return typst.dictionary(
+            dict(
                 paint=self.color,
                 thickness=self.thickness,
                 cap=self.capstyle,
@@ -148,12 +147,18 @@ class Line2D:
 
     @property
     def definition(self) -> str:
+        keys = ["data", "stroke", "marker"]
         return (
-            f"let stroke-{self.index} = {self.stroke.export()}\n\n"
-            + f"let marker-{self.index} = {self.marker.export()}\n\n"
-            + f"let data-{self.index} = {self.data}\n"
+            f"let data-{self.index} = {self.data}\n"
+            + f"let stroke-{self.index} = {self.stroke.export()}\n"
+            + f"let marker-{self.index} = {self.marker.export()}\n"
+            + f"let line-{self.index} = "
+            + typst.dictionary(
+                {key: f"{key}-{self.index}" for key in keys}
+                | dict(transform="transform")
+            )
         )
 
     @property
     def draw(self) -> str:
-        return f"draw.line(data-{self.index}, stroke: stroke-{self.index}, marker: marker-{self.index}, transform)\n"
+        return f"draw.line(..line-{self.index})\n"

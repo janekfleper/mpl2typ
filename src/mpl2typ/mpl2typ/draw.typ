@@ -2,8 +2,9 @@
   std.place(top + left, dx: position.at(0), dy: position.at(1), body)
 }
 
-#let line(points, stroke: none, marker: none, transform) = {
-  points = points.map(transform)
+#let line(data: (), stroke: none, marker: none, transform: none) = {
+  assert.ne(transform, none, message: "Parameter transform must not be none")
+  let points = data.map(transform)
 
   if stroke != none {
     let (first, ..other) = points
