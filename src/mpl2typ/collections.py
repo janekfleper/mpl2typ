@@ -223,32 +223,36 @@ class Collection:
         stroke = self.stroke
         stroke = stroke if stroke is not None else "none"
 
+        keys = [
+            "path",
+            "size",
+            "offset",
+            "fill",
+            "stroke",
+            "data",
+            "transform",
+            "compute-scale",
+            "offset-transform",
+        ]
         return (
-            f"let path-{self.index} = {path}\n"
+            f"let data-{self.index} = {self.data}\n"
+            + f"let path-{self.index} = {path}\n"
             + f"let size-{self.index} = {size}\n"
             + f"let offset-{self.index} = {offset}\n"
             + f"let fill-{self.index} = {fill}\n"
             + f"let stroke-{self.index} = {stroke}\n"
-            + f"let data-{self.index} = {self.data}\n"
             + f"let transform-{self.index} = {self.transform}\n"
             + f"let compute-scale-{self.index} = {self.compute_scale}\n"
             + f"let offset-transform-{self.index} = {self.offset_transform}\n"
+            + f"let collection-{self.index} = "
+            + typst.dictionary({key: f"{key}-{self.index}" for key in keys})
         )
 
     @property
     def draw(self):
-        kwargs = {
-            "data": f"data-{self.index}",
-            "path": f"path-{self.index}",
-            "size": f"size-{self.index}",
-            "offset": f"offset-{self.index}",
-            "fill": f"fill-{self.index}",
-            "stroke": f"stroke-{self.index}",
-            "transform": f"transform-{self.index}",
-            "compute-scale": f"compute-scale-{self.index}",
-            "offset-transform": f"offset-transform-{self.index}",
-        }
-        return typst.function("draw.collection", named=kwargs, inline=False)
+        return typst.function(
+            "draw.collection", body=f"..collection-{self.index}", inline=True
+        )
 
 
 class QuadMesh:
