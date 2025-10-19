@@ -47,15 +47,15 @@ class Figure:
         for i, ax in enumerate(self.fig.get_axes()):
             gs = ax.get_gridspec()
             if gs is None:
-                self.other_axes.append(Axes(i, ax, standalone=True))
+                self.other_axes.append(Axes(str(i), ax, standalone=True))
             elif gs not in gridspecs:
                 gridspecs.append(gs)
-                grid_axes.append([Axes(i, ax)])
+                grid_axes.append([Axes(str(i), ax)])
             else:
-                grid_axes[gridspecs.index(gs)].append(Axes(i, ax))
+                grid_axes[gridspecs.index(gs)].append(Axes(str(i), ax))
 
         for i in range(len(gridspecs)):
-            self.grids.append(Grid(i, gridspecs[i], grid_axes[i]))
+            self.grids.append(Grid(str(i), gridspecs[i], grid_axes[i]))
 
     def export(self, path: str | pathlib.Path) -> None:
         with open(path, "w", encoding="utf-8") as f:
@@ -68,11 +68,11 @@ class Figure:
                 for ax in grid.axes:
                     f.write(ax.export() + "\n")
                 f.write(grid.export() + "\n")
-                children.append(f"grid-{grid.index}()")
+                children.append(f"{grid.prefix}-{grid.name}()")
 
             for ax in self.other_axes:
                 f.write(ax.export() + "\n")
-                children.append(f"other-axes-{ax.index}()")
+                children.append(f"standalone-{ax.prefix}-{ax.name}()")
 
             f.write(
                 template(

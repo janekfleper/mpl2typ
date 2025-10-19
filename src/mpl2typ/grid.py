@@ -16,7 +16,7 @@ class Cell:
         self.axes: list[Axes] = []
 
     def export(self) -> str:
-        axes = [f"axes-{axes.index}()" for axes in self.axes]
+        axes = [f"{axes.prefix}-{axes.name}()" for axes in self.axes]
         body = typst.function(
             "block",
             named=dict(
@@ -42,13 +42,15 @@ class Cell:
 class Grid:
     def __init__(
         self,
-        index: int,
+        name: str,
         grid: matplotlib.gridspec.GridSpec,
         axes: list[Axes],
+        prefix: str = "grid",
     ):
-        self.index = index
+        self.name = name
         self.grid = grid
         self.axes = axes
+        self.prefix = prefix
 
         self.cells: list[Cell] = []
         self.padding: dict[str, float] = dict(left=0, right=0, top=0, bottom=0)
@@ -134,7 +136,7 @@ class Grid:
         )
 
         return typst.block(
-            f"grid-{self.index}",
+            f"{self.prefix}-{self.name}",
             self.padding,
             grid,
         )

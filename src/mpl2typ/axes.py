@@ -375,9 +375,16 @@ class Axis:
 
 
 class Axes:
-    def __init__(self, index: int, ax: matplotlib.axes.Axes, standalone: bool = False):
-        self.index = index
+    def __init__(
+        self,
+        name: str,
+        ax: matplotlib.axes.Axes,
+        prefix: str = "axes",
+        standalone: bool = False,
+    ):
+        self.name = name
         self.ax = ax
+        self.prefix = prefix
         self.standalone = standalone
 
         self.title = Title(ax)
@@ -459,7 +466,7 @@ class Axes:
             self.draws.append(self.legend.draw)
         draws = [draw[0] for draw in sorted(self.draws, key=lambda x: x[1])]
 
-        s = f"#let axes-{self.index}(xlim: {self.xlim}, ylim: {self.ylim}, dpi: {self.ax.figure.dpi}) = {{"
+        s = f"#let {self.prefix}-{self.name}(xlim: {self.xlim}, ylim: {self.ylim}, dpi: {self.ax.figure.dpi}) = {{"
         s += header + "\n"
         s += textwrap.indent("\n\n".join(self.definitions), "  ") + "\n"
         s += textwrap.indent("\n".join(draws), "  ") + "\n"
@@ -467,8 +474,8 @@ class Axes:
 
         if self.standalone:
             s += typst.block(
-                f"other-axes-{self.index}",
+                f"standalone-{self.prefix}-{self.name}",
                 self.padding,
-                f"axes-{self.index}()",
+                f"{self.prefix}-{self.name}()",
             )
         return s
