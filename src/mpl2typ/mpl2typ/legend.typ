@@ -38,6 +38,7 @@
 
 #let legend(
   location: top + left,
+  title: none,
   columns: 1,
   marker-first: true,
   row-gutter: 0.5em,
@@ -99,5 +100,6 @@
     inset: inset,
   )
 
+  if title != none { items.insert(0, grid.cell(y: 0, colspan: 2 * columns, align(center, title))) }
   std.place(alignment, dx: dx, dy: dy, frame(grid(..items)))
 }

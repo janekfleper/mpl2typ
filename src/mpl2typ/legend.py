@@ -150,9 +150,17 @@ class Legend:
                 print(f"Unknown handle type {type(handle)}")
 
     @property
+    def title(self) -> str:
+        title = self.legend.get_title().get_text()
+        if not title:
+            return "none"
+        return f"[{title}]"
+
+    @property
     def style(self) -> dict:
         return {
             "location": LOCATION[self.legend._loc],
+            "title": self.title,
             "columns": self.legend._ncols,
             "row-gutter": typst.length(self.legend.labelspacing, unit="em"),
             "item-gutter": typst.length(self.legend.handletextpad, unit="em"),
