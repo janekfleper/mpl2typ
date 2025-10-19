@@ -87,17 +87,21 @@ class LegendHandlerErrorbar:
             indices.append(index)
 
         elements = dict()
-        if self.handle.has_xerr:
-            left, right = indices[:2]
-            elements["left"] = f"marker-{left}"
-            elements["right"] = f"marker-{right}"
-        if self.handle.has_yerr:
-            bottom, top = indices[-2:]
-            elements["bottom"] = f"marker-{bottom}"
-            elements["top"] = f"marker-{top}"
+        if indices and self.handle.has_xerr:
+            if len(indices) == 1:
+                elements["x"] = f"marker-{indices[0]}"
+            else:
+                left, right = indices[:2]
+                elements["left"] = f"marker-{left}"
+                elements["right"] = f"marker-{right}"
+        if indices and self.handle.has_yerr:
+            if len(indices) == 1:
+                elements["y"] = f"marker-{indices[0]}"
+            else:
+                bottom, top = indices[-2:]
+                elements["bottom"] = f"marker-{bottom}"
+                elements["top"] = f"marker-{top}"
 
-        if not elements:
-            return ""
         return typst.dictionary(elements, inline=True)
 
     @property
