@@ -383,7 +383,11 @@ class Axes:
 
         self.title = Title(ax)
         self.axis = Axis(ax)
-        self.legend = Legend(ax.legend_)
+
+        if ax.legend_ is not None:
+            self.legend = Legend(ax.legend_)
+        else:
+            self.legend = None
 
     @property
     def position(self):
@@ -452,7 +456,8 @@ class Axes:
         s += textwrap.indent(self.title.export(), "  ")
         s += textwrap.indent(self.data, "  ")
         s += textwrap.indent(self.axis.export(), "  ")
-        s += textwrap.indent(self.legend.export(), "  ")
+        if self.legend is not None:
+            s += textwrap.indent(self.legend.export(), "  ")
         s += "}\n\n"
 
         if self.standalone:
