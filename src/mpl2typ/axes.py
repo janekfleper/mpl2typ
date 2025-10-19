@@ -456,8 +456,9 @@ class Axes:
                 self.draws.append(text.draw)
 
     def export(self):
-        self.definitions.append(self.title.definition)
-        self.draws.extend(self.title.draw)
+        if title := self.title.definition:
+            self.definitions.append(title)
+            self.draws.extend(self.title.draw)
         self.definitions.append(self.axis.definition)
         self.draws.extend(self.axis.draw)
         self.export_data()
