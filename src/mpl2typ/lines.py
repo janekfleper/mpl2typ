@@ -134,9 +134,10 @@ class Marker:
 
 
 class Line2D:
-    def __init__(self, index: int, line: matplotlib.lines.Line2D):
-        self.index = index
+    def __init__(self, name: str, line: matplotlib.lines.Line2D, prefix: str = "line"):
+        self.name = name
         self.line = line
+        self.prefix = prefix
         self.stroke = Stroke(line)
         self.marker = Marker(line)
 
@@ -149,12 +150,12 @@ class Line2D:
     def definition(self) -> str:
         keys = ["data", "stroke", "marker"]
         return (
-            f"let data-{self.index} = {self.data}\n"
-            + f"let stroke-{self.index} = {self.stroke.export()}\n"
-            + f"let marker-{self.index} = {self.marker.export()}\n"
-            + f"let line-{self.index} = "
+            f"let data-{self.name} = {self.data}\n"
+            + f"let stroke-{self.name} = {self.stroke.export()}\n"
+            + f"let marker-{self.name} = {self.marker.export()}\n"
+            + f"let {self.prefix}-{self.name} = "
             + typst.dictionary(
-                {key: f"{key}-{self.index}" for key in keys}
+                {key: f"{key}-{self.name}" for key in keys}
                 | dict(transform="transform")
             )
         )
@@ -162,6 +163,8 @@ class Line2D:
     @property
     def draw(self) -> tuple[str, float]:
         return (
-            typst.function("draw.line", body=f"..line-{self.index}", inline=True),
+            typst.function(
+                "draw.line", body=f"..{self.prefix}-{self.name}", inline=True
+            ),
             self.line.zorder,
         )

@@ -37,14 +37,14 @@ class LegendHandlerLine2D:
         self.children = children
 
         try:
-            self.index = self.children.index(self.handle)
+            self.name = str(self.children.index(self.handle))
         except ValueError:
-            self.index = None
+            self.name = None
 
     def export(self):
         return typst.function(
             "legend.line2d.with",
-            named=dict(stroke=f"stroke-{self.index}", marker=f"marker-{self.index}"),
+            named=dict(stroke=f"stroke-{self.name}", marker=f"marker-{self.name}"),
             inline=True,
         )
 
@@ -66,39 +66,39 @@ class LegendHandlerErrorbar:
     def data(self):
         line = self.handle.lines[0]
         try:
-            index = self.children.index(line)
+            name = str(self.children.index(line))
         except ValueError:
-            index = None
+            name = None
 
         return typst.dictionary(
-            dict(stroke=f"stroke-{index}", marker=f"marker-{index}"),
+            dict(stroke=f"stroke-{name}", marker=f"marker-{name}"),
             inline=True,
         )
 
     @property
     def caps(self):
         lines = self.handle.lines[1]
-        indices = []
+        names = []
         for line in lines:
             try:
-                index = self.children.index(line)
+                name = str(self.children.index(line))
             except ValueError:
-                index = None
-            indices.append(index)
+                name = None
+            names.append(name)
 
         elements = dict()
-        if indices and self.handle.has_xerr:
-            if len(indices) == 1:
-                elements["x"] = f"marker-{indices[0]}"
+        if names and self.handle.has_xerr:
+            if len(names) == 1:
+                elements["x"] = f"marker-{names[0]}"
             else:
-                left, right = indices[:2]
+                left, right = names[:2]
                 elements["left"] = f"marker-{left}"
                 elements["right"] = f"marker-{right}"
-        if indices and self.handle.has_yerr:
-            if len(indices) == 1:
-                elements["y"] = f"marker-{indices[0]}"
+        if names and self.handle.has_yerr:
+            if len(names) == 1:
+                elements["y"] = f"marker-{names[0]}"
             else:
-                bottom, top = indices[-2:]
+                bottom, top = names[-2:]
                 elements["bottom"] = f"marker-{bottom}"
                 elements["top"] = f"marker-{top}"
 
@@ -107,19 +107,19 @@ class LegendHandlerErrorbar:
     @property
     def bars(self):
         collections = self.handle.lines[2]
-        indices = []
+        names = []
         for collection in collections:
             try:
-                index = self.children.index(collection)
+                name = str(self.children.index(collection))
             except ValueError:
-                index = None
-            indices.append(index)
+                name = None
+            names.append(name)
 
         elements = dict()
         if self.handle.has_xerr:
-            elements["x"] = f"stroke-{indices[0]}"
+            elements["x"] = f"stroke-{names[0]}"
         if self.handle.has_yerr:
-            elements["y"] = f"stroke-{indices[-1]}"
+            elements["y"] = f"stroke-{names[-1]}"
 
         if not elements:
             return ""

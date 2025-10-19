@@ -50,9 +50,15 @@ def curve_components(path: matplotlib.path.Path):
 
 
 class Collection:
-    def __init__(self, index: int, collection: matplotlib.collections.Collection):
-        self.index = index
+    def __init__(
+        self,
+        name: str,
+        collection: matplotlib.collections.Collection,
+        prefix: str = "collection",
+    ):
+        self.name = name
         self.collection = collection
+        self.prefix = prefix
 
     @property
     def path(self) -> list[str]:
@@ -78,7 +84,7 @@ class Collection:
     def transform(self) -> str:
         axes = self.collection.axes
         if axes is None:
-            raise ValueError(f"The collection {self.index} is not part of an Axes")
+            raise ValueError(f"The collection {self.name} is not part of an Axes")
 
         transform = self.collection.get_transform()
         if transform == axes.transData:
@@ -95,7 +101,7 @@ class Collection:
     def compute_scale(self) -> str:
         axes = self.collection.axes
         if axes is None:
-            raise ValueError(f"The collection {self.index} is not part of an Axes")
+            raise ValueError(f"The collection {self.name} is not part of an Axes")
 
         transform = self.collection.get_transform()
         if transform == axes.transData:
@@ -126,7 +132,7 @@ class Collection:
         """
         axes = self.collection.axes
         if axes is None:
-            raise ValueError(f"The collection {self.index} is not part of an Axes")
+            raise ValueError(f"The collection {self.name} is not part of an Axes")
 
         offset_transform = self.collection.get_offset_transform()
         if offset_transform == axes.transData:
@@ -235,33 +241,39 @@ class Collection:
             "offset-transform",
         ]
         return (
-            f"let data-{self.index} = {self.data}\n"
-            + f"let path-{self.index} = {path}\n"
-            + f"let size-{self.index} = {size}\n"
-            + f"let offset-{self.index} = {offset}\n"
-            + f"let fill-{self.index} = {fill}\n"
-            + f"let stroke-{self.index} = {stroke}\n"
-            + f"let transform-{self.index} = {self.transform}\n"
-            + f"let compute-scale-{self.index} = {self.compute_scale}\n"
-            + f"let offset-transform-{self.index} = {self.offset_transform}\n"
-            + f"let collection-{self.index} = "
-            + typst.dictionary({key: f"{key}-{self.index}" for key in keys})
+            f"let data-{self.name} = {self.data}\n"
+            + f"let path-{self.name} = {path}\n"
+            + f"let size-{self.name} = {size}\n"
+            + f"let offset-{self.name} = {offset}\n"
+            + f"let fill-{self.name} = {fill}\n"
+            + f"let stroke-{self.name} = {stroke}\n"
+            + f"let transform-{self.name} = {self.transform}\n"
+            + f"let compute-scale-{self.name} = {self.compute_scale}\n"
+            + f"let offset-transform-{self.name} = {self.offset_transform}\n"
+            + f"let {self.prefix}-{self.name} = "
+            + typst.dictionary({key: f"{key}-{self.name}" for key in keys})
         )
 
     @property
     def draw(self) -> tuple[str, float]:
         return (
             typst.function(
-                "draw.collection", body=f"..collection-{self.index}", inline=True
+                "draw.collection", body=f"..{self.prefix}-{self.name}", inline=True
             ),
             self.collection.zorder,
         )
 
 
 class QuadMesh:
-    def __init__(self, index: int, collection: matplotlib.collections.QuadMesh):
-        self.index = index
+    def __init__(
+        self,
+        name: str,
+        collection: matplotlib.collections.QuadMesh,
+        prefix: str = "quad-mesh",
+    ):
+        self.name = name
         self.collection = collection
+        self.prefix = prefix
 
     @property
     def gradient(self) -> str:
@@ -272,12 +284,12 @@ class QuadMesh:
     def colormap(self) -> str:
         norm = self.collection.norm
         signature = typst.function(
-            f"colormap-{self.index}",
+            f"colormap-{self.name}",
             pos=["v"],
             named=dict(vmin=norm.vmin, vmax=norm.vmax),
             inline=True,
         )
-        return f"{signature} = gradient-{self.index}.sample((v - vmin) / (vmax - vmin) * 100%)"
+        return f"{signature} = gradient-{self.name}.sample((v - vmin) / (vmax - vmin) * 100%)"
 
     @property
     def vertices(self) -> str:
@@ -290,16 +302,16 @@ class QuadMesh:
     @property
     def definition(self) -> str:
         return (
-            f"let vertices-{self.index} = {self.vertices}\n"
-            + f"let data-{self.index} = {self.data}\n"
-            + f"let gradient-{self.index} = {self.gradient}\n"
+            f"let vertices-{self.name} = {self.vertices}\n"
+            + f"let data-{self.name} = {self.data}\n"
+            + f"let gradient-{self.name} = {self.gradient}\n"
             + f"let {self.colormap}\n"
-            + f"let collection-{self.index} = "
+            + f"let {self.prefix}-{self.name} = "
             + typst.dictionary(
                 {
-                    "vertices": f"vertices-{self.index}",
-                    "data": f"data-{self.index}",
-                    "colormap": f"colormap-{self.index}",
+                    "vertices": f"vertices-{self.name}",
+                    "data": f"data-{self.name}",
+                    "colormap": f"colormap-{self.name}",
                     "transform": "transform",
                 }
             )
@@ -309,7 +321,7 @@ class QuadMesh:
     def draw(self) -> tuple[str, float]:
         return (
             typst.function(
-                "draw.quad-mesh", body=f"..collection-{self.index}", inline=True
+                "draw.quad-mesh", body=f"..{self.prefix}-{self.name}", inline=True
             ),
             self.collection.zorder,
         )

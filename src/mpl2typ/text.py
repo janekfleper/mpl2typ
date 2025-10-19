@@ -6,10 +6,17 @@ from . import typst
 
 
 class Text:
-    def __init__(self, name: str, text: matplotlib.text.Text, ax: matplotlib.axes.Axes):
+    def __init__(
+        self,
+        name: str,
+        text: matplotlib.text.Text,
+        ax: matplotlib.axes.Axes,
+        prefix: str = "text",
+    ):
         self.name = name
         self.text = text
         self.ax = ax
+        self.prefix = prefix
 
     @property
     def position(self) -> str:
@@ -66,18 +73,20 @@ class Text:
             body=f"[{self.text.get_text()}]",
             inline=True,
         )
-        return f"let text-{self.name} = {typst.dictionary(dict(position=self.position, body=self.inner(text)))}"
+        return f"let {self.prefix}-{self.name} = {typst.dictionary(dict(position=self.position, body=self.inner(text)))}"
 
     @property
     def draw(self) -> tuple[str, float]:
         return (
             typst.function(
                 "draw.text",
-                body=f"..text-{self.name}",
+                body=f"..{self.prefix}-{self.name}",
                 inline=True,
             ),
             self.text.zorder,
         )
 
     def export(self) -> str:
-        return f"let text-{self.name} = " + self.definition + "\n" + self.draw[0]
+        return (
+            f"let {self.prefix}-{self.name} = " + self.definition + "\n" + self.draw[0]
+        )

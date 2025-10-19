@@ -55,15 +55,17 @@ TickParams = TypeVar("TickParams", XTickParams, YTickParams)
 class Title:
     def __init__(self, ax: matplotlib.axes.Axes):
         self.center = (
-            Text("title", ax.title, ax) if ax.get_title(loc="center") else None
+            Text("main", ax.title, ax, prefix="title")
+            if ax.get_title(loc="center")
+            else None
         )
         self.left = (
-            Text("title-left", ax._left_title, ax)  # type: ignore
+            Text("left", ax._left_title, ax, prefix="title")  # type: ignore
             if ax.get_title(loc="left")
             else None
         )
         self.right = (
-            Text("title-right", ax._right_title, ax)  # type: ignore
+            Text("right", ax._right_title, ax, prefix="title")  # type: ignore
             if ax.get_title(loc="right")
             else None
         )
@@ -324,24 +326,24 @@ class Axis:
     @property
     def xlabel(self):
         if self.ax.get_xlabel():
-            return Text("xaxis-label", self.ax.xaxis.get_label(), self.ax)
+            return Text("xaxis", self.ax.xaxis.get_label(), self.ax, prefix="label")
 
     @property
     def ylabel(self):
         if self.ax.get_ylabel():
-            return Text("yaxis-label", self.ax.yaxis.get_label(), self.ax)
+            return Text("yaxis", self.ax.yaxis.get_label(), self.ax, prefix="label")
 
     @property
     def xoffset(self):
         xaxis_offset_text = self.ax.xaxis.get_offset_text()
         if xaxis_offset_text.get_text():
-            return Text("xaxis-offset", xaxis_offset_text, self.ax)
+            return Text("xaxis", xaxis_offset_text, self.ax, prefix="offset-label")
 
     @property
     def yoffset(self):
         yaxis_offset_text = self.ax.yaxis.get_offset_text()
         if yaxis_offset_text.get_text():
-            return Text("yaxis-offset", yaxis_offset_text, self.ax)
+            return Text("yaxis", yaxis_offset_text, self.ax, prefix="offset-label")
 
     @property
     def definition(self) -> str:
@@ -439,19 +441,19 @@ class Axes:
     def export_data(self):
         for i, child in enumerate(self.ax._children):  # type: ignore
             if isinstance(child, matplotlib.lines.Line2D):
-                line = Line2D(i, child)
+                line = Line2D(str(i), child)
                 self.definitions.append(line.definition)
                 self.draws.append(line.draw)
             elif isinstance(child, matplotlib.collections.QuadMesh):
-                collection = QuadMesh(i, child)
+                collection = QuadMesh(str(i), child)
                 self.definitions.append(collection.definition)
                 self.draws.append(collection.draw)
             elif isinstance(child, matplotlib.collections.Collection):
-                collection = Collection(i, child)
+                collection = Collection(str(i), child)
                 self.definitions.append(collection.definition)
                 self.draws.append(collection.draw)
             elif isinstance(child, matplotlib.text.Text):
-                text = Text(f"text-{i}", child, self.ax)
+                text = Text(str(i), child, self.ax)
                 self.definitions.append(text.definition)
                 self.draws.append(text.draw)
 
