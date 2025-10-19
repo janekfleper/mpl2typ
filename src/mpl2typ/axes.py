@@ -436,12 +436,12 @@ class Axes:
                 line = Line2D(i, child)
                 definitions.append(line.definition)
                 draws.append(line.draw)
-            elif isinstance(child, matplotlib.collections.Collection):
-                collection = Collection(i, child)
-                definitions.append(collection.definition)
-                draws.append(collection.draw)
             elif isinstance(child, matplotlib.collections.QuadMesh):
                 collection = QuadMesh(i, child)
+                definitions.append(collection.definition)
+                draws.append(collection.draw)
+            elif isinstance(child, matplotlib.collections.Collection):
+                collection = Collection(i, child)
                 definitions.append(collection.definition)
                 draws.append(collection.draw)
             elif isinstance(child, matplotlib.text.Text):

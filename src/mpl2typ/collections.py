@@ -261,20 +261,20 @@ class QuadMesh:
         self.collection = collection
 
     @property
+    def gradient(self) -> str:
+        cmap = self.collection.get_cmap()
+        return f"gradient.linear(..color.map.{cmap.name})"
+
+    @property
     def colormap(self) -> str:
         norm = self.collection.norm
-        cmap = self.collection.get_cmap()
-        gradient = f"gradient.linear(..color.map.{cmap.name})"
         signature = typst.function(
             f"colormap-{self.index}",
             pos=["v"],
             named=dict(vmin=norm.vmin, vmax=norm.vmax),
             inline=True,
         )
-        return (
-            f"let gradient-{self.index} = {gradient}\n"
-            + f"let {signature} = gradient-{self.index}.sample((v - vmin) / (vmax - vmin) * 99%)"
-        )
+        return f"{signature} = gradient-{self.index}.sample((v - vmin) / (vmax - vmin) * 99%)"
 
     @property
     def vertices(self) -> str:
@@ -287,12 +287,21 @@ class QuadMesh:
     @property
     def definition(self) -> str:
         return (
-            self.colormap
-            + "\n"
-            + f"let vertices-{self.index} = {self.vertices}\n"
+            f"let vertices-{self.index} = {self.vertices}\n"
             + f"let data-{self.index} = {self.data}\n"
+            + f"let gradient-{self.index} = {self.gradient}\n"
+            + f"let {self.colormap}\n"
+            + f"let collection-{self.index} = "
+            + typst.dictionary(
+                {
+                    "vertices": f"vertices-{self.index}",
+                    "data": f"data-{self.index}",
+                    "colormap": f"colormap-{self.index}",
+                    "transform": "transform",
+                }
+            )
         )
 
     @property
     def draw(self) -> str:
-        return f"draw.quad-mesh(vertices-{self.index}, data-{self.index}, colormap-{self.index}, transform)\n"
+        return f"draw.quad-mesh(..collection-{self.index})\n"

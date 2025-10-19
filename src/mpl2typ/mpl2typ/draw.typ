@@ -100,7 +100,10 @@
   }
 }
 
-#let quad-mesh(vertices, data, colormap, transform) = {
+#let quad-mesh(vertices: (), data: (), colormap: none, transform: none) = {
+  assert.ne(colormap, none, message: "Parameter colormap must not be none")
+  assert.ne(transform, none, message: "Parameter transform must not be none")
+
   for (i, row) in data.enumerate() {
     for (j, value) in row.enumerate() {
       let color = colormap(value)
