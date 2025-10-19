@@ -274,7 +274,7 @@ class QuadMesh:
             named=dict(vmin=norm.vmin, vmax=norm.vmax),
             inline=True,
         )
-        return f"{signature} = gradient-{self.index}.sample((v - vmin) / (vmax - vmin) * 99%)"
+        return f"{signature} = gradient-{self.index}.sample((v - vmin) / (vmax - vmin) * 100%)"
 
     @property
     def vertices(self) -> str:
