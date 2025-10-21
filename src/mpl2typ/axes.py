@@ -450,26 +450,20 @@ class Axes:
         return f"({self.ax.get_ylim()[0]}, {self.ax.get_ylim()[1]})"
 
     def export_data(self):
-        for i, child in enumerate(self.ax._children):  # type: ignore
-            if isinstance(child, matplotlib.lines.Line2D):
-                line = Line2D(str(i), child)
-                self.data[f"{line.prefix}-{line.name}"] = line.data
-                self.definitions.append(line.definition)
-                self.draws.append(line.draw)
-            elif isinstance(child, matplotlib.collections.QuadMesh):
-                collection = QuadMesh(str(i), child)
-                self.data[f"{collection.prefix}-{collection.name}"] = collection.data
-                self.definitions.append(collection.definition)
-                self.draws.append(collection.draw)
-            elif isinstance(child, matplotlib.collections.Collection):
-                collection = Collection(str(i), child)
-                self.data[f"{collection.prefix}-{collection.name}"] = collection.data
-                self.definitions.append(collection.definition)
-                self.draws.append(collection.draw)
-            elif isinstance(child, matplotlib.text.Text):
-                text = Text(str(i), child, self.ax)
-                self.definitions.append(text.definition)
-                self.draws.append(text.draw)
+        for i, _child in enumerate(self.ax._children):  # type: ignore
+            if isinstance(_child, matplotlib.lines.Line2D):
+                child = Line2D(str(i), _child)
+            elif isinstance(_child, matplotlib.collections.QuadMesh):
+                child = QuadMesh(str(i), _child)
+            elif isinstance(_child, matplotlib.collections.Collection):
+                child = Collection(str(i), _child)
+            elif isinstance(_child, matplotlib.text.Text):
+                child = Text(str(i), _child, self.ax)
+
+            if hasattr(child, "data"):
+                self.data[f"{child.prefix}-{child.name}"] = child.data
+            self.definitions.append(child.definition)
+            self.draws.append(child.draw)
 
     def export(self):
         if title := self.title.definition:
