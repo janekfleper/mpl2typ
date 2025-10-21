@@ -1,9 +1,11 @@
+import json
 import textwrap
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, Any
 
+import numpy as np
 import matplotlib.axes
 import matplotlib.axis
 import matplotlib.text
@@ -15,6 +17,14 @@ from .lines import Stroke, Line2D
 from .collections import Collection, QuadMesh
 from .legend import Legend
 from .text import Text
+
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
+
 
 header = """
   let xscale = 1 / (xlim.at(1) - xlim.at(0)) * 100%
@@ -397,6 +407,7 @@ class Axes:
         else:
             self.legend = None
 
+        self.data: dict[str, Any] = {}
         self.definitions: list[str] = []
         self.draws: list[tuple[str, float]] = []
 
@@ -442,14 +453,17 @@ class Axes:
         for i, child in enumerate(self.ax._children):  # type: ignore
             if isinstance(child, matplotlib.lines.Line2D):
                 line = Line2D(str(i), child)
+                self.data[f"{line.prefix}-{line.name}"] = line.data
                 self.definitions.append(line.definition)
                 self.draws.append(line.draw)
             elif isinstance(child, matplotlib.collections.QuadMesh):
                 collection = QuadMesh(str(i), child)
+                self.data[f"{collection.prefix}-{collection.name}"] = collection.data
                 self.definitions.append(collection.definition)
                 self.draws.append(collection.draw)
             elif isinstance(child, matplotlib.collections.Collection):
                 collection = Collection(str(i), child)
+                self.data[f"{collection.prefix}-{collection.name}"] = collection.data
                 self.definitions.append(collection.definition)
                 self.draws.append(collection.draw)
             elif isinstance(child, matplotlib.text.Text):
@@ -469,8 +483,15 @@ class Axes:
             self.draws.append(self.legend.draw)
         draws = [draw[0] for draw in sorted(self.draws, key=lambda x: x[1])]
 
+        if self.data:
+            with open(f"data/{self.prefix}-{self.name}.json", "w") as f:
+                json.dump(self.data, f, indent=4, cls=NumpyEncoder)
+
         s = f"#let {self.prefix}-{self.name}(xlim: {self.xlim}, ylim: {self.ylim}, dpi: {self.ax.figure.dpi}) = {{"
         s += header + "\n"
+        if self.data:
+            load_data = f'let data = json("data/{self.prefix}-{self.name}.json")\n\n'
+            s += textwrap.indent(load_data, "  ")
         s += textwrap.indent("\n\n".join(self.definitions), "  ") + "\n"
         s += textwrap.indent("\n".join(draws), "  ") + "\n"
         s += "}\n\n"

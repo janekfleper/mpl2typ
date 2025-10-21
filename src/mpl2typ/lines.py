@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.typing as npt
 import matplotlib.lines
 
 from . import typst
@@ -142,21 +143,22 @@ class Line2D:
         self.marker = Marker(line)
 
     @property
-    def data(self) -> str:
-        points = np.array(self.line.get_path().vertices)
-        return typst.array([f"({x}, {y})" for x, y in points], inline=False)
+    def data(self) -> npt.NDArray[np.float64]:
+        return np.array(self.line.get_path().vertices)
 
     @property
     def definition(self) -> str:
-        keys = ["data", "stroke", "marker"]
         return (
-            f"let data-{self.name} = {self.data}\n"
-            + f"let stroke-{self.name} = {self.stroke.export()}\n"
+            f"let stroke-{self.name} = {self.stroke.export()}\n"
             + f"let marker-{self.name} = {self.marker.export()}\n"
             + f"let {self.prefix}-{self.name} = "
             + typst.dictionary(
-                {key: f"{key}-{self.name}" for key in keys}
-                | dict(transform="transform")
+                dict(
+                    data=f'data.at("{self.prefix}-{self.name}")',
+                    stroke=f"stroke-{self.name}",
+                    marker=f"marker-{self.name}",
+                    transform="transform",
+                )
             )
         )
 

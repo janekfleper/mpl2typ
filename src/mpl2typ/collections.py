@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.typing as npt
 import matplotlib.path
 import matplotlib.collections
 import matplotlib.transforms
@@ -61,24 +62,18 @@ class Collection:
         self.prefix = prefix
 
     @property
-    def path(self) -> list[str]:
-        return [
-            typst.ndarray(np.array(path.vertices, dtype=float))
-            for path in self.collection.get_paths()
-        ]
+    def path(self) -> list[npt.NDArray[np.float64]]:
+        return [np.array(path.vertices) for path in self.collection.get_paths()]
 
     @property
-    def size(self) -> list[str]:
+    def size(self) -> npt.NDArray[np.float64]:
         if isinstance(self.collection, matplotlib.collections._CollectionWithSizes):  # type: ignore
-            return [f"{s}" for s in self.collection.get_sizes()]
-        return []
+            return self.collection.get_sizes()
+        return np.array([])
 
     @property
-    def offset(self) -> list[str]:
-        return [
-            typst.ndarray(offset)
-            for offset in np.array(self.collection.get_offsets(), dtype=float)
-        ]
+    def offset(self) -> npt.NDArray[np.float64]:
+        return np.array(self.collection.get_offsets())
 
     @property
     def transform(self) -> str:
@@ -150,6 +145,13 @@ class Collection:
         )
 
     @property
+    def fill(self) -> list[str]:
+        return [
+            typst.function("color.rgb", pos=typst.ratio(color), inline=True)
+            for color in self.collection.get_facecolor()
+        ]
+
+    @property
     def edgecolor(self) -> list[str]:
         return [
             typst.function("color.rgb", pos=typst.ratio(color), inline=True)
@@ -157,101 +159,74 @@ class Collection:
         ]
 
     @property
-    def facecolor(self) -> list[str]:
-        return [
-            typst.function("color.rgb", pos=typst.ratio(color), inline=True)
-            for color in self.collection.get_facecolor()
-        ]
-
-    @property
     def linewidth(self) -> list[str]:
+        """
+        The linewidths "inherit" the shape of the linestyles, and vice versa.
+        If there are multiple linestyles but only a single linewidth, the
+        properties should be returned accordingly.
+        See https://stackoverflow.com/a/22240621 for the source of the loop.
+        """
         linewidth = self.collection.get_linewidth()
         if isinstance(linewidth, (float, int)):
             return [f"{linewidth}pt"]
-        return [f"{lw}pt" for lw in linewidth]
+
+        linewidths = [f"{lw}pt" for lw in linewidth]
+        if all(lw == linewidths[0] for lw in linewidths):
+            return linewidths[:1]
+        return linewidths
 
     @property
     def linestyle(self) -> list[str]:
+        """
+        If all linestyles are equal, only a single linestyle is returned. See
+        the docstring of the ``linewidth`` property for the details.
+        """
         linestyle = self.collection.get_linestyle()
         if isinstance(linestyle, (str, float)):
             return [f"{linestyle}"]
-        return [typst.dash(offset, pattern) for offset, pattern in linestyle]  # type: ignore
+
+        linestyles = [typst.dash(offset, pattern) for offset, pattern in linestyle]
+        if all(lw == linestyles[0] for lw in linestyles):
+            return linestyles[:1]
+        return linestyles
 
     @property
-    def stroke(self) -> str | None:
-        named: dict[str, str] = {}
-        if len(edgecolor := self.edgecolor) == 1:
-            named["paint"] = edgecolor[0]
-        if len(linewidth := self.linewidth) == 1:
-            named["thickness"] = linewidth[0]
-        if len(linestyle := self.linestyle) == 1:
-            named["dash"] = linestyle[0]
-
-        if not named:
-            return None
-        return typst.dictionary(named, inline=False)
+    def stroke(self) -> dict[str, str]:
+        return dict(
+            paint=typst.array(self.edgecolor, squeeze=True, inline=False),
+            thickness=typst.array(self.linewidth, squeeze=True, inline=False),
+            dash=typst.array(self.linestyle, squeeze=True, inline=False),
+        )
 
     @property
-    def data(self) -> str:
-        data: dict[str, str] = {}
-
-        if len(path := self.path) > 1:
-            data["paths"] = typst.array(path, inline=False)
-        if len(size := self.size) > 1:
-            data["sizes"] = typst.array(size, inline=False)
-        if len(offset := self.offset) > 1:
-            data["offsets"] = typst.array(offset, inline=False)
-        if len(facecolor := self.facecolor) > 1:
-            data["fills"] = typst.array(facecolor, inline=False)
-
-        strokes: dict[str, str] = {}
-        if len(edgecolors := self.edgecolor) > 1:
-            strokes["paint"] = typst.array(edgecolors, inline=False)
-        if len(linewidths := self.linewidth) > 1:
-            strokes["thickness"] = typst.array(linewidths, inline=False)
-        if len(linestyles := self.linestyle) > 1:
-            strokes["dash"] = typst.array(linestyles, inline=False)
-        if strokes:
-            data["strokes"] = typst.dictionary(strokes, inline=False)
-
-        return typst.dictionary(data, inline=False)
+    def data(
+        self,
+    ) -> dict[str, list[npt.NDArray[np.float64]] | npt.NDArray[np.float64]]:
+        return {
+            "path": self.path,
+            "size": self.size,
+            "offset": self.offset,
+        }
 
     @property
     def definition(self):
-        path = self.path
-        path = path[0] if len(path) == 1 else "none"
-        size = self.size
-        size = size[0] if len(size) == 1 else "none"
-        offset = self.offset
-        offset = offset[0] if len(offset) == 1 else "none"
-        fill = self.facecolor
-        fill = fill[0] if len(fill) == 1 else "none"
-        stroke = self.stroke
-        stroke = stroke if stroke is not None else "none"
-
-        keys = [
-            "path",
-            "size",
-            "offset",
-            "fill",
-            "stroke",
-            "data",
-            "transform",
-            "compute-scale",
-            "offset-transform",
-        ]
         return (
-            f"let data-{self.name} = {self.data}\n"
-            + f"let path-{self.name} = {path}\n"
-            + f"let size-{self.name} = {size}\n"
-            + f"let offset-{self.name} = {offset}\n"
-            + f"let fill-{self.name} = {fill}\n"
-            + f"let stroke-{self.name} = {stroke}\n"
+            f"let fill-{self.name} = {typst.array(self.fill, squeeze=True, inline=False)}\n"
+            + f"let stroke-{self.name} = {typst.dictionary(self.stroke, inline=False)}\n"
             + f"let transform-{self.name} = {self.transform}\n"
             + f"let compute-scale-{self.name} = {self.compute_scale}\n"
             + f"let offset-transform-{self.name} = {self.offset_transform}\n"
             + f"let {self.prefix}-{self.name} = "
-            + typst.dictionary({key: f"{key}-{self.name}" for key in keys})
+            + typst.dictionary(
+                {
+                    "data": f'data.at("{self.prefix}-{self.name}")',
+                    "fill": f"fill-{self.name}",
+                    "stroke": f"stroke-{self.name}",
+                    "transform": f"transform-{self.name}",
+                    "compute-scale": f"compute-scale-{self.name}",
+                    "offset-transform": f"offset-transform-{self.name}",
+                }
+            )
         )
 
     @property
@@ -292,25 +267,29 @@ class QuadMesh:
         return f"{signature} = gradient-{self.name}.sample((v - vmin) / (vmax - vmin) * 100%)"
 
     @property
-    def vertices(self) -> str:
-        return typst.ndarray(np.array(self.collection.get_coordinates(), dtype=float))
+    def vertices(self) -> npt.NDArray[np.float64]:
+        return np.array(self.collection.get_coordinates(), dtype=float)
 
     @property
-    def data(self) -> str:
-        return typst.ndarray(np.array(self.collection.get_array(), dtype=float))  # type: ignore
+    def values(self) -> npt.NDArray[np.float64]:
+        return np.array(self.collection.get_array(), dtype=float)
+
+    @property
+    def data(self) -> dict[str, npt.NDArray[np.float64]]:
+        return {
+            "vertices": self.vertices,
+            "values": self.values,
+        }
 
     @property
     def definition(self) -> str:
         return (
-            f"let vertices-{self.name} = {self.vertices}\n"
-            + f"let data-{self.name} = {self.data}\n"
-            + f"let gradient-{self.name} = {self.gradient}\n"
+            f"let gradient-{self.name} = {self.gradient}\n"
             + f"let {self.colormap}\n"
             + f"let {self.prefix}-{self.name} = "
             + typst.dictionary(
                 {
-                    "vertices": f"vertices-{self.name}",
-                    "data": f"data-{self.name}",
+                    "data": f'data.at("{self.prefix}-{self.name}")',
                     "colormap": f"colormap-{self.name}",
                     "transform": "transform",
                 }

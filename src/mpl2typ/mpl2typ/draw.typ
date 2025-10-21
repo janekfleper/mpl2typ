@@ -44,26 +44,26 @@
 
 #let rescale(point, scale: scale) = point.map(x => x * scale)
 
-#let update-stroke(i, props) = {
-  if "paint" in props.keys() {
-    let paint = props.at("paint")
-    (paint: paint.at(calc.rem-euclid(i, paint.len())))
-  }
-  if "thickness" in props.keys() {
-    let thickness = props.at("thickness")
-    (thickness: thickness.at(calc.rem-euclid(i, thickness.len())))
-  }
-  if "dash" in props.keys() {
-    let dash = props.at("dash")
-    (dash: dash.at(calc.rem-euclid(i, dash.len())))
+#let _get-prop(i, prop) = {
+  if type(prop) != array {
+    return prop
+  } else if (prop == none) or (prop.len() == 0) {
+    none
+  } else if prop.len() > 1 {
+    prop.at(calc.rem-euclid(i, prop.len()))
+  } else {
+    prop.at(0)
   }
 }
 
+#let _get-stroke(i, stroke) = (
+  paint: _get-prop(i, stroke.paint),
+  thickness: _get-prop(i, stroke.thickness),
+  dash: _get-prop(i, stroke.dash),
+)
+
 #let collection(
   data: (:),
-  path: none,
-  size: none,
-  offset: none,
   fill: none,
   stroke: none,
   transform: none,
@@ -74,43 +74,30 @@
   assert.ne(offset-transform, none, message: "Parameter offset-transform must not be none")
   if compute-scale == none { compute-scale = size => size }
 
-  if data == (:) { return draw-line(path.map(transform), offset-transform(offset), fill, stroke) }
+  let path = data.remove("path", default: ())
+  let size = data.remove("size", default: ())
+  let offset = data.remove("offset", default: ())
+  let length = calc.max(path.len(), offset.len())
 
-  let paths = data.remove("paths", default: ())
-  let sizes = data.remove("sizes", default: ())
-  let offsets = data.remove("offsets", default: ())
-  let length = calc.max(paths.len(), offsets.len())
-  let fills = data.remove("fills", default: ())
-  let strokes = data.remove("strokes", default: (:))
+  for i in range(length) {
+    let _path = _get-prop(i, path)
+    let _size = _get-prop(i, size)
+    let _offset = _get-prop(i, offset)
+    let _fill = _get-prop(i, fill)
+    let _stroke = _get-stroke(i, stroke)
 
-  if length == 0 {
-    size = sizes.at(0, default: size)
-    if size != none { path = path.map(rescale.with(scale: compute-scale(size))) }
-    draw-line(
-      path.map(transform),
-      offset-transform(offset),
-      fills.at(0, default: fill),
-      stroke + update-stroke(0, strokes),
-    )
-  } else {
-    for i in range(length) {
-      let path = if paths.len() > 0 { paths.at(calc.rem-euclid(i, paths.len())) } else { path }
-      let size = if sizes.len() > 0 { sizes.at(calc.rem-euclid(i, sizes.len())) } else { size }
-      let offset = if offsets.len() > 0 { offsets.at(calc.rem-euclid(i, offsets.len())) } else { offset }
-      let fill = if fills.len() > 0 { fills.at(calc.rem-euclid(i, fills.len())) } else { fill }
-      let stroke = stroke + update-stroke(i, strokes)
-
-      if size != none { path = path.map(rescale.with(scale: compute-scale(size))) }
-      draw-line(path.map(transform), offset-transform(offset), fill, stroke)
-    }
+    if _size != none { _path = _path.map(rescale.with(scale: compute-scale(_size))) }
+    draw-line(_path.map(transform), offset-transform(_offset), _fill, _stroke)
   }
 }
 
-#let quad-mesh(vertices: (), data: (), colormap: none, transform: none) = {
+#let quad-mesh(data: (:), colormap: none, transform: none) = {
   assert.ne(colormap, none, message: "Parameter colormap must not be none")
   assert.ne(transform, none, message: "Parameter transform must not be none")
+  let vertices = data.remove("vertices", default: ())
+  let values = data.remove("values", default: ())
 
-  for (i, row) in data.enumerate() {
+  for (i, row) in values.enumerate() {
     for (j, value) in row.enumerate() {
       let color = colormap(value)
       std.place(
