@@ -49,25 +49,33 @@
   if labels == () { labels = locs.len() * ("",) }
   set text(..label-style.text)
 
-  let (tick-alignment, tick-dx) = (
-    "in": (left, 0pt),
-    "out": (right, tick-style.line.length),
-    "inout": (center, tick-style.line.length / 2),
+  let tick-alignment = (
+    "in": (left: left, right: right),
+    "out": (left: right, right: left),
+    "inout": (left: center, right: center),
+    "left": (left: right, right: right),
+    "right": (left: left, right: left),
   ).at(tick-style.direction)
   let tick-line = line(..tick-style.line)
-  let tick-left = if left in show-ticks { place(tick-alignment, tick-line) } else { none }
-  let tick-right = if right in show-ticks { place(tick-alignment.inv(), tick-line) } else { none }
+  let tick-left = if left in show-ticks { place(tick-alignment.left, tick-line) } else { none }
+  let tick-right = if right in show-ticks { place(tick-alignment.right, tick-line) } else { none }
 
-  let label-alignment = horizon + right
-  let label-dx = label-style.pad + tick-dx
+  let label-dx(tick-alignment) = {
+    if tick-alignment == left {
+      label-style.pad + 0pt
+    } else if tick-alignment == right {
+      label-style.pad + tick-style.line.length
+    } else { label-style.pad + tick-style.line.length / 2 }
+  }
+  let label-alignment = (left: horizon + right, right: horizon + left)
   let label-rotate = rotate.with(label-style.rotation)
   let label-left = if left in show-labels {
-    label => { place(dx: -label-dx, label-rotate(place(label-alignment, label))) }
+    label => { place(dx: -label-dx(tick-alignment.left), label-rotate(place(label-alignment.left, label))) }
   } else {
     label => { none }
   }
   let label-right = if right in show-labels {
-    label => { place(dx: label-dx, label-rotate(place(label-alignment.inv(), label))) }
+    label => { place(dx: label-dx(tick-alignment.right.inv()), label-rotate(place(label-alignment.right, label))) }
   } else {
     label => { none }
   }
