@@ -132,3 +132,18 @@
   let body = if numbering == none { number } else { std.numbering(numbering, number) }
   std.place(alignment, dx: dx, dy: dy, frame(align(center + horizon, body)))
 }
+
+#let cell(position: (0, 0), shape: (1, 1), body) = {
+  grid.cell(
+    x: position.at(0),
+    y: position.at(1),
+    colspan: shape.at(0),
+    rowspan: shape.at(1),
+    block(
+      width: 100%,
+      height: 100%,
+      stroke: red,
+      body,
+    ),
+  )
+}

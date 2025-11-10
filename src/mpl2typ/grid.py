@@ -8,34 +8,20 @@ from .axes import Axes
 
 
 class Cell:
-    def __init__(self, x: int, y: int, colspan: int, rowspan: int):
-        self.x = x
-        self.y = y
-        self.colspan = colspan
-        self.rowspan = rowspan
+    def __init__(self, position: tuple[int, int], shape: tuple[int, int]):
+        self.position = position
+        self.shape = shape
         self.axes: list[Axes] = []
 
     def export(self) -> str:
         axes = [f"{axes.prefix}-{axes.name}()" for axes in self.axes]
-        body = typst.function(
-            "block",
+        return typst.function(
+            "axes.cell",
             named=dict(
-                width="100%",
-                height="100%",
-                stroke="red",
+                position=f"({self.position[0]}, {self.position[1]})",
+                shape=f"({self.shape[0]}, {self.shape[1]})",
             ),
             body=typst.make_body(axes),
-        )
-
-        return typst.function(
-            "grid.cell",
-            named=dict(
-                x=self.x,
-                y=self.y,
-                colspan=self.colspan,
-                rowspan=self.rowspan,
-            ),
-            body=body,
         )
 
 
@@ -66,7 +52,7 @@ class Grid:
 
     def _add_axes(self, axes: Axes) -> None:
         for cell in self.cells:
-            if cell.x == axes.cell["x"] and cell.y == axes.cell["y"]:
+            if cell.position == axes.cell["position"]:
                 cell.axes.append(axes)
                 return
 

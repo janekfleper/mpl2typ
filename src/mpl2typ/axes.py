@@ -439,7 +439,7 @@ class Axes:
         y = sps.rowspan.start
         colspan = sps.colspan.stop - x
         rowspan = sps.rowspan.stop - y
-        return dict(x=x, y=y, colspan=colspan, rowspan=rowspan)
+        return dict(position=(x, y), shape=(colspan, rowspan))
 
     @property
     def xlim(self):
