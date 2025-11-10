@@ -4,25 +4,33 @@
   if labels == () { labels = locs.len() * ("",) }
   set text(..label-style.text)
 
-  let (tick-alignment, tick-dy) = (
-    "in": (bottom, 0pt),
-    "out": (top, tick-style.line.length),
-    "inout": (horizon, tick-style.line.length / 2),
+  let tick-alignment = (
+    "in": (bottom: bottom, top: top),
+    "out": (bottom: top, top: bottom),
+    "inout": (bottom: horizon, top: horizon),
+    "bottom": (bottom: top, top: top),
+    "top": (bottom: bottom, top: bottom),
   ).at(tick-style.direction)
   let tick-line = line(..tick-style.line)
-  let tick-bottom = if bottom in show-ticks { place(tick-alignment, tick-line) } else { none }
-  let tick-top = if top in show-ticks { place(tick-alignment.inv(), tick-line) } else { none }
+  let tick-bottom = if bottom in show-ticks { place(tick-alignment.bottom, tick-line) } else { none }
+  let tick-top = if top in show-ticks { place(tick-alignment.top, tick-line) } else { none }
 
-  let label-alignment = center + top
-  let label-dy = label-style.pad + tick-dy
+  let label-dy(tick-alignment) = {
+    if tick-alignment == bottom {
+      label-style.pad + 0pt
+    } else if tick-alignment == top {
+      label-style.pad + tick-style.line.length
+    } else { label-style.pad + tick-style.line.length / 2 }
+  }
+  let label-alignment = (bottom: center + top, top: center + bottom)
   let label-rotate = rotate.with(label-style.rotation, reflow: true)
   let label-bottom = if bottom in show-labels {
-    label => { place(label-alignment, dy: label-dy, label-rotate(label)) }
+    label => { place(label-alignment.bottom, dy: label-dy(tick-alignment.bottom), label-rotate(label)) }
   } else {
     label => { none }
   }
   let label-top = if top in show-labels {
-    label => { place(label-alignment.inv(), dy: -label-dy, label-rotate(label)) }
+    label => { place(label-alignment.top, dy: -label-dy(tick-alignment.top.inv()), label-rotate(label)) }
   } else {
     label => { none }
   }
