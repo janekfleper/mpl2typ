@@ -101,3 +101,34 @@
   let grid-line = line(length: 100%, ..grid-style)
   for loc in locs { if (loc > 0%) and (loc < 100%) { place(dy: loc, grid-line) } }
 }
+
+#let abc(
+  location: top + left,
+  inset: 0.4em,
+  outset: 0.5em,
+  fill: none,
+  stroke: none,
+  frame: block,
+  numbering: "a",
+  number,
+) = {
+  outset = if type(outset) in (length, ratio) { (outset, outset) } else { outset }
+  let alignment = if type(location) == std.alignment { location } else { top + left }
+  let (dx, dy) = if type(location) == std.alignment {
+    (
+      if location.x == right { -outset.at(0) } else if location.x == center { 0% } else { outset.at(0) },
+      if location.y == bottom { -outset.at(1) } else if location.y == horizon { 0% } else { outset.at(1) },
+    )
+  } else {
+    location
+  }
+
+  let frame = frame.with(
+    stroke: stroke,
+    fill: fill,
+    inset: inset,
+  )
+
+  let body = if numbering == none { number } else { std.numbering(numbering, number) }
+  std.place(alignment, dx: dx, dy: dy, frame(align(center + horizon, body)))
+}
