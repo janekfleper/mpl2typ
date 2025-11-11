@@ -298,6 +298,19 @@ def dash(
     )
 
 
+def stroke(edgecolor, linewidth, linestyle):
+    paint = color(edgecolor)
+    thickness = length(linewidth, "pt")
+    if linestyle == "solid":
+        return f"{paint} + {thickness}"
+
+    if isinstance(linestyle, (str, float)):
+        _dash = f'"{linestyle}"'
+    else:
+        _dash = dash(*linestyle)
+    return dict(paint=paint, thickness=thickness, dash=_dash)
+
+
 def transform(
     scale: Sequence[float] | Sequence[str] | None = None,
     shift: Sequence[float] | Sequence[str] | None = None,
