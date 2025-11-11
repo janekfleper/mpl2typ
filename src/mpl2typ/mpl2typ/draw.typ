@@ -56,11 +56,16 @@
   }
 }
 
-#let _get-stroke(i, stroke) = (
-  paint: _get-prop(i, stroke.paint),
-  thickness: _get-prop(i, stroke.thickness),
-  dash: _get-prop(i, stroke.dash),
-)
+#let _get-stroke(i, stroke) = {
+  if type(stroke) != dictionary { return stroke }
+  if stroke.paint == () { return none }
+
+  (
+    paint: _get-prop(i, stroke.paint),
+    thickness: _get-prop(i, stroke.thickness),
+    dash: _get-prop(i, stroke.dash),
+  )
+}
 
 #let collection(
   data: (:),
