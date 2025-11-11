@@ -265,12 +265,12 @@ def color(color: str | tuple[float, ...], alpha: float | None = None) -> str:
         color = function("color.rgb", pos=ratio(color), inline=True)
     else:
         try:
-            color = function("color.luma", pos=ratio(float(color) * 100), inline=True)
+            color = function("color.luma", pos=[ratio(float(color) * 100)], inline=True)
         except ValueError:
             if color in COLORS:
                 color = COLORS[color]
             elif color.startswith("#"):
-                color = function("color.rgb", pos=f'"{color}"', inline=True)
+                color = function("color.rgb", pos=[f'"{color}"'], inline=True)
 
     if alpha is None:
         return color
