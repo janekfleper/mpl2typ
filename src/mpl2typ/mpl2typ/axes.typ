@@ -133,6 +133,29 @@
   std.place(alignment, dx: dx, dy: dy, frame(align(center + horizon, body)))
 }
 
+#let spines(spines) = {
+  if "top" in spines {
+    let (start, end) = spines.top.bounds
+    let stroke = spines.top.at("stroke", default: black)
+    std.place(top, line(start: (start, 0%), end: (end, 0%), stroke: stroke))
+  }
+  if "bottom" in spines {
+    let (start, end) = spines.bottom.bounds
+    let stroke = spines.bottom.at("stroke", default: black)
+    std.place(bottom, line(start: (start, 0%), end: (end, 0%), stroke: stroke))
+  }
+  if "left" in spines {
+    let (start, end) = spines.left.bounds
+    let stroke = spines.left.at("stroke", default: black)
+    std.place(left, line(start: (0%, start), end: (0%, end), stroke: stroke))
+  }
+  if "right" in spines {
+    let (start, end) = spines.right.bounds
+    let stroke = spines.right.at("stroke", default: black)
+    std.place(right, line(start: (100%, start), end: (100%, end), stroke: stroke))
+  }
+}
+
 #let cell(position: (0, 0), shape: (1, 1), body) = {
   grid.cell(
     x: position.at(0),
@@ -142,7 +165,7 @@
     block(
       width: 100%,
       height: 100%,
-      stroke: red,
+      stroke: none,
       body,
     ),
   )

@@ -386,6 +386,48 @@ class Axis:
         return draws
 
 
+class Spines:
+    def __init__(self, ax):
+        self.spines = ax.spines
+        self.transform = ax.transLimits
+
+    def get_bounds(self, spine) -> str:
+        points = self.transform.transform_path(spine.get_path()).vertices
+        if isinstance(spine.axis, matplotlib.axis.YAxis):
+            return typst.array(typst.ratio(points[:, 1]))
+        elif isinstance(spine.axis, matplotlib.axis.XAxis):
+            return typst.array(typst.ratio(points[:, 0]))
+        else:
+            raise TypeError(f"Unknown axis type {type(spine.axis)}")
+
+    @staticmethod
+    def get_stroke(spine) -> str:
+        stroke = typst.stroke(
+            spine.get_edgecolor(),
+            spine.get_linewidth(),
+            spine.get_linestyle(),
+        )
+        if isinstance(stroke, str):
+            return stroke
+        return typst.dictionary(stroke, inline=True)
+
+    @property
+    def definition(self):
+        spines = {}
+        for key in self.spines:
+            spine = self.spines[key]
+            if spine.get_visible():
+                spines[key] = typst.dictionary(
+                    dict(bounds=self.get_bounds(spine), stroke=self.get_stroke(spine)),
+                    inline=True,
+                )
+        return "let spines = " + typst.dictionary(spines, inline=False)
+
+    @property
+    def draw(self) -> tuple[str, float]:
+        return ("axes.spines(spines)", self.spines.left.zorder)
+
+
 class Axes:
     def __init__(
         self,
@@ -401,6 +443,7 @@ class Axes:
 
         self.title = Title(ax)
         self.axis = Axis(ax)
+        self.spines = Spines(ax)
 
         if ax.legend_ is not None:
             self.legend = Legend(ax.legend_)
@@ -471,6 +514,8 @@ class Axes:
             self.draws.extend(self.title.draw)
         self.definitions.append(self.axis.definition)
         self.draws.extend(self.axis.draw)
+        self.definitions.append(self.spines.definition)
+        self.draws.append(self.spines.draw)
         self.export_data()
         if self.legend is not None:
             self.definitions.append(self.legend.definition)
