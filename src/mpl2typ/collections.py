@@ -146,9 +146,25 @@ class Collection:
 
     @property
     def fill(self) -> list[str]:
-        return [
+        colors = [
             typst.function("color.rgb", pos=typst.ratio(color), inline=True)
             for color in self.collection.get_facecolor()
+        ]
+
+        hatch = self.collection.get_hatch()
+        if hatch is None:
+            return colors
+
+        color = typst.color(self.collection._hatch_color)
+        linewidth = typst.length(self.collection.get_hatch_linewidth(), "pt")
+        stroke = f"{color} + {linewidth}"
+        return [
+            typst.function(
+                "hatch.hatch",
+                named=dict(pattern=f'"{hatch}"', stroke=stroke, fill=color),
+                inline=False,
+            )
+            for color in colors
         ]
 
     @property

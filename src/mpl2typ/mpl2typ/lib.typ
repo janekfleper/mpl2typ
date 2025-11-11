@@ -1,4 +1,5 @@
 #import "axes.typ"
 #import "draw.typ"
+#import "hatch.typ"
 #import "markers.typ"
 #import "legend.typ"
