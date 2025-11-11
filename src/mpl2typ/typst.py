@@ -262,19 +262,19 @@ def block(name: str, padding: dict[str, float], body: str | None = None):
 
 def color(color: str | tuple[float, ...], alpha: float | None = None) -> str:
     if isinstance(color, tuple):
-        color = f"color.rgb({', '.join(ratio(color))})"
+        color = function("color.rgb", pos=ratio(color), inline=True)
     else:
         try:
-            color = f"color.luma({round(float(color) * 100, 3)}%)"
+            color = function("color.luma", pos=ratio(float(color) * 100), inline=True)
         except ValueError:
             if color in COLORS:
                 color = COLORS[color]
             elif color.startswith("#"):
-                color = f'color.rgb("{color}")'
+                color = function("color.rgb", pos=f'"{color}"', inline=True)
 
     if alpha is None:
         return color
-    return f"{color}.transparentize({round((1 - alpha) * 100, 3)}%)"
+    return f"{color}.transparentize({ratio(1 - alpha)})"
 
 
 def dash(
