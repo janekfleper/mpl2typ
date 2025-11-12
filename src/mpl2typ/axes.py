@@ -382,7 +382,7 @@ class Spines:
     def get_bounds(self, spine) -> str:
         points = self.transform.transform_path(spine.get_path()).vertices
         if isinstance(spine.axis, matplotlib.axis.YAxis):
-            return typst.ratio(points[:, 1])
+            return typst.ratio(1 - points[:, 1])
         elif isinstance(spine.axis, matplotlib.axis.XAxis):
             return typst.ratio(points[:, 0])
         else:
