@@ -8,22 +8,35 @@ from .axes import Axes
 from .grid import Grid
 
 
-def template(width: float, height: float, body: str | None = None) -> str:
-    s = ""
-    s += f"#let width = {width}cm\n"
-    s += f"#let height = {height}cm\n\n"
+def template(
+    width: float,
+    height: float,
+    fill: str,
+    stroke: str,
+    body: str | None = None,
+) -> str:
+    figure = typst.function(
+        "figure",
+        named=dict(
+            width=typst.length(width, "cm"),
+            height=typst.length(height, "cm"),
+        ),
+        inline=True,
+    )
 
     block = typst.function(
-        "#block",
+        "block",
         named=dict(
             width="width",
             height="height",
-            stroke="blue",
+            stroke=stroke,
+            fill=fill,
         ),
         body=body,
+        inline=False,
     )
 
-    return s + block
+    return "#let " + figure + " = " + block + "\n\n" + "#figure()"
 
 
 class Figure:
@@ -40,6 +53,14 @@ class Figure:
     @property
     def height(self) -> float:
         return self.fig.get_figheight() * 2.54
+
+    @property
+    def fill(self) -> str:
+        return typst.color(self.fig.get_facecolor())
+
+    @property
+    def stroke(self) -> str:
+        return typst.stroke(self.fig.get_edgecolor(), self.fig.get_linewidth(), "solid")
 
     def parse(self) -> None:
         grid_axes: list[list[Axes]] = []
@@ -78,6 +99,8 @@ class Figure:
                 template(
                     width=self.width,
                     height=self.height,
+                    fill=self.fill,
+                    stroke=self.stroke,
                     body=typst.make_body(children),
                 )
             )
