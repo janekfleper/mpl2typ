@@ -215,7 +215,7 @@ def function(
         named = {}
 
     comment = f"// {comment}\n" if comment else ""
-    args = [f"{p}" for p in pos] + [f"{k}: {v}" for k, v in named.items()]
+    args = [f"{dump(p)}" for p in pos] + [f"{k}: {dump(v)}" for k, v in named.items()]
     if body is not None:
         args.append(body)
     if not args:
@@ -291,11 +291,8 @@ def dash(
     if not isinstance(offset, (str, int, np.integer, float)):
         raise TypeError(f"Unknown offset type '{type(offset)}'")
 
-    pattern = list(np.array(pattern, dtype=float))
-    return dictionary(
-        dict(array=array(length(pattern, "pt")), phase=f"{offset}pt"),
-        inline=True,
-    )
+    pattern = np.array(pattern, dtype=float)
+    return dict(array=length(pattern, "pt"), phase=f"{offset}pt")
 
 
 def stroke(edgecolor, linewidth, linestyle):
@@ -330,3 +327,35 @@ def transform(
     transformed = f"({x}, {y})"
     body = "let (x, y) = point\n" + transformed
     return "{\n" + textwrap.indent(body, "  ") + "\n}"
+
+
+def dump(obj, squeeze: bool = False):
+    """
+    Dump an object to a Typst string
+
+    This function is equivalent to `json.dumps()` that turns any object into a
+    valid string.
+
+    Parameters
+    ----------
+    obj: any
+        The object to dump
+    squeeze: bool
+        If True, lists and tuples are squeezed if they contain a single element
+
+    Returns
+    -------
+    str
+    """
+    if isinstance(obj, np.ndarray):
+        return ndarray(obj)
+    elif isinstance(obj, (list, tuple)):
+        elements = [dump(e, squeeze=squeeze) for e in obj]
+        length = sum([len(e) for e in elements])
+        return array(elements, squeeze=squeeze, inline=length < 80)
+    elif isinstance(obj, dict):
+        values = [dump(v, squeeze=squeeze) for v in obj.values()]
+        length = sum([len(k) for k in obj.keys()]) + sum([len(v) for v in values])
+        return dictionary(dict(zip(obj.keys(), values)), inline=length < 80)
+    else:
+        return str(obj)

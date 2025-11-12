@@ -117,12 +117,12 @@ class Ticks(ABC, Generic[TickParams]):
         self.params: TickParams
 
     @property
-    def locs(self):
-        return typst.array([f"{tick.get_loc()}" for tick in self.ticks])
+    def locs(self) -> list[str]:
+        return [f"{tick.get_loc()}" for tick in self.ticks]
 
     @property
-    def labels(self):
-        return typst.array([f'"{tick.label1.get_text()}"' for tick in self.ticks])
+    def labels(self) -> list[str]:
+        return [f'"{tick.label1.get_text()}"' for tick in self.ticks]
 
     @property
     @abstractmethod
@@ -150,47 +150,35 @@ class Ticks(ABC, Generic[TickParams]):
         pass
 
     @property
-    def tick_style(self):
+    def tick_style(self) -> dict[str, str | dict[str, str]]:
         tick = self.ticks[0]
         line = tick.tick1line
         stroke = f"{typst.color(str(line.get_color()), line.get_alpha())} + {line.get_markeredgewidth()}pt"
-        return typst.dictionary(
-            dict(
-                direction=f'"{tick.get_tickdir()}"',
-                line=typst.dictionary(
-                    dict(
-                        length=f"{line.get_markersize()}pt",
-                        angle=self.tick_angle,
-                        stroke=stroke,
-                    ),
-                    inline=True,
-                ),
+        return dict(
+            direction=f'"{tick.get_tickdir()}"',
+            line=dict(
+                length=f"{line.get_markersize()}pt",
+                angle=self.tick_angle,
+                stroke=stroke,
             ),
-            inline=True,
         )
 
     @property
-    def grid_style(self):
+    def grid_style(self) -> dict[str, str]:
         line = self.ticks[0].gridline
-        return typst.dictionary(dict(stroke=Stroke(line).export()), inline=True)
+        return dict(stroke=Stroke(line).export())
 
     @property
-    def label_style(self):
+    def label_style(self) -> dict[str, str | dict[str, str]]:
         tick = self.ticks[0]
         text = self.ticks[0].label1
-        return typst.dictionary(
-            dict(
-                pad=f"{tick.get_pad()}pt",
-                rotation=f"{-text.get_rotation()}deg",
-                text=typst.dictionary(
-                    dict(
-                        size=f"{text.get_fontsize()}pt",
-                        fill=typst.color(str(text.get_color()), text.get_alpha()),
-                    ),
-                    inline=True,
-                ),
+        return dict(
+            pad=f"{tick.get_pad()}pt",
+            rotation=f"{-text.get_rotation()}deg",
+            text=dict(
+                size=f"{text.get_fontsize()}pt",
+                fill=typst.color(str(text.get_color()), text.get_alpha()),
             ),
-            inline=True,
         )
 
     @property
@@ -203,13 +191,13 @@ class Ticks(ABC, Generic[TickParams]):
         }
         if self.params.gridOn:
             items["grid-style"] = self.grid_style
-        return f"let {self.name} = " + typst.dictionary(items)
+        return f"let {self.name} = " + typst.dump(items)
 
     @property
     def draw(self) -> tuple[str, float]:
         named = {
-            "show-ticks": typst.array(self.tick_positions),
-            "show-labels": typst.array(self.label_positions),
+            "show-ticks": self.tick_positions,
+            "show-labels": self.label_positions,
         }
 
         s = typst.function(
@@ -394,22 +382,19 @@ class Spines:
     def get_bounds(self, spine) -> str:
         points = self.transform.transform_path(spine.get_path()).vertices
         if isinstance(spine.axis, matplotlib.axis.YAxis):
-            return typst.array(typst.ratio(points[:, 1]))
+            return typst.ratio(points[:, 1])
         elif isinstance(spine.axis, matplotlib.axis.XAxis):
-            return typst.array(typst.ratio(points[:, 0]))
+            return typst.ratio(points[:, 0])
         else:
             raise TypeError(f"Unknown axis type {type(spine.axis)}")
 
     @staticmethod
     def get_stroke(spine) -> str:
-        stroke = typst.stroke(
+        return typst.stroke(
             spine.get_edgecolor(),
             spine.get_linewidth(),
             spine.get_linestyle(),
         )
-        if isinstance(stroke, str):
-            return stroke
-        return typst.dictionary(stroke, inline=True)
 
     @property
     def definition(self):
@@ -417,11 +402,10 @@ class Spines:
         for key in self.spines:
             spine = self.spines[key]
             if spine.get_visible():
-                spines[key] = typst.dictionary(
-                    dict(bounds=self.get_bounds(spine), stroke=self.get_stroke(spine)),
-                    inline=True,
+                spines[key] = dict(
+                    bounds=self.get_bounds(spine), stroke=self.get_stroke(spine)
                 )
-        return "let spines = " + typst.dictionary(spines, inline=False)
+        return "let spines = " + typst.dump(spines)
 
     @property
     def draw(self) -> tuple[str, float]:

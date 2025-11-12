@@ -63,20 +63,17 @@ class LegendHandlerErrorbar:
         self.children = children
 
     @property
-    def data(self):
+    def data(self) -> dict[str, str]:
         line = self.handle.lines[0]
         try:
             name = str(self.children.index(line))
         except ValueError:
             name = None
 
-        return typst.dictionary(
-            dict(stroke=f"stroke-{name}", marker=f"marker-{name}"),
-            inline=True,
-        )
+        return dict(stroke=f"stroke-{name}", marker=f"marker-{name}")
 
     @property
-    def caps(self):
+    def caps(self) -> dict[str, str]:
         lines = self.handle.lines[1]
         names = []
         for line in lines:
@@ -102,10 +99,10 @@ class LegendHandlerErrorbar:
                 elements["bottom"] = f"marker-{bottom}"
                 elements["top"] = f"marker-{top}"
 
-        return typst.dictionary(elements, inline=True)
+        return elements
 
     @property
-    def bars(self):
+    def bars(self) -> str | dict[str, str]:
         collections = self.handle.lines[2]
         names = []
         for collection in collections:
@@ -123,7 +120,7 @@ class LegendHandlerErrorbar:
 
         if not elements:
             return ""
-        return typst.dictionary(elements, inline=True)
+        return elements
 
     def export(self):
         return typst.function(
@@ -161,7 +158,7 @@ class Legend:
         return f"[{title}]"
 
     @property
-    def style(self) -> dict:
+    def style(self) -> dict[str, str | int]:
         return {
             "location": LOCATION[self.legend._loc],
             "title": self.title,
@@ -182,7 +179,7 @@ class Legend:
         return typst.color(self.legend.legendPatch.get_edgecolor())
 
     @property
-    def frame(self) -> dict:
+    def frame(self) -> dict[str, str | int | dict[str, str]]:
         if not self.legend.get_frame_on():
             return dict()
 
@@ -193,6 +190,7 @@ class Legend:
             frame_kwargs["radius"] = (
                 f"{style.rounding_size * frame.get_mutation_scale():.2f}pt"
             )
+
         return dict(
             fill=self.fill,
             stroke=self.stroke,
@@ -205,17 +203,16 @@ class Legend:
 
     @property
     def definition(self) -> str:
-        style = typst.dictionary(self.style | self.frame)
+        style = self.style | self.frame
         items = [
-            typst.dictionary(dict(handle=item.export(), label=f"[{item.label}]"))
-            for item in self.items
+            dict(handle=item.export(), label=f"[{item.label}]") for item in self.items
         ]
         return (
             "let legend-style = "
-            + style
+            + typst.dump(style)
             + "\n"
             + "let legend-items = "
-            + typst.array(items, inline=False)
+            + typst.dump(items)
         )
 
     @property

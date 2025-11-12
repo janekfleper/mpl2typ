@@ -52,7 +52,7 @@ class Stroke:
 
     @property
     def color(self) -> str:
-        return typst.color(str(self.line.get_color()), self.line.get_alpha())
+        return typst.color(self.line.get_color(), self.line.get_alpha())
 
     @property
     def thickness(self) -> str:
@@ -70,26 +70,22 @@ class Stroke:
         return f'"{self.line.get_dash_joinstyle()}"'
 
     @property
-    def dash(self) -> str:
+    def dash(self) -> str | dict[str, str]:
         offset, pattern = self.line._dash_pattern
         if pattern is None:
             return '"solid"'
         else:
-            array = typst.array(typst.length(pattern, "pt"))
-            phase = f"{offset}pt"
-            return f"(array: {array}, phase: {phase})"
+            return dict(array=typst.length(pattern, "pt"), phase=f"{offset}pt")
 
-    def export(self) -> str:
+    def export(self) -> str | dict[str, str]:
         if self.line.get_linestyle() in ["none", "None", " ", ""]:
             return "none"
-        return typst.dictionary(
-            dict(
-                paint=self.color,
-                thickness=self.thickness,
-                cap=self.capstyle,
-                join=self.joinstyle,
-                dash=self.dash,
-            ),
+        return dict(
+            paint=self.color,
+            thickness=self.thickness,
+            cap=self.capstyle,
+            join=self.joinstyle,
+            dash=self.dash,
         )
 
 
@@ -103,11 +99,11 @@ class Marker:
 
     @property
     def face_color(self) -> str:
-        return typst.color(str(self.line.get_markerfacecolor()), self.line.get_alpha())
+        return typst.color(self.line.get_markerfacecolor(), self.line.get_alpha())
 
     @property
     def edge_color(self) -> str:
-        return typst.color(str(self.line.get_markeredgecolor()), self.line.get_alpha())
+        return typst.color(self.line.get_markeredgecolor(), self.line.get_alpha())
 
     @property
     def edge_width(self) -> str:
@@ -149,8 +145,8 @@ class Line2D:
     @property
     def definition(self) -> str:
         return (
-            f"let stroke-{self.name} = {self.stroke.export()}\n"
-            + f"let marker-{self.name} = {self.marker.export()}\n"
+            f"let stroke-{self.name} = {typst.dump(self.stroke.export())}\n"
+            + f"let marker-{self.name} = {typst.dump(self.marker.export())}\n"
             + f"let {self.prefix}-{self.name} = "
             + typst.dictionary(
                 dict(

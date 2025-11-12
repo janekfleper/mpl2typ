@@ -32,7 +32,7 @@ def curve_components(path: matplotlib.path.Path):
 
         segment[1::2] *= -1  # flip the y-coordinates
         points = [
-            typst.array(typst.length(list(point), " * s"), inline=True)
+            typst.length(list(point), " * s")
             for point in np.array(segment, dtype=float).reshape(-1, 2)
         ]
         if code == path.MOVETO:
@@ -192,7 +192,7 @@ class Collection:
         return linewidths
 
     @property
-    def linestyle(self) -> list[str]:
+    def linestyle(self) -> list[str | dict[str, str]]:
         """
         If all linestyles are equal, only a single linestyle is returned. See
         the docstring of the ``linewidth`` property for the details.
@@ -209,9 +209,9 @@ class Collection:
     @property
     def stroke(self) -> dict[str, str]:
         return dict(
-            paint=typst.array(self.edgecolor, squeeze=True, inline=False),
-            thickness=typst.array(self.linewidth, squeeze=True, inline=False),
-            dash=typst.array(self.linestyle, squeeze=True, inline=False),
+            paint=typst.dump(self.edgecolor, squeeze=True),
+            thickness=typst.dump(self.linewidth, squeeze=True),
+            dash=typst.dump(self.linestyle, squeeze=True),
         )
 
     @property
