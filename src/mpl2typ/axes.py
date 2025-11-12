@@ -1,4 +1,5 @@
 import json
+import pathlib
 import textwrap
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
@@ -502,7 +503,7 @@ class Axes:
             self.definitions.append(child.definition)
             self.draws.append(child.draw)
 
-    def export(self):
+    def export(self, path: pathlib.Path) -> None:
         if title := self.title.definition:
             self.definitions.append(title)
             self.draws.extend(self.title.draw)
@@ -523,7 +524,8 @@ class Axes:
         draws = [draw[0] for draw in sorted(self.draws, key=lambda x: x[1])]
 
         if self.data:
-            with open(f"data/{self.prefix}-{self.name}.json", "w") as f:
+            filename = path.joinpath("data", f"{self.prefix}-{self.name}.json")
+            with open(filename, "w") as f:
                 json.dump(self.data, f, indent=4, cls=NumpyEncoder)
 
         s = f"#let {self.prefix}-{self.name}(xlim: {self.xlim}, ylim: {self.ylim}, dpi: {self.ax.figure.dpi}) = {{"

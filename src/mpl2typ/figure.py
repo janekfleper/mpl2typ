@@ -79,7 +79,11 @@ class Figure:
             self.grids.append(Grid(str(i), gridspecs[i], grid_axes[i]))
 
     def export(self, path: str | pathlib.Path) -> None:
-        with open(path, "w", encoding="utf-8") as f:
+        path = pathlib.Path(path)
+        path.mkdir(parents=True, exist_ok=True)
+        path.joinpath("data").mkdir(parents=True, exist_ok=True)
+
+        with open(path.joinpath("figure.typ"), "w", encoding="utf-8") as f:
             f.write('#import "/mpl2typ/lib.typ": *\n\n')
             f.write("#set page(width: auto, height: auto, margin: 0.9mm)\n")
             f.write("\n\n")
@@ -87,12 +91,12 @@ class Figure:
             children: list[str] = []
             for grid in self.grids:
                 for ax in grid.axes:
-                    f.write(ax.export() + "\n")
+                    f.write(ax.export(path) + "\n")
                 f.write(grid.export() + "\n")
                 children.append(f"{grid.prefix}-{grid.name}()")
 
             for ax in self.other_axes:
-                f.write(ax.export() + "\n")
+                f.write(ax.export(path) + "\n")
                 children.append(f"standalone-{ax.prefix}-{ax.name}()")
 
             f.write(
