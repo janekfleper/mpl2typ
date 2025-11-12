@@ -251,7 +251,8 @@ def block(name: str, padding: dict[str, float], body: str | None = None):
         named=dict(
             width="100% - padding.right - padding.left",
             height="100% - padding.top - padding.bottom",
-            stroke="green",
+            stroke="none",
+            fill="none",
         ),
         body=body,
     )
