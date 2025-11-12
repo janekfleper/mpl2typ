@@ -10,27 +10,20 @@ class Text:
         self,
         name: str,
         text: matplotlib.text.Text,
-        ax: matplotlib.axes.Axes,
+        axes: "typst.axes.Axes",
         prefix: str = "text",
     ):
         self.name = name
         self.text = text
-        self.ax = ax
+        self.axes = axes
         self.prefix = prefix
 
     @property
     def position(self) -> str:
-        transform = self.text.get_transform()
-        if transform == self.ax.transData:
-            x, y = self.text.get_position()
-            return f"transform({typst.array([str(x), str(y)])})"
-
-        x, y = self.ax.transAxes.inverted().transform_point(  # type: ignore
-            transform.transform_point(self.text.get_position())  # type: ignore
+        return self.axes.transform_point(
+            self.text.get_position(),
+            self.text.get_transform(),
         )
-        dx = f"{round(x * 100, 3)}%"
-        dy = f"{round((1 - y) * 100, 3)}%"
-        return f"({dx}, {dy})"
 
     @property
     def fontsize(self) -> float:
@@ -73,7 +66,7 @@ class Text:
             body=f"[{self.text.get_text()}]",
             inline=True,
         )
-        return f"let {self.prefix}-{self.name} = {typst.dictionary(dict(position=self.position, body=self.inner(text)))}"
+        return f"let {self.prefix}-{self.name} = {typst.dump(dict(position=self.position, body=self.inner(text)))}"
 
     @property
     def draw(self) -> tuple[str, float]:

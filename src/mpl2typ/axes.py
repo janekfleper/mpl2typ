@@ -64,19 +64,20 @@ TickParams = TypeVar("TickParams", XTickParams, YTickParams)
 
 
 class Title:
-    def __init__(self, ax: matplotlib.axes.Axes):
+    def __init__(self, axes: "Axes"):
+        ax = axes.ax
         self.center = (
-            Text("main", ax.title, ax, prefix="title")
+            Text("main", ax.title, axes, prefix="title")
             if ax.get_title(loc="center")
             else None
         )
         self.left = (
-            Text("left", ax._left_title, ax, prefix="title")  # type: ignore
+            Text("left", ax._left_title, axes, prefix="title")  # type: ignore
             if ax.get_title(loc="left")
             else None
         )
         self.right = (
-            Text("right", ax._right_title, ax, prefix="title")  # type: ignore
+            Text("right", ax._right_title, axes, prefix="title")  # type: ignore
             if ax.get_title(loc="right")
             else None
         )
@@ -304,45 +305,49 @@ class YTicks(Ticks[YTickParams]):
 
 
 class Axis:
-    def __init__(self, ax: matplotlib.axes.Axes):
-        self.ax = ax
+    def __init__(self, axes: "Axes"):
+        self.axes = axes
         self.xticks: list[XTicks] = []
         self.yticks: list[YTicks] = []
 
-        if ticks := ax.xaxis.get_major_ticks():
-            params = ax.xaxis.get_tick_params(which="major")
+        if ticks := self.ax.xaxis.get_major_ticks():
+            params = self.ax.xaxis.get_tick_params(which="major")
             self.xticks.append(XTicks("xaxis-major-ticks", ticks, params))
-        if ticks := ax.xaxis.get_minor_ticks():
-            params = ax.xaxis.get_tick_params(which="minor")
+        if ticks := self.ax.xaxis.get_minor_ticks():
+            params = self.ax.xaxis.get_tick_params(which="minor")
             self.xticks.append(XTicks("xaxis-minor-ticks", ticks, params))
-        if ticks := ax.yaxis.get_major_ticks():
-            params = ax.yaxis.get_tick_params(which="major")
+        if ticks := self.ax.yaxis.get_major_ticks():
+            params = self.ax.yaxis.get_tick_params(which="major")
             self.yticks.append(YTicks("yaxis-major-ticks", ticks, params))
-        if ticks := ax.yaxis.get_minor_ticks():
-            params = ax.yaxis.get_tick_params(which="minor")
+        if ticks := self.ax.yaxis.get_minor_ticks():
+            params = self.ax.yaxis.get_tick_params(which="minor")
             self.yticks.append(YTicks("yaxis-minor-ticks", ticks, params))
 
     @property
+    def ax(self) -> matplotlib.axes.Axes:
+        return self.axes.ax
+
+    @property
     def xlabel(self):
-        if self.ax.get_xlabel():
-            return Text("xaxis", self.ax.xaxis.get_label(), self.ax, prefix="label")
+        if self.axes.ax.get_xlabel():
+            return Text("xaxis", self.ax.xaxis.get_label(), self.axes, prefix="label")
 
     @property
     def ylabel(self):
-        if self.ax.get_ylabel():
-            return Text("yaxis", self.ax.yaxis.get_label(), self.ax, prefix="label")
+        if self.axes.ax.get_ylabel():
+            return Text("yaxis", self.ax.yaxis.get_label(), self.axes, prefix="label")
 
     @property
     def xoffset(self):
         xaxis_offset_text = self.ax.xaxis.get_offset_text()
         if xaxis_offset_text.get_text():
-            return Text("xaxis", xaxis_offset_text, self.ax, prefix="offset-label")
+            return Text("xaxis", xaxis_offset_text, self.axes, prefix="offset-label")
 
     @property
     def yoffset(self):
         yaxis_offset_text = self.ax.yaxis.get_offset_text()
         if yaxis_offset_text.get_text():
-            return Text("yaxis", yaxis_offset_text, self.ax, prefix="offset-label")
+            return Text("yaxis", yaxis_offset_text, self.axes, prefix="offset-label")
 
     @property
     def definition(self) -> str:
@@ -426,8 +431,8 @@ class Axes:
         self.prefix = prefix
         self.standalone = standalone
 
-        self.title = Title(ax)
-        self.axis = Axis(ax)
+        self.title = Title(self)
+        self.axis = Axis(self)
         self.spines = Spines(ax)
 
         if ax.legend_ is not None:
@@ -438,6 +443,41 @@ class Axes:
         self.data: dict[str, Any] = {}
         self.definitions: list[str] = []
         self.draws: list[tuple[str, float]] = []
+
+    def transform_point(self, point, transform) -> str | tuple[str, str]:
+        """
+        Transform a point from any coordinates to relative axes coordinates.
+
+        In Typst, the relative axes coordinates range from 0% to 100% in both
+        directions, although the y-axis is inverted compared to matplotlib.
+        """
+        x, y = point
+        if transform == self.ax.transData:
+            return f"transform({typst.array([str(x), str(y)])})"
+        elif transform == self.ax.transAxes:
+            return typst.ratio((x, 1 - y))
+        elif isinstance(transform, matplotlib.transforms.IdentityTransform):
+            (x0, y0), (x1, y1) = self.ax.bbox.get_points()
+            x = typst.ratio((x - x0) / (x1 - x0))
+            y = typst.ratio((y1 - y) / (y1 - y0))
+            return (x, y)
+        elif isinstance(transform, matplotlib.transforms.BlendedAffine2D):
+            if transform._x == self.ax.transAxes:
+                x = typst.ratio(x)
+            elif isinstance(transform._x, matplotlib.transforms.IdentityTransform):
+                x0, x1 = self.ax.bbox.get_points()[:, 0]
+                x = typst.ratio((x - x0) / (x1 - x0))
+            if transform._y == self.ax.transAxes:
+                y = typst.ratio(1 - y)
+            elif isinstance(transform._y, matplotlib.transforms.IdentityTransform):
+                y0, y1 = self.ax.bbox.get_points()[:, 1]
+                y = typst.ratio((y1 - y) / (y1 - y0))
+            return (x, y)
+        else:
+            x, y = self.ax.transAxes.inverted().transform_point(
+                transform.transform_point(point)
+            )
+            return typst.ratio((x, 1 - y))
 
     @property
     def position(self):
@@ -496,7 +536,7 @@ class Axes:
             elif isinstance(_child, matplotlib.collections.Collection):
                 child = Collection(str(i), _child)
             elif isinstance(_child, matplotlib.text.Text):
-                child = Text(str(i), _child, self.ax)
+                child = Text(str(i), _child, self)
 
             if hasattr(child, "data"):
                 self.data[f"{child.prefix}-{child.name}"] = child.data
