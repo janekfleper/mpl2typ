@@ -17,10 +17,7 @@ class Cell:
         axes = [f"{axes.prefix}-{axes.name}()" for axes in self.axes]
         return typst.function(
             "axes.cell",
-            named=dict(
-                position=f"({self.position[0]}, {self.position[1]})",
-                shape=f"({self.shape[0]}, {self.shape[1]})",
-            ),
+            named=dict(position=self.position, shape=self.shape),
             body=typst.make_body(axes),
         )
 

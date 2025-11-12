@@ -458,6 +458,16 @@ class Axes:
         )
 
     @property
+    def patch(self) -> tuple[str, float]:
+        fill = typst.color(self.ax.get_facecolor(), self.ax.get_alpha())
+        patch = typst.function(
+            "rect",
+            named=dict(width="100%", height="100%", fill=fill, stroke="none"),
+            inline=True,
+        )
+        return (f"std.place({patch})", self.ax.patch.zorder)
+
+    @property
     def cell(self):
         sps = self.ax.get_subplotspec()
         if sps is None:
@@ -496,14 +506,20 @@ class Axes:
         if title := self.title.definition:
             self.definitions.append(title)
             self.draws.extend(self.title.draw)
-        self.definitions.append(self.axis.definition)
-        self.draws.extend(self.axis.draw)
+
+        self.draws.append(self.patch)
         self.definitions.append(self.spines.definition)
         self.draws.append(self.spines.draw)
+
+        self.definitions.append(self.axis.definition)
+        self.draws.extend(self.axis.draw)
+
         self.export_data()
+
         if self.legend is not None:
             self.definitions.append(self.legend.definition)
             self.draws.append(self.legend.draw)
+
         draws = [draw[0] for draw in sorted(self.draws, key=lambda x: x[1])]
 
         if self.data:
@@ -515,7 +531,7 @@ class Axes:
         if self.data:
             load_data = f'let data = json("data/{self.prefix}-{self.name}.json")\n\n'
             s += textwrap.indent(load_data, "  ")
-        s += textwrap.indent("\n\n".join(self.definitions), "  ") + "\n"
+        s += textwrap.indent("\n\n".join(self.definitions), "  ") + "\n\n"
         s += textwrap.indent("\n".join(draws), "  ") + "\n"
         s += "}\n\n"
 
