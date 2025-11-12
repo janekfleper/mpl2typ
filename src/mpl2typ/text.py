@@ -1,8 +1,20 @@
+import numpy as np
+import matplotlib
 import matplotlib.text
 import matplotlib.axes
 import matplotlib.transforms
 
 from . import typst
+
+
+def relativ_fontsize(fontsize: float) -> str:
+    delta = fontsize - matplotlib.rcParams["font.size"]
+    fontsize = typst.length(1, "em")
+    if delta > 0:
+        fontsize += " + " + typst.length(delta, "pt")
+    elif delta < 0:
+        fontsize += " - " + typst.length(abs(delta), "pt")
+    return fontsize
 
 
 class Text:
@@ -26,8 +38,8 @@ class Text:
         )
 
     @property
-    def fontsize(self) -> float:
-        return float(self.text.get_fontsize())
+    def fontsize(self) -> str:
+        return relativ_fontsize(float(self.text.get_fontsize()))
 
     @property
     def color(self) -> str:
@@ -56,7 +68,7 @@ class Text:
 
     @property
     def definition(self) -> str:
-        kwargs = dict(size=f"{self.fontsize}pt", fill=self.color)
+        kwargs = dict(size=self.fontsize, fill=self.color)
         if self.text.get_verticalalignment() in ["center", "bottom"]:
             kwargs["bottom-edge"] = '"descender"'
 

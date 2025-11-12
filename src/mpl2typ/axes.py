@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import TypeVar, Generic, Any
 
 import numpy as np
+import matplotlib
 import matplotlib.axes
 import matplotlib.axis
 import matplotlib.text
@@ -17,7 +18,7 @@ from . import typst
 from .lines import Stroke, Line2D
 from .collections import Collection, QuadMesh
 from .legend import Legend
-from .text import Text
+from .text import Text, relativ_fontsize
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -178,7 +179,7 @@ class Ticks(ABC, Generic[TickParams]):
             pad=f"{tick.get_pad()}pt",
             rotation=f"{-text.get_rotation()}deg",
             text=dict(
-                size=f"{text.get_fontsize()}pt",
+                size=relativ_fontsize(float(text.get_fontsize())),
                 fill=typst.color(str(text.get_color()), text.get_alpha()),
             ),
         )
