@@ -5,7 +5,18 @@ from collections.abc import Mapping, Sequence
 import numpy as np
 import numpy.typing as npt
 
-COLORS = {"k": "black"}
+COLORS = {
+    "k": "black",
+    "w": "white",
+    "r": "red",
+    "b": "blue",
+    "g": "green",
+    (0.0, 0.0, 0.0, 1.0): "black",
+    (1.0, 1.0, 1.0, 1.0): "white",
+    (1.0, 0.0, 0.0, 1.0): "red",
+    (0.0, 1.0, 0.0, 1.0): "green",
+    (0.0, 0.0, 1.0, 1.0): "blue",
+}
 
 
 def make_body(elements: Sequence[str]) -> str:
@@ -260,17 +271,37 @@ def block(name: str, padding: dict[str, float], body: str | None = None):
     )
 
 
-def color(color: str | tuple[float, ...], alpha: float | None = None) -> str:
-    if isinstance(color, tuple):
-        color = function("color.rgb", pos=ratio(color), inline=True)
+def _color_from_str(color: str) -> str:
+    if color in COLORS.values():
+        return color
+    elif color in COLORS:
+        return COLORS[color]
+    elif color.startswith("#"):
+        return function("color.rgb", pos=[f'"{color}"'], inline=True)
     else:
         try:
-            color = function("color.luma", pos=[ratio(float(color) * 100)], inline=True)
+            return function("color.luma", pos=[ratio(float(color))], inline=True)
         except ValueError:
-            if color in COLORS:
-                color = COLORS[color]
-            elif color.startswith("#"):
-                color = function("color.rgb", pos=[f'"{color}"'], inline=True)
+            print(f"Unknown color '{color}', defaulting to black")
+            return "black"
+
+
+def _color_from_tuple(color: tuple[float, ...], simplify: bool = True) -> str:
+    if simplify:
+        if color in COLORS:
+            return COLORS[color]
+        elif len(set(color[:3])) == 1 and (len(color) == 3 or color[3] == 1.0):
+            return function("color.luma", pos=[ratio(color[0])], inline=True)
+    return function("color.rgb", pos=ratio(color), inline=True)
+
+
+def color(
+    color: str | tuple[float, ...], alpha: float | None = None, simplify: bool = True
+) -> str:
+    if isinstance(color, str):
+        color = _color_from_str(color)
+    elif isinstance(color, (tuple, list, np.ndarray)):
+        color = _color_from_tuple(tuple(color), simplify=simplify)
 
     if alpha is None:
         return color

@@ -146,10 +146,7 @@ class Collection:
 
     @property
     def fill(self) -> list[str]:
-        colors = [
-            typst.function("color.rgb", pos=typst.ratio(color), inline=True)
-            for color in self.collection.get_facecolor()
-        ]
+        colors = [typst.color(color) for color in self.collection.get_facecolor()]
 
         hatch = self.collection.get_hatch()
         if hatch is None:
@@ -169,10 +166,7 @@ class Collection:
 
     @property
     def edgecolor(self) -> list[str]:
-        return [
-            typst.function("color.rgb", pos=typst.ratio(color), inline=True)
-            for color in self.collection.get_edgecolor()
-        ]
+        return [typst.color(color) for color in self.collection.get_edgecolor()]
 
     @property
     def linewidth(self) -> list[str]:
