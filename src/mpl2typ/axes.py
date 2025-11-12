@@ -122,7 +122,7 @@ class Ticks(ABC, Generic[TickParams]):
 
     @property
     def labels(self) -> list[str]:
-        return [f'"{tick.label1.get_text()}"' for tick in self.ticks]
+        return [f"${tick.label1.get_text()}$" for tick in self.ticks]
 
     @property
     @abstractmethod
