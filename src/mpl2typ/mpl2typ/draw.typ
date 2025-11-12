@@ -8,7 +8,10 @@
   place(position, body)
 }
 
+#let clip(body) = std.place(block(width: 100%, height: 100%, stroke: none, fill: none, clip: true, body))
+
 #let line(data: (), stroke: none, marker: none, transform: none) = {
+  show: clip
   assert.ne(transform, none, message: "Parameter transform must not be none")
   let points = data.map(transform)
 
@@ -75,6 +78,7 @@
   compute-scale: none,
   offset-transform: none,
 ) = {
+  show: clip
   assert.ne(transform, none, message: "Parameter transform must not be none")
   assert.ne(offset-transform, none, message: "Parameter offset-transform must not be none")
   if compute-scale == none { compute-scale = size => size }
@@ -97,6 +101,7 @@
 }
 
 #let quad-mesh(data: (:), colormap: none, transform: none) = {
+  show: clip
   assert.ne(colormap, none, message: "Parameter colormap must not be none")
   assert.ne(transform, none, message: "Parameter transform must not be none")
   let vertices = data.remove("vertices", default: ())
