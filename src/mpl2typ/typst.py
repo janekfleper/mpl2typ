@@ -279,7 +279,7 @@ def _color_from_str(color: str) -> str:
     elif color.startswith("#"):
         return function("color.rgb", pos=[f'"{color}"'], inline=True)
     elif color.startswith("C"):
-        return f"colors.at({color[1:]})"
+        return f"colors({color[1:]})"
     else:
         try:
             return function("color.luma", pos=[ratio(float(color))], inline=True)
