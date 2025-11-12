@@ -17,3 +17,10 @@
 )
 
 #let colors(i) = _default-colors.at(calc.rem(i, _default-colors.len()))
+
+#let figure-style(body) = {
+  set text(10pt, font: "DejaVu Sans")
+  show math.equation: set text(font: "DejaVu Sans")
+
+  body
+}
