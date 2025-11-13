@@ -79,6 +79,7 @@
   offset-transform: none,
 ) = {
   show: clip
+  set curve(stroke: (cap: "round", join: "round"))
   assert.ne(transform, none, message: "Parameter transform must not be none")
   assert.ne(offset-transform, none, message: "Parameter offset-transform must not be none")
   if compute-scale == none { compute-scale = size => size }
