@@ -68,6 +68,8 @@
     thickness: _get-prop(i, stroke.thickness),
     dash: _get-prop(i, stroke.dash),
   )
+  if "cap" in stroke { (cap: _get-prop(i, stroke.cap)) }
+  if "join" in stroke { (join: _get-prop(i, stroke.join)) }
 }
 
 #let collection(
