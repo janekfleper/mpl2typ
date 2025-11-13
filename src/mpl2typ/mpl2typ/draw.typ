@@ -11,10 +11,10 @@
 #let clip(body) = std.place(block(width: 100%, height: 100%, stroke: none, fill: none, clip: true, body))
 
 #let line(data: (), stroke: none, marker: none, transform: none) = {
-  show: clip
   assert.ne(transform, none, message: "Parameter transform must not be none")
   let points = data.map(transform)
 
+  show: clip
   if stroke != none {
     let (first, ..other) = points
     std.place(
@@ -78,8 +78,6 @@
   compute-scale: none,
   offset-transform: none,
 ) = {
-  show: clip
-  set curve(stroke: (cap: "round", join: "round"))
   assert.ne(transform, none, message: "Parameter transform must not be none")
   assert.ne(offset-transform, none, message: "Parameter offset-transform must not be none")
   if compute-scale == none { compute-scale = size => size }
@@ -89,6 +87,8 @@
   let offset = data.remove("offset", default: ())
   let length = calc.max(path.len(), offset.len())
 
+  show: clip
+  set curve(stroke: (cap: "round", join: "round"))
   for i in range(length) {
     let _path = _get-prop(i, path)
     let _size = _get-prop(i, size)
@@ -102,12 +102,12 @@
 }
 
 #let quad-mesh(data: (:), colormap: none, transform: none) = {
-  show: clip
   assert.ne(colormap, none, message: "Parameter colormap must not be none")
   assert.ne(transform, none, message: "Parameter transform must not be none")
   let vertices = data.remove("vertices", default: ())
   let values = data.remove("values", default: ())
 
+  show: clip
   for (i, row) in values.enumerate() {
     for (j, value) in row.enumerate() {
       let color = colormap(value)
