@@ -36,8 +36,8 @@ def template(
         body=body,
         inline=False,
     )
-
-    return "#let " + figure + " = " + block + "\n\n" + "#figure()"
+    body = typst.make_body(("show: figure-style", block))
+    return "#let " + figure + " = " + body + "\n\n" + "#figure()"
 
 
 class Figure:
@@ -88,7 +88,6 @@ class Figure:
             header: str = textwrap.dedent("""\
             #import "/mpl2typ/lib.typ": *
             #import "/style.typ": *
-            #show: figure-style
             """)
 
         with open(path.joinpath("figure.typ"), "w", encoding="utf-8") as f:
