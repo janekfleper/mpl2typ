@@ -110,6 +110,7 @@
   stroke: none,
   frame: block,
   numbering: "a",
+  text-style: (:),
   number,
 ) = {
   outset = if type(outset) in (length, ratio) { (outset, outset) } else { outset }
@@ -130,7 +131,10 @@
   )
 
   let body = if numbering == none { number } else { std.numbering(numbering, number) }
-  std.place(alignment, dx: dx, dy: dy, frame(align(center + horizon, body)))
+  {
+    set text(..text-style)
+    std.place(alignment, dx: dx, dy: dy, frame(align(center + horizon, body)))
+  }
 }
 
 #let spines(spines) = {
