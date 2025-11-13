@@ -134,6 +134,7 @@
 }
 
 #let spines(spines) = {
+  set line(stroke: (cap: "square"))
   if "top" in spines {
     let (start, end) = spines.top.bounds
     let stroke = spines.top.at("stroke", default: black)
