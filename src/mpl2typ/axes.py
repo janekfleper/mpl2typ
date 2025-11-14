@@ -427,9 +427,9 @@ class Axes:
         prefix: str = "axes",
         standalone: bool = False,
     ):
-        self.name = name
+        self._name = name
         self.ax = ax
-        self.prefix = prefix
+        self._prefix = prefix
         self.standalone = standalone
 
         self.title = Title(self)
@@ -444,6 +444,10 @@ class Axes:
         self.data: dict[str, Any] = {}
         self.definitions: list[str] = []
         self.draws: list[tuple[str, float]] = []
+
+    @property
+    def name(self) -> str:
+        return self._prefix + "-" + self._name
 
     def transform_point(self, point, transform) -> str | tuple[str, str]:
         """
@@ -565,23 +569,19 @@ class Axes:
         draws = [draw[0] for draw in sorted(self.draws, key=lambda x: x[1])]
 
         if self.data:
-            filename = path.joinpath("data", f"{self.prefix}-{self.name}.json")
+            filename = path.joinpath("data", f"{self.name}.json")
             with open(filename, "w") as f:
                 json.dump(self.data, f, indent=4, cls=NumpyEncoder)
 
-        s = f"#let {self.prefix}-{self.name}(xlim: {self.xlim}, ylim: {self.ylim}, dpi: {self.ax.figure.dpi}) = {{"
+        s = f"#let {self.name}(xlim: {self.xlim}, ylim: {self.ylim}, dpi: {self.ax.figure.dpi}) = {{"
         s += header + "\n"
         if self.data:
-            load_data = f'let data = json("data/{self.prefix}-{self.name}.json")\n\n'
+            load_data = f'let data = json("data/{self.name}.json")\n\n'
             s += textwrap.indent(load_data, "  ")
         s += textwrap.indent("\n\n".join(self.definitions), "  ") + "\n\n"
         s += textwrap.indent("\n".join(draws), "  ") + "\n"
         s += "}\n\n"
 
         if self.standalone:
-            s += typst.block(
-                f"standalone-{self.prefix}-{self.name}",
-                self.padding,
-                f"{self.prefix}-{self.name}()",
-            )
+            s += typst.block(self.name, self.padding, f"{self.name}()")
         return s

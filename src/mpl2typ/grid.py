@@ -14,7 +14,7 @@ class Cell:
         self.axes: list[Axes] = []
 
     def export(self) -> str:
-        axes = [f"{axes.prefix}-{axes.name}()" for axes in self.axes]
+        axes = [f"{axes.name}()" for axes in self.axes]
         return typst.function(
             "axes.cell",
             named=dict(position=self.position, shape=self.shape),
@@ -30,14 +30,18 @@ class Grid:
         axes: list[Axes],
         prefix: str = "grid",
     ):
-        self.name = name
+        self._name = name
         self.grid = grid
         self.axes = axes
-        self.prefix = prefix
+        self._prefix = prefix
 
         self.cells: list[Cell] = []
         self.padding: dict[str, float] = dict(left=0, right=0, top=0, bottom=0)
         self.parse()
+
+    @property
+    def name(self) -> str:
+        return self._prefix + "-" + self._name
 
     @property
     def columns(self) -> list[float]:
@@ -118,8 +122,4 @@ class Grid:
             body=",\n".join(cells) if cells else None,
         )
 
-        return typst.block(
-            f"{self.prefix}-{self.name}",
-            self.padding,
-            grid,
-        )
+        return typst.block(self.name, self.padding, grid)

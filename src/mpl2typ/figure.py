@@ -69,12 +69,15 @@ class Figure:
         for i, ax in enumerate(self.fig.get_axes()):
             gs = ax.get_gridspec()
             if gs is None:
-                self.other_axes.append(Axes(str(i), ax, standalone=True))
-            elif gs not in gridspecs:
-                gridspecs.append(gs)
-                grid_axes.append([Axes(str(i), ax)])
+                axes = Axes(str(i), ax, prefix="standalone", standalone=True)
+                self.other_axes.append(axes)
             else:
-                grid_axes[gridspecs.index(gs)].append(Axes(str(i), ax))
+                axes = Axes(str(i), ax, standalone=False)
+                if gs not in gridspecs:
+                    gridspecs.append(gs)
+                    grid_axes.append([axes])
+                else:
+                    grid_axes[gridspecs.index(gs)].append(axes)
 
         for i in range(len(gridspecs)):
             self.grids.append(Grid(str(i), gridspecs[i], grid_axes[i]))
@@ -101,11 +104,11 @@ class Figure:
                 for ax in grid.axes:
                     f.write(ax.export(path) + "\n")
                 f.write(grid.export() + "\n")
-                children.append(f"{grid.prefix}-{grid.name}()")
+                children.append(f"{grid.name}()")
 
             for ax in self.other_axes:
                 f.write(ax.export(path) + "\n")
-                children.append(f"standalone-{ax.prefix}-{ax.name}()")
+                children.append(f"{ax.name}()")
 
             f.write(
                 template(
