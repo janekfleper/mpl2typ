@@ -176,3 +176,74 @@
     ),
   )
 }
+
+#let inset(position: none, shape: none, body) = {
+  assert.ne(position, none, message: "Parameter position must not be none")
+  assert.ne(shape, none, message: "Parameter shape must not be none")
+
+  let (dx, dy) = position
+  let (width, height) = shape
+  std.place(
+    top + left,
+    dx: dx,
+    dy: dy,
+    block(
+      width: width,
+      height: height,
+      fill: none,
+      stroke: none,
+      inset: 0em,
+      outset: 0em,
+      body,
+    ),
+  )
+}
+
+#let inset-indicator(target: none, source: none, connectors: ()) = {
+  assert.ne(target, none, message: "Parameter target must not be none")
+  assert.ne(source, none, message: "Parameter source must not be none")
+
+  let (x0, y0) = target.position
+  let (x1, y1) = (x0 + target.shape.at(0), y0 + target.shape.at(1))
+  let (xt0, yt0) = (target.transform)((x0, y0))
+  let (xt1, yt1) = (target.transform)((x1, y1))
+  let (hw, ht) = (xt1 - xt0, yt0 - yt1)
+
+  let (xs0, ys0) = source.position
+  let (hs, ws) = source.shape
+
+  for conn in connectors.anchors {
+    let (xc0, xc1) = if conn.x == left {
+      (xt0, xs0)
+    } else if conn.x == right {
+      (xt0 + hw, xs0 + ws)
+    } else {
+      panic("Invalid horizontal connector direction: " + repr(conn))
+    }
+    let (yc0, yc1) = if conn.y == top {
+      (yt0, ys0)
+    } else if conn.y == bottom {
+      (yt0 + ht, ys0 + hs)
+    } else {
+      panic("Invalid vertical connector direction: " + repr(conn))
+    }
+
+    if connectors.stroke != none {
+      std.place(top + left, std.line(
+        start: (xc0, yc0),
+        end: (xc1, yc1),
+        stroke: connectors.stroke,
+      ))
+    }
+  }
+
+  // Draw the target rectangle at the end to ensure it is on top of the connectors
+  std.place(top + left, dx: xt0, dy: yt0, rect(
+    width: hw,
+    height: ht,
+    fill: target.at("fill", default: none),
+    stroke: target.at("stroke", default: none),
+    inset: 0em,
+    outset: 0em,
+  ))
+}

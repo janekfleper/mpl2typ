@@ -11,6 +11,7 @@ import matplotlib
 import matplotlib.axes
 import matplotlib.axis
 import matplotlib.text
+import matplotlib.inset
 import matplotlib.lines
 import matplotlib.collections
 
@@ -431,6 +432,7 @@ class Axes:
         self.ax = ax
         self._prefix = prefix
         self.standalone = standalone
+        self.inset_axes: list[InsetAxes] = []
 
         self.title = Title(self)
         self.axis = Axis(self)
@@ -548,6 +550,22 @@ class Axes:
             self.definitions.append(child.definition)
             self.draws.append(child.draw)
 
+    def export_insets(self):
+        for ix in self.inset_axes:
+            self.definitions.append(ix.definition)
+            self.draws.append(ix.draw)
+
+        for i, _child in enumerate(self.ax._children):  # type: ignore
+            if isinstance(_child, matplotlib.inset.InsetIndicator):
+                inset_axes = [ix for ix in self.inset_axes if ix.ax == _child._inset_ax]
+                if len(inset_axes) == 1:
+                    child = InsetIndicator(_child, inset_axes[0])
+                    self.definitions.append(child.definition)
+                    self.draws.append(child.draw)
+                else:
+                    message = f"Found {len(inset_axes)} inset axes for inset indicator {str(i)}"
+                    print(message)
+
     def export(self, path: pathlib.Path) -> None:
         if title := self.title.definition:
             self.definitions.append(title)
@@ -561,6 +579,7 @@ class Axes:
         self.draws.extend(self.axis.draw)
 
         self.export_data()
+        self.export_insets()
 
         if self.legend is not None:
             self.definitions.append(self.legend.definition)
@@ -585,3 +604,105 @@ class Axes:
         if self.standalone:
             s += typst.block(self.name, self.padding, f"{self.name}()")
         return s
+
+
+class InsetAxes(Axes):
+    def __init__(self, name, ix, axes, prefix: str = "inset"):
+        self.axes = axes
+        super().__init__(name, ix, prefix, standalone=False)
+
+    def transform_bounds(self, point) -> tuple[float, float]:
+        return self.axes.ax.transAxes.inverted().transform_point(
+            self.axes.ax.figure.transFigure.transform_point(point)
+        )
+
+    @property
+    def position(self) -> tuple[float, float]:
+        """
+        The coordinates (x0, y1) use the upper left corner of the inset as the
+        reference point, which is more aligned with the coordinates in Typst.
+        """
+        p0, p1 = self.ax.get_position().get_points()
+        x0, y0 = self.transform_bounds(p0)
+        x1, y1 = self.transform_bounds(p1)
+        return (x0, 1 - y1)
+
+    @property
+    def shape(self) -> tuple[float, float]:
+        p0, p1 = self.ax.get_position().get_points()
+        x0, y0 = self.transform_bounds(p0)
+        x1, y1 = self.transform_bounds(p1)
+        return (x1 - x0, y1 - y0)
+
+    @property
+    def definition(self) -> str:
+        properties = dict(
+            position=typst.ratio(self.position),
+            shape=typst.ratio(self.shape),
+        )
+        return f"let {self.name}-properties = " + typst.dump(properties)
+
+    @property
+    def draw(self) -> tuple[str, float]:
+        return (f"axes.inset(..{self.name}-properties, {self.name}())", self.ax.zorder)
+
+
+class InsetIndicator:
+    def __init__(self, indicator, inset_axes):
+        self.indicator = indicator
+        self.inset_axes = inset_axes
+
+    @property
+    def name(self):
+        return f"{self.inset_axes.name}-indicator"
+
+    @property
+    def target(self):
+        rect = self.indicator.rectangle
+        x, y = rect.xy
+        width, height = rect.get_width(), rect.get_height()
+        return dict(
+            position=(x, y + height),
+            shape=(width, height),
+            transform="transform",
+            stroke=typst.stroke(
+                rect.get_edgecolor(),
+                rect.get_linewidth(),
+                rect.get_linestyle(),
+            ),
+        )
+
+    @property
+    def source(self):
+        return f"{self.inset_axes.name}-properties"
+
+    @property
+    def connectors(self):
+        anchors = ["bottom + left", "top + left", "bottom + right", "top + right"]
+        indices = []
+        for i, connector in enumerate(self.indicator.connectors):
+            if connector.get_visible():
+                indices.append(i)
+
+        return dict(
+            anchors=[anchors[i] for i in indices],
+            stroke=typst.stroke(
+                connector.get_edgecolor(),
+                connector.get_linewidth(),
+                connector.get_linestyle(),
+            ),
+        )
+
+    @property
+    def definition(self):
+        return f"let {self.name} = " + typst.dump(
+            dict(
+                target=self.target,
+                source=self.source,
+                connectors=self.connectors,
+            )
+        )
+
+    @property
+    def draw(self):
+        return (f"axes.inset-indicator(..{self.name})", self.indicator.zorder)

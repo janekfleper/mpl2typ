@@ -5,7 +5,7 @@ import matplotlib.figure
 import matplotlib.gridspec
 
 from . import typst
-from .axes import Axes
+from .axes import Axes, InsetAxes
 from .grid import Grid
 
 
@@ -44,6 +44,7 @@ class Figure:
     def __init__(self, fig: matplotlib.figure.Figure):
         self.fig = fig
         self.grids: list[Grid] = []
+        self.inset_axes: list[InsetAxes] = []
         self.other_axes: list[Axes] = []
         self.parse()
 
@@ -79,6 +80,11 @@ class Figure:
                 else:
                     grid_axes[gridspecs.index(gs)].append(axes)
 
+            for ix in ax.child_axes:
+                inset_axes = InsetAxes(str(len(self.inset_axes)), ix, axes)
+                self.inset_axes.append(inset_axes)
+                axes.inset_axes.append(inset_axes)
+
         for i in range(len(gridspecs)):
             self.grids.append(Grid(str(i), gridspecs[i], grid_axes[i]))
 
@@ -100,6 +106,9 @@ class Figure:
             f.write(header + "\n")
 
             children: list[str] = []
+            for inset in self.inset_axes:
+                f.write(inset.export(path) + "\n")
+
             for grid in self.grids:
                 for ax in grid.axes:
                     f.write(ax.export(path) + "\n")
