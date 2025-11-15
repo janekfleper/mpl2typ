@@ -18,7 +18,7 @@ class Cell:
         return typst.function(
             "axes.cell",
             named=dict(position=self.position, shape=self.shape),
-            body=typst.make_body(axes),
+            body=typst.body(axes),
         )
 
 

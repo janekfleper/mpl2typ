@@ -56,24 +56,24 @@ class Stroke:
 
     @property
     def thickness(self) -> str:
-        return f"{self.line.get_linewidth()}pt"
+        return typst.length(self.line.get_linewidth(), "pt")
 
     @property
     def capstyle(self) -> str:
         capstyle = self.line.get_dash_capstyle()
         if capstyle == "projecting":
             capstyle = "square"  # this is the equivalent cap style in Typst
-        return f'"{capstyle}"'
+        return typst.string(capstyle)
 
     @property
     def joinstyle(self) -> str:
-        return f'"{self.line.get_dash_joinstyle()}"'
+        return typst.string(self.line.get_dash_joinstyle())
 
     @property
     def dash(self) -> str | dict[str, str]:
         offset, pattern = self.line._dash_pattern
         if pattern is None:
-            return '"solid"'
+            return typst.string("solid")
         else:
             return dict(array=typst.length(pattern, "pt"), phase=f"{offset}pt")
 
@@ -95,7 +95,7 @@ class Marker:
 
     @property
     def size(self) -> str:
-        return f"{self.line.get_markersize() / 2}pt"
+        return typst.length(self.line.get_markersize() / 2, "pt")
 
     @property
     def face_color(self) -> str:
@@ -107,7 +107,7 @@ class Marker:
 
     @property
     def edge_width(self) -> str:
-        return f"{self.line.get_markeredgewidth()}pt"
+        return typst.length(self.line.get_markeredgewidth(), "pt")
 
     @property
     def stroke(self) -> str:
@@ -132,11 +132,15 @@ class Marker:
 
 class Line2D:
     def __init__(self, name: str, line: matplotlib.lines.Line2D, prefix: str = "line"):
-        self.name = name
+        self._name = name
         self.line = line
-        self.prefix = prefix
+        self._prefix = prefix
         self.stroke = Stroke(line)
         self.marker = Marker(line)
+
+    @property
+    def name(self) -> str:
+        return self._prefix + "-" + self._name
 
     @property
     def data(self) -> npt.NDArray[np.float64]:
@@ -147,10 +151,10 @@ class Line2D:
         return (
             f"let stroke-{self.name} = {typst.dump(self.stroke.export())}\n"
             + f"let marker-{self.name} = {typst.dump(self.marker.export())}\n"
-            + f"let {self.prefix}-{self.name} = "
+            + f"let {self.name} = "
             + typst.dictionary(
                 dict(
-                    data=f'data.at("{self.prefix}-{self.name}")',
+                    data=f'data.at("{self.name}")',
                     stroke=f"stroke-{self.name}",
                     marker=f"marker-{self.name}",
                     transform="transform",
@@ -161,8 +165,6 @@ class Line2D:
     @property
     def draw(self) -> tuple[str, float]:
         return (
-            typst.function(
-                "draw.line", body=f"..{self.prefix}-{self.name}", inline=True
-            ),
+            typst.function("draw.line", body=f"..{self.name}", inline=True),
             self.line.zorder,
         )

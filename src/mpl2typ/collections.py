@@ -57,9 +57,13 @@ class Collection:
         collection: matplotlib.collections.Collection,
         prefix: str = "collection",
     ):
-        self.name = name
+        self._name = name
         self.collection = collection
-        self.prefix = prefix
+        self._prefix = prefix
+
+    @property
+    def name(self) -> str:
+        return self._prefix + "-" + self._name
 
     @property
     def path(self) -> list[npt.NDArray[np.float64]]:
@@ -89,7 +93,9 @@ class Collection:
         scale = np.diag(matrix[:2, :2])
         shift = matrix[:2, 2]
         return "point => " + typst.transform(
-            list(scale), list(shift), unit=["1pt", "-1pt"]
+            list(scale),
+            list(shift),
+            unit=[typst.length(1, "pt"), typst.length(-1, "pt")],
         )
 
     @property
@@ -141,7 +147,7 @@ class Collection:
         return "point => " + typst.transform(
             list(offset_scale / dpi),
             list(offset_shift / dpi),
-            unit=["72pt", "-72pt"],
+            unit=[typst.length(72, "pt"), typst.length(-72, "pt")],
         )
 
     @property
@@ -158,7 +164,7 @@ class Collection:
         return [
             typst.function(
                 "hatch.hatch",
-                named=dict(pattern=f'"{hatch}"', stroke=stroke, fill=color),
+                named=dict(pattern=typst.string(hatch), stroke=stroke, fill=color),
                 inline=False,
             )
             for color in colors
@@ -178,9 +184,9 @@ class Collection:
         """
         linewidth = self.collection.get_linewidth()
         if isinstance(linewidth, (float, int)):
-            return [f"{linewidth}pt"]
+            return [typst.length(linewidth, "pt")]
 
-        linewidths = [f"{lw}pt" for lw in linewidth]
+        linewidths = [typst.length(lw, "pt") for lw in linewidth]
         if all(lw == linewidths[0] for lw in linewidths):
             return linewidths[:1]
         return linewidths
@@ -226,10 +232,10 @@ class Collection:
             + f"let transform-{self.name} = {self.transform}\n"
             + f"let compute-scale-{self.name} = {self.compute_scale}\n"
             + f"let offset-transform-{self.name} = {self.offset_transform}\n"
-            + f"let {self.prefix}-{self.name} = "
+            + f"let {self.name} = "
             + typst.dictionary(
                 {
-                    "data": f'data.at("{self.prefix}-{self.name}")',
+                    "data": f'data.at("{self.name}")',
                     "fill": f"fill-{self.name}",
                     "stroke": f"stroke-{self.name}",
                     "transform": f"transform-{self.name}",
@@ -242,9 +248,7 @@ class Collection:
     @property
     def draw(self) -> tuple[str, float]:
         return (
-            typst.function(
-                "draw.collection", body=f"..{self.prefix}-{self.name}", inline=True
-            ),
+            typst.function("draw.collection", body=f"..{self.name}", inline=True),
             self.collection.zorder,
         )
 
@@ -256,9 +260,13 @@ class QuadMesh:
         collection: matplotlib.collections.QuadMesh,
         prefix: str = "quad-mesh",
     ):
-        self.name = name
+        self._name = name
         self.collection = collection
-        self.prefix = prefix
+        self._prefix = prefix
+
+    @property
+    def name(self) -> str:
+        return self._prefix + "-" + self._name
 
     @property
     def gradient(self) -> str:
@@ -296,10 +304,10 @@ class QuadMesh:
         return (
             f"let gradient-{self.name} = {self.gradient}\n"
             + f"let {self.colormap}\n"
-            + f"let {self.prefix}-{self.name} = "
+            + f"let {self.name} = "
             + typst.dictionary(
                 {
-                    "data": f'data.at("{self.prefix}-{self.name}")',
+                    "data": f'data.at("{self.name}")',
                     "colormap": f"colormap-{self.name}",
                     "transform": "transform",
                 }
@@ -310,7 +318,9 @@ class QuadMesh:
     def draw(self) -> tuple[str, float]:
         return (
             typst.function(
-                "draw.quad-mesh", body=f"..{self.prefix}-{self.name}", inline=True
+                "draw.quad-mesh",
+                body=f"..{self.name}",
+                inline=True,
             ),
             self.collection.zorder,
         )

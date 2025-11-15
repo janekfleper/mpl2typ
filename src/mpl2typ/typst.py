@@ -19,7 +19,7 @@ COLORS = {
 }
 
 
-def make_body(elements: Sequence[str]) -> str:
+def body(elements: Sequence[str]) -> str:
     """
     Join elements into a valid Typst body
 
@@ -48,11 +48,23 @@ def boolean(value: bool) -> str:
     return "true" if value else "false"
 
 
-def array(elements: Sequence[str], squeeze: bool = False, inline: bool = True) -> str:
+def string(value: str) -> str:
+    return f'"{value}"'
+
+
+def content(value: str) -> str:
+    return f"[{value}]"
+
+
+def array(
+    elements: Sequence[str | int | float],
+    squeeze: bool = False,
+    inline: bool = True,
+) -> str:
     if not elements:
         return "()"
     elif len(elements) == 1:
-        return elements[0] if squeeze else f"({elements[0]},)"
+        return str(elements[0]) if squeeze else f"({elements[0]},)"
 
     newline = "" if inline else "\n"
     separator = ", " if inline else ",\n"
@@ -60,7 +72,7 @@ def array(elements: Sequence[str], squeeze: bool = False, inline: bool = True) -
 
     return (
         f"({newline}"
-        + textwrap.indent(separator.join(elements), indent)
+        + textwrap.indent(separator.join([str(e) for e in elements]), indent)
         + f"{separator if not inline else ''})"
     )
 
@@ -133,7 +145,7 @@ def length(
                 length(list(values.values()), unit=unit, scale=scale, digits=digits),
             )
         )
-    elif isinstance(values, (int, float)):
+    elif isinstance(values, (int, float, np.integer, np.floating)):
         if scale is not None:
             values = values * scale
         if digits is not None:
@@ -177,6 +189,70 @@ def fraction(
     digits: int = 3,
 ) -> str | list[str] | dict[str, str]:
     return length(values, "fr", scale=scale, digits=digits)
+
+
+@overload
+def degree(
+    values: int | float,
+    scale: int | float | None = ...,
+    digits: int = ...,
+) -> str: ...
+
+
+@overload
+def degree(
+    values: Sequence[int | float],
+    scale: int | float | None = ...,
+    digits: int = ...,
+) -> list[str]: ...
+
+
+@overload
+def degree(
+    values: Mapping[str, int | float],
+    scale: int | float | None = ...,
+    digits: int = ...,
+) -> dict[str, str]: ...
+
+
+def degree(
+    values: int | float | Sequence[int | float] | Mapping[str, int | float],
+    scale: int | float | None = None,
+    digits: int = 3,
+) -> str | list[str] | dict[str, str]:
+    return length(values, "deg", scale=scale, digits=digits)
+
+
+@overload
+def radian(
+    values: int | float,
+    scale: int | float | None = ...,
+    digits: int = ...,
+) -> str: ...
+
+
+@overload
+def radian(
+    values: Sequence[int | float],
+    scale: int | float | None = ...,
+    digits: int = ...,
+) -> list[str]: ...
+
+
+@overload
+def radian(
+    values: Mapping[str, int | float],
+    scale: int | float | None = ...,
+    digits: int = ...,
+) -> dict[str, str]: ...
+
+
+def radian(
+    values: int | float | Sequence[int | float] | Mapping[str, int | float],
+    scale: int | float | None = None,
+    digits: int = 3,
+) -> str | list[str] | dict[str, str]:
+    return length(values, "rad", scale=scale, digits=digits)
 
 
 @overload

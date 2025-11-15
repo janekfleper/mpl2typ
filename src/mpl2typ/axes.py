@@ -122,7 +122,7 @@ class Ticks(ABC, Generic[TickParams]):
 
     @property
     def locs(self) -> list[str]:
-        return [f"{tick.get_loc()}" for tick in self.ticks]
+        return [str(tick.get_loc()) for tick in self.ticks]
 
     @property
     def labels(self) -> list[str]:
@@ -157,11 +157,15 @@ class Ticks(ABC, Generic[TickParams]):
     def tick_style(self) -> dict[str, str | dict[str, str]]:
         tick = self.ticks[0]
         line = tick.tick1line
-        stroke = f"{typst.color(str(line.get_color()), line.get_alpha())} + {line.get_markeredgewidth()}pt"
+        stroke = (
+            typst.color(line.get_color(), line.get_alpha())
+            + " + "
+            + typst.length(line.get_markeredgewidth(), "pt")
+        )
         return dict(
-            direction=f'"{tick.get_tickdir()}"',
+            direction=typst.string(tick.get_tickdir()),
             line=dict(
-                length=f"{line.get_markersize()}pt",
+                length=typst.length(line.get_markersize(), "pt"),
                 angle=self.tick_angle,
                 stroke=stroke,
             ),
@@ -177,8 +181,8 @@ class Ticks(ABC, Generic[TickParams]):
         tick = self.ticks[0]
         text = self.ticks[0].label1
         return dict(
-            pad=f"{tick.get_pad()}pt",
-            rotation=f"{-text.get_rotation()}deg",
+            pad=typst.length(tick.get_pad(), "pt"),
+            rotation=typst.degree(-text.get_rotation()),
             text=dict(
                 size=relativ_fontsize(float(text.get_fontsize())),
                 fill=typst.color(str(text.get_color()), text.get_alpha()),
@@ -234,7 +238,7 @@ class XTicks(Ticks[XTickParams]):
 
     @property
     def tick_angle(self) -> str:
-        return "90deg"
+        return typst.degree(90)
 
     @property
     def draw_function(self) -> str:
@@ -277,7 +281,7 @@ class YTicks(Ticks[YTickParams]):
 
     @property
     def tick_angle(self) -> str:
-        return "0deg"
+        return typst.degree(0)
 
     @property
     def draw_function(self) -> str:
@@ -417,7 +421,10 @@ class Spines:
 
     @property
     def draw(self) -> tuple[str, float]:
-        return ("axes.spines(spines)", self.spines.left.zorder)
+        return (
+            typst.function("axes.spines", body="spines", inline=True),
+            self.spines.left.zorder,
+        )
 
 
 class Axes:
@@ -460,7 +467,7 @@ class Axes:
         """
         x, y = point
         if transform == self.ax.transData:
-            return f"transform({typst.array([str(x), str(y)])})"
+            return typst.function("transform", pos=[typst.array([x, y])], inline=True)
         elif transform == self.ax.transAxes:
             return typst.ratio((x, 1 - y))
         elif isinstance(transform, matplotlib.transforms.IdentityTransform):
@@ -513,7 +520,10 @@ class Axes:
             named=dict(width="100%", height="100%", fill=fill, stroke="none"),
             inline=True,
         )
-        return (f"std.place({patch})", self.ax.patch.zorder)
+        return (
+            typst.function("std.place", body=patch, inline=True),
+            self.ax.patch.zorder,
+        )
 
     @property
     def cell(self):
@@ -527,12 +537,12 @@ class Axes:
         return dict(position=(x, y), shape=(colspan, rowspan))
 
     @property
-    def xlim(self):
-        return f"({self.ax.get_xlim()[0]}, {self.ax.get_xlim()[1]})"
+    def xlim(self) -> list[str]:
+        return typst.array(self.ax.get_xlim())
 
     @property
-    def ylim(self):
-        return f"({self.ax.get_ylim()[0]}, {self.ax.get_ylim()[1]})"
+    def ylim(self) -> list[str]:
+        return typst.array(self.ax.get_ylim())
 
     def export_data(self):
         for i, _child in enumerate(self.ax._children):  # type: ignore
@@ -546,7 +556,7 @@ class Axes:
                 child = Text(str(i), _child, self)
 
             if hasattr(child, "data"):
-                self.data[f"{child.prefix}-{child.name}"] = child.data
+                self.data[child.name] = child.data
             self.definitions.append(child.definition)
             self.draws.append(child.draw)
 
@@ -592,7 +602,12 @@ class Axes:
             with open(filename, "w") as f:
                 json.dump(self.data, f, indent=4, cls=NumpyEncoder)
 
-        s = f"#let {self.name}(xlim: {self.xlim}, ylim: {self.ylim}, dpi: {self.ax.figure.dpi}) = {{"
+        function = typst.function(
+            self.name,
+            named=dict(xlim=self.xlim, ylim=self.ylim, dpi=self.ax.figure.dpi),
+            inline=True,
+        )
+        s = f"#let {function} = {{"
         s += header + "\n"
         if self.data:
             load_data = f'let data = json("data/{self.name}.json")\n\n'
@@ -640,11 +655,18 @@ class InsetAxes(Axes):
             position=typst.ratio(self.position),
             shape=typst.ratio(self.shape),
         )
-        return f"let {self.name}-properties = " + typst.dump(properties)
+        return f"let properties-{self.name} = " + typst.dump(properties)
 
     @property
     def draw(self) -> tuple[str, float]:
-        return (f"axes.inset(..{self.name}-properties, {self.name}())", self.ax.zorder)
+        return (
+            typst.function(
+                "axes.inset",
+                body=f"..properties-{self.name}, {self.name}()",
+                inline=True,
+            ),
+            self.ax.zorder,
+        )
 
 
 class InsetIndicator:
@@ -653,11 +675,11 @@ class InsetIndicator:
         self.inset_axes = inset_axes
 
     @property
-    def name(self):
-        return f"{self.inset_axes.name}-indicator"
+    def name(self) -> str:
+        return f"indicator-{self.inset_axes.name}"
 
     @property
-    def target(self):
+    def target(self) -> dict[str, str | tuple[float, ...]]:
         rect = self.indicator.rectangle
         x, y = rect.xy
         width, height = rect.get_width(), rect.get_height()
@@ -673,11 +695,11 @@ class InsetIndicator:
         )
 
     @property
-    def source(self):
-        return f"{self.inset_axes.name}-properties"
+    def source(self) -> str:
+        return f"properties-{self.inset_axes.name}"
 
     @property
-    def connectors(self):
+    def connectors(self) -> dict[str, str | list[str]]:
         anchors = ["bottom + left", "top + left", "bottom + right", "top + right"]
         indices = []
         for i, connector in enumerate(self.indicator.connectors):
@@ -694,7 +716,7 @@ class InsetIndicator:
         )
 
     @property
-    def definition(self):
+    def definition(self) -> str:
         return f"let {self.name} = " + typst.dump(
             dict(
                 target=self.target,
@@ -704,5 +726,8 @@ class InsetIndicator:
         )
 
     @property
-    def draw(self):
-        return (f"axes.inset-indicator(..{self.name})", self.indicator.zorder)
+    def draw(self) -> tuple[str, float]:
+        return (
+            typst.function("axes.inset-indicator", body=f"..{self.name}", inline=True),
+            self.indicator.zorder,
+        )

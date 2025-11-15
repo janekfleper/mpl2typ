@@ -1,4 +1,3 @@
-import numpy as np
 import matplotlib
 import matplotlib.text
 import matplotlib.axes
@@ -25,13 +24,17 @@ class Text:
         axes: "typst.axes.Axes",
         prefix: str = "text",
     ):
-        self.name = name
+        self._name = name
         self.text = text
         self.axes = axes
-        self.prefix = prefix
+        self._prefix = prefix
 
     @property
-    def position(self) -> str:
+    def name(self) -> str:
+        return self._prefix + "-" + self._name
+
+    @property
+    def position(self) -> str | tuple[str, str]:
         return self.axes.transform_point(
             self.text.get_position(),
             self.text.get_transform(),
@@ -60,11 +63,32 @@ class Text:
         rotation = self.text.get_rotation()
         if rotation:
             if self.text.get_rotation_mode() == "anchor":
-                return f"rotate(-{rotation}deg, place({self.alignment}, {body}))"
+                return typst.function(
+                    "rotate",
+                    pos=[typst.degree(-rotation)],
+                    body=typst.function(
+                        "place",
+                        pos=[self.alignment],
+                        body=body,
+                    ),
+                )
             else:  # "default" or None
-                return f"place({self.alignment}, rotate(-{rotation}deg, reflow: true, {body}))"
+                return typst.function(
+                    "place",
+                    pos=[self.alignment],
+                    body=typst.function(
+                        "rotate",
+                        pos=[typst.degree(-rotation)],
+                        named=dict(reflow="true"),
+                        body=body,
+                    ),
+                )
         else:
-            return f"place({self.alignment}, {body})"
+            return typst.function(
+                "place",
+                pos=[self.alignment],
+                body=body,
+            )
 
     @property
     def definition(self) -> str:
@@ -75,23 +99,21 @@ class Text:
         text = typst.function(
             "text",
             named=kwargs,
-            body=f"[{self.text.get_text()}]",
+            body=typst.content(self.text.get_text()),
             inline=True,
         )
-        return f"let {self.prefix}-{self.name} = {typst.dump(dict(position=self.position, body=self.inner(text)))}"
+        return f"let {self.name} = {typst.dump(dict(position=self.position, body=self.inner(text)))}"
 
     @property
     def draw(self) -> tuple[str, float]:
         return (
             typst.function(
                 "draw.text",
-                body=f"..{self.prefix}-{self.name}",
+                body=f"..{self.name}",
                 inline=True,
             ),
             self.text.zorder,
         )
 
     def export(self) -> str:
-        return (
-            f"let {self.prefix}-{self.name} = " + self.definition + "\n" + self.draw[0]
-        )
+        return f"let {self.name} = " + self.definition + "\n" + self.draw[0]

@@ -10,18 +10,15 @@ from .grid import Grid
 
 
 def template(
-    width: float,
-    height: float,
+    width: str,
+    height: str,
     fill: str,
     stroke: str,
     body: str | None = None,
 ) -> str:
     figure = typst.function(
         "figure",
-        named=dict(
-            width=typst.length(width, "cm"),
-            height=typst.length(height, "cm"),
-        ),
+        named=dict(width=width, height=height),
         inline=True,
     )
 
@@ -36,7 +33,7 @@ def template(
         body=body,
         inline=False,
     )
-    body = typst.make_body(("show: figure-style", block))
+    body = typst.body(("show: figure-style", block))
     return "#let " + figure + " = " + body + "\n\n" + "#figure()"
 
 
@@ -49,12 +46,12 @@ class Figure:
         self.parse()
 
     @property
-    def width(self) -> float:
-        return self.fig.get_figwidth() * 2.54
+    def width(self) -> str:
+        return typst.length(self.fig.get_figwidth() * 2.54, "cm")
 
     @property
-    def height(self) -> float:
-        return self.fig.get_figheight() * 2.54
+    def height(self) -> str:
+        return typst.length(self.fig.get_figheight() * 2.54, "cm")
 
     @property
     def fill(self) -> str:
@@ -125,6 +122,6 @@ class Figure:
                     height=self.height,
                     fill=self.fill,
                     stroke=self.stroke,
-                    body=typst.make_body(children),
+                    body=typst.body(children),
                 )
             )

@@ -155,7 +155,7 @@ class Legend:
         title = self.legend.get_title().get_text()
         if not title:
             return "none"
-        return f"[{title}]"
+        return typst.content(title)
 
     @property
     def style(self) -> dict[str, str | int]:
