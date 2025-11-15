@@ -211,19 +211,20 @@ class Ticks(ABC, Generic[TickParams]):
             "show-labels": self.label_positions,
         }
 
-        s = typst.function(
-            self.draw_function,
-            named=named,
-            body=f"..{self.name}, transform",
-            inline=True,
-        )
+        s = ""
         if self.params.gridOn:
-            s += "\n"
             s += typst.function(
                 self.grid_function,
                 body=f"..{self.name}, transform",
                 inline=True,
             )
+            s += "\n"
+        s += typst.function(
+            self.draw_function,
+            named=named,
+            body=f"..{self.name}, transform",
+            inline=True,
+        )
         return (s, self.ticks[0].tick1line.zorder)
 
 
