@@ -562,7 +562,7 @@ class Axes:
             self.children.append(child)
 
         if self.ax.legend_ is not None:
-            self.legend = Legend(self.ax.legend_)
+            self.legend = Legend(self.ax.legend_, self)
 
     def export_insets(self):
         for ix in self.inset_axes:

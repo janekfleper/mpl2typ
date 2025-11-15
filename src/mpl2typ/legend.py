@@ -3,6 +3,8 @@ import matplotlib.lines
 import matplotlib.container
 
 from . import typst
+from .lines import Line2D
+from .collections import Collection, QuadMesh
 
 
 # The "best" location is not supported (yet) in mpl2typ since matplotlib just
@@ -28,18 +30,16 @@ class LegendHandlerLine2D:
         self,
         handle: matplotlib.lines.Line2D,
         label: str,
-        legend: matplotlib.legend.Legend,
-        children,
+        legend: "Legend",
     ):
         self.handle = handle
         self.label = label
         self.legend = legend
-        self.children = children
 
-        try:
-            self.name = str(self.children.index(self.handle))
-        except ValueError:
-            self.name = None
+        child = self.legend.match_handle(self.handle)
+        if child is None:
+            raise ValueError(f"Could not find handle {self.handle} in legend")
+        self.name = child.name
 
     def export(self):
         return typst.function(
@@ -54,34 +54,29 @@ class LegendHandlerErrorbar:
         self,
         handle: matplotlib.container.ErrorbarContainer,
         label: str,
-        legend: matplotlib.legend.Legend,
-        children,
+        legend: "Legend",
     ):
         self.handle = handle
         self.label = label
         self.legend = legend
-        self.children = children
 
     @property
     def data(self) -> dict[str, str]:
         line = self.handle.lines[0]
-        try:
-            name = str(self.children.index(line))
-        except ValueError:
-            name = None
-
-        return dict(stroke=f"stroke-{name}", marker=f"marker-{name}")
+        child = self.legend.match_handle(line)
+        if child is None:
+            raise ValueError(f"Could not find handle {line} in legend")
+        return dict(stroke=f"stroke-{child.name}", marker=f"marker-{child.name}")
 
     @property
     def caps(self) -> dict[str, str]:
         lines = self.handle.lines[1]
         names = []
         for line in lines:
-            try:
-                name = str(self.children.index(line))
-            except ValueError:
-                name = None
-            names.append(name)
+            child = self.legend.match_handle(line)
+            if child is None:
+                raise ValueError(f"Could not find handle {line} in legend")
+            names.append(child.name)
 
         elements = dict()
         if names and self.handle.has_xerr:
@@ -106,11 +101,10 @@ class LegendHandlerErrorbar:
         collections = self.handle.lines[2]
         names = []
         for collection in collections:
-            try:
-                name = str(self.children.index(collection))
-            except ValueError:
-                name = None
-            names.append(name)
+            child = self.legend.match_handle(collection)
+            if child is None:
+                raise ValueError(f"Could not find handle {collection} in legend")
+            names.append(child.name)
 
         elements = dict()
         if self.handle.has_xerr:
@@ -130,25 +124,36 @@ class LegendHandlerErrorbar:
 
 
 class Legend:
-    def __init__(self, legend: matplotlib.legend.Legend):
+    def __init__(self, legend: matplotlib.legend.Legend, axes: "typst.axes.Axes"):
         self.legend = legend
-        self.ax = self.legend.axes
+        self.axes = axes
 
         self.items = []
         self.parse()
 
     def parse(self):
-        for handle, label in zip(*self.ax.get_legend_handles_labels()):
+        for handle, label in zip(*self.axes.ax.get_legend_handles_labels()):
             if isinstance(handle, matplotlib.lines.Line2D):
-                self.items.append(
-                    LegendHandlerLine2D(handle, label, self.legend, self.ax._children)
-                )
+                self.items.append(LegendHandlerLine2D(handle, label, self))
             elif isinstance(handle, matplotlib.container.ErrorbarContainer):
-                self.items.append(
-                    LegendHandlerErrorbar(handle, label, self.legend, self.ax._children)
-                )
+                self.items.append(LegendHandlerErrorbar(handle, label, self))
             else:
                 print(f"Unknown handle type {type(handle)}")
+
+    def match_handle(self, handle):
+        if isinstance(handle, matplotlib.lines.Line2D):
+            for child in self.axes.children:
+                if not isinstance(child, Line2D):
+                    continue
+                if child.line == handle:
+                    return child
+        elif isinstance(handle, matplotlib.collections.Collection):
+            for child in self.axes.children:
+                if not isinstance(child, Collection):
+                    continue
+                if child.collection == handle:
+                    return child
+        return None
 
     @property
     def title(self) -> str:
@@ -187,8 +192,8 @@ class Legend:
         style = frame.get_boxstyle()
         frame_kwargs = dict()
         if isinstance(style, matplotlib.patches.BoxStyle.Round):
-            frame_kwargs["radius"] = (
-                f"{style.rounding_size * frame.get_mutation_scale():.2f}pt"
+            frame_kwargs["radius"] = typst.length(
+                style.rounding_size * frame.get_mutation_scale(), "pt"
             )
 
         return dict(
