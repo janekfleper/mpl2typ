@@ -126,7 +126,10 @@ class Ticks(ABC, Generic[TickParams]):
 
     @property
     def labels(self) -> list[str]:
-        return [f"${tick.label1.get_text()}$" for tick in self.ticks]
+        labels = [tick.label1.get_text() for tick in self.ticks]
+        if any([bool(label) for label in labels]):
+            return [f"${label}$" for label in labels]
+        return []
 
     @property
     @abstractmethod
