@@ -444,15 +444,13 @@ class Axes:
         self.title = Title(self)
         self.axis = Axis(self)
         self.spines = Spines(ax)
+        self.legend = None
 
-        if ax.legend_ is not None:
-            self.legend = Legend(ax.legend_)
-        else:
-            self.legend = None
-
+        self.children: list[Any] = []
         self.data: dict[str, Any] = {}
         self.definitions: list[str] = []
         self.draws: list[tuple[str, float]] = []
+        self.parse()
 
     @property
     def name(self) -> str:
@@ -544,7 +542,7 @@ class Axes:
     def ylim(self) -> list[str]:
         return typst.array(self.ax.get_ylim())
 
-    def export_data(self):
+    def parse(self):
         for i, _child in enumerate(self.ax._children):  # type: ignore
             if isinstance(_child, matplotlib.lines.Line2D):
                 child = Line2D(str(i), _child)
@@ -554,11 +552,17 @@ class Axes:
                 child = Collection(str(i), _child)
             elif isinstance(_child, matplotlib.text.Text):
                 child = Text(str(i), _child, self)
+            elif isinstance(_child, matplotlib.inset.InsetIndicator):
+                # InsetIndicators are handled in export_insets() for now...
+                continue
+            else:
+                print("Unknown child type", type(_child))
+                continue
 
-            if hasattr(child, "data"):
-                self.data[child.name] = child.data
-            self.definitions.append(child.definition)
-            self.draws.append(child.draw)
+            self.children.append(child)
+
+        if self.ax.legend_ is not None:
+            self.legend = Legend(self.ax.legend_)
 
     def export_insets(self):
         for ix in self.inset_axes:
@@ -588,7 +592,12 @@ class Axes:
         self.definitions.append(self.axis.definition)
         self.draws.extend(self.axis.draw)
 
-        self.export_data()
+        for child in self.children:
+            self.definitions.append(child.definition)
+            self.draws.append(child.draw)
+            if hasattr(child, "data"):
+                self.data[child.name] = child.data
+
         self.export_insets()
 
         if self.legend is not None:
