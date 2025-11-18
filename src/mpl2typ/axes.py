@@ -417,7 +417,7 @@ class Spines:
         spines = {}
         for key in self.spines:
             spine = self.spines[key]
-            if spine.get_visible():
+            if type(spine) is matplotlib.spines.Spine and spine.get_visible():
                 spines[key] = dict(
                     bounds=self.get_bounds(spine), stroke=self.get_stroke(spine)
                 )
