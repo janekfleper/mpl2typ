@@ -317,21 +317,6 @@ class YTicks(Ticks[YTickParams]):
 class Axis:
     def __init__(self, axes: "Axes"):
         self.axes = axes
-        self.xticks: list[XTicks] = []
-        self.yticks: list[YTicks] = []
-
-        if ticks := self.ax.xaxis.get_major_ticks():
-            params = self.ax.xaxis.get_tick_params(which="major")
-            self.xticks.append(XTicks("xaxis-major-ticks", ticks, params))
-        if ticks := self.ax.xaxis.get_minor_ticks():
-            params = self.ax.xaxis.get_tick_params(which="minor")
-            self.xticks.append(XTicks("xaxis-minor-ticks", ticks, params))
-        if ticks := self.ax.yaxis.get_major_ticks():
-            params = self.ax.yaxis.get_tick_params(which="major")
-            self.yticks.append(YTicks("yaxis-major-ticks", ticks, params))
-        if ticks := self.ax.yaxis.get_minor_ticks():
-            params = self.ax.yaxis.get_tick_params(which="minor")
-            self.yticks.append(YTicks("yaxis-minor-ticks", ticks, params))
 
     @property
     def ax(self) -> matplotlib.axes.Axes:
@@ -358,6 +343,28 @@ class Axis:
         yaxis_offset_text = self.ax.yaxis.get_offset_text()
         if yaxis_offset_text.get_text():
             return Text("yaxis", yaxis_offset_text, self.axes, prefix="offset-label")
+
+    @property
+    def xticks(self) -> list[XTicks]:
+        xticks: list[XTicks] = []
+        if ticks := self.ax.xaxis.get_major_ticks():
+            params = self.ax.xaxis.get_tick_params(which="major")
+            xticks.append(XTicks("xaxis-major-ticks", ticks, params))
+        if ticks := self.ax.xaxis.get_minor_ticks():
+            params = self.ax.xaxis.get_tick_params(which="minor")
+            xticks.append(XTicks("xaxis-minor-ticks", ticks, params))
+        return xticks
+
+    @property
+    def yticks(self) -> list[YTicks]:
+        yticks: list[YTicks] = []
+        if ticks := self.ax.yaxis.get_major_ticks():
+            params = self.ax.yaxis.get_tick_params(which="major")
+            yticks.append(YTicks("yaxis-major-ticks", ticks, params))
+        if ticks := self.ax.yaxis.get_minor_ticks():
+            params = self.ax.yaxis.get_tick_params(which="minor")
+            yticks.append(YTicks("yaxis-minor-ticks", ticks, params))
+        return yticks
 
     @property
     def definition(self) -> str:
