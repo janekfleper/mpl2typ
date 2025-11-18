@@ -207,16 +207,16 @@
   let (x1, y1) = (x0 + target.shape.at(0), y0 + target.shape.at(1))
   let (xt0, yt0) = (target.transform)((x0, y0))
   let (xt1, yt1) = (target.transform)((x1, y1))
-  let (hw, ht) = (xt1 - xt0, yt0 - yt1)
+  let (wt, ht) = (xt1 - xt0, yt0 - yt1)
 
   let (xs0, ys0) = source.position
-  let (hs, ws) = source.shape
+  let (ws, hs) = source.shape
 
   for conn in connectors.anchors {
     let (xc0, xc1) = if conn.x == left {
       (xt0, xs0)
     } else if conn.x == right {
-      (xt0 + hw, xs0 + ws)
+      (xt0 + wt, xs0 + ws)
     } else {
       panic("Invalid horizontal connector direction: " + repr(conn))
     }
@@ -239,7 +239,7 @@
 
   // Draw the target rectangle at the end to ensure it is on top of the connectors
   std.place(top + left, dx: xt0, dy: yt0, rect(
-    width: hw,
+    width: wt,
     height: ht,
     fill: target.at("fill", default: none),
     stroke: target.at("stroke", default: none),
