@@ -438,7 +438,7 @@ class Spines:
         )
 
 
-class Axes:
+class AxesBase:
     def __init__(
         self,
         name: str,
@@ -450,57 +450,10 @@ class Axes:
         self.ax = ax
         self._prefix = prefix
         self.standalone = standalone
-        self.inset_axes: list[InsetAxes] = []
-
-        self.title = Title(self)
-        self.axis = Axis(self)
-        self.spines = Spines(ax)
-        self.legend = None
-
-        self.children: list[Any] = []
-        self.data: dict[str, Any] = {}
-        self.definitions: list[str] = []
-        self.draws: list[tuple[str, float]] = []
-        self.parse()
 
     @property
     def name(self) -> str:
         return self._prefix + "-" + self._name
-
-    def transform_point(self, point, transform) -> str | tuple[str, str]:
-        """
-        Transform a point from any coordinates to relative axes coordinates.
-
-        In Typst, the relative axes coordinates range from 0% to 100% in both
-        directions, although the y-axis is inverted compared to matplotlib.
-        """
-        x, y = point
-        if transform == self.ax.transData:
-            return typst.function("transform", pos=[typst.array([x, y])], inline=True)
-        elif transform == self.ax.transAxes:
-            return typst.ratio((x, 1 - y))
-        elif isinstance(transform, matplotlib.transforms.IdentityTransform):
-            (x0, y0), (x1, y1) = self.ax.bbox.get_points()
-            x = typst.ratio((x - x0) / (x1 - x0))
-            y = typst.ratio((y1 - y) / (y1 - y0))
-            return (x, y)
-        elif isinstance(transform, matplotlib.transforms.BlendedAffine2D):
-            if transform._x == self.ax.transAxes:
-                x = typst.ratio(x)
-            elif isinstance(transform._x, matplotlib.transforms.IdentityTransform):
-                x0, x1 = self.ax.bbox.get_points()[:, 0]
-                x = typst.ratio((x - x0) / (x1 - x0))
-            if transform._y == self.ax.transAxes:
-                y = typst.ratio(1 - y)
-            elif isinstance(transform._y, matplotlib.transforms.IdentityTransform):
-                y0, y1 = self.ax.bbox.get_points()[:, 1]
-                y = typst.ratio((y1 - y) / (y1 - y0))
-            return (x, y)
-        else:
-            x, y = self.ax.transAxes.inverted().transform_point(
-                transform.transform_point(point)
-            )
-            return typst.ratio((x, 1 - y))
 
     @property
     def position(self):
@@ -544,6 +497,64 @@ class Axes:
         colspan = sps.colspan.stop - x
         rowspan = sps.rowspan.stop - y
         return dict(position=(x, y), shape=(colspan, rowspan))
+
+
+class Axes(AxesBase):
+    def __init__(
+        self,
+        name: str,
+        ax: matplotlib.axes.Axes,
+        prefix: str = "axes",
+        standalone: bool = False,
+    ):
+        super().__init__(name, ax, prefix, standalone)
+        self.inset_axes: list[InsetAxes] = []
+
+        self.title = Title(self)
+        self.axis = Axis(self)
+        self.spines = Spines(ax)
+        self.legend = None
+
+        self.children: list[Any] = []
+        self.data: dict[str, Any] = {}
+        self.definitions: list[str] = []
+        self.draws: list[tuple[str, float]] = []
+        self.parse()
+
+    def transform_point(self, point, transform) -> str | tuple[str, str]:
+        """
+        Transform a point from any coordinates to relative axes coordinates.
+
+        In Typst, the relative axes coordinates range from 0% to 100% in both
+        directions, although the y-axis is inverted compared to matplotlib.
+        """
+        x, y = point
+        if transform == self.ax.transData:
+            return typst.function("transform", pos=[typst.array([x, y])], inline=True)
+        elif transform == self.ax.transAxes:
+            return typst.ratio((x, 1 - y))
+        elif isinstance(transform, matplotlib.transforms.IdentityTransform):
+            (x0, y0), (x1, y1) = self.ax.bbox.get_points()
+            x = typst.ratio((x - x0) / (x1 - x0))
+            y = typst.ratio((y1 - y) / (y1 - y0))
+            return (x, y)
+        elif isinstance(transform, matplotlib.transforms.BlendedAffine2D):
+            if transform._x == self.ax.transAxes:
+                x = typst.ratio(x)
+            elif isinstance(transform._x, matplotlib.transforms.IdentityTransform):
+                x0, x1 = self.ax.bbox.get_points()[:, 0]
+                x = typst.ratio((x - x0) / (x1 - x0))
+            if transform._y == self.ax.transAxes:
+                y = typst.ratio(1 - y)
+            elif isinstance(transform._y, matplotlib.transforms.IdentityTransform):
+                y0, y1 = self.ax.bbox.get_points()[:, 1]
+                y = typst.ratio((y1 - y) / (y1 - y0))
+            return (x, y)
+        else:
+            x, y = self.ax.transAxes.inverted().transform_point(
+                transform.transform_point(point)
+            )
+            return typst.ratio((x, 1 - y))
 
     @property
     def xlim(self) -> list[str]:
