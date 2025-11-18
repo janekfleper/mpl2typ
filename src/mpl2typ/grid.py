@@ -25,9 +25,9 @@ class Cell:
 class Grid:
     def __init__(
         self,
-        name: str,
         grid: matplotlib.gridspec.GridSpec,
         axes: list[Axes],
+        name: str,
         prefix: str = "grid",
     ):
         self._name = name

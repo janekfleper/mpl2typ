@@ -69,17 +69,17 @@ class Title:
     def __init__(self, axes: "Axes"):
         ax = axes.ax
         self.center = (
-            Text("main", ax.title, axes, prefix="title")
+            Text(ax.title, axes, "main", prefix="title")
             if ax.get_title(loc="center")
             else None
         )
         self.left = (
-            Text("left", ax._left_title, axes, prefix="title")  # type: ignore
+            Text(ax._left_title, axes, "left", prefix="title")  # type: ignore
             if ax.get_title(loc="left")
             else None
         )
         self.right = (
-            Text("right", ax._right_title, axes, prefix="title")  # type: ignore
+            Text(ax._right_title, axes, "right", prefix="title")  # type: ignore
             if ax.get_title(loc="right")
             else None
         )
@@ -113,8 +113,8 @@ class Title:
 class Ticks(ABC, Generic[TickParams]):
     def __init__(
         self,
-        name: str,
         ticks: Sequence[matplotlib.axis.Tick],
+        name: str,
     ):
         self.name = name
         self.ticks = ticks
@@ -231,11 +231,11 @@ class Ticks(ABC, Generic[TickParams]):
 class XTicks(Ticks[XTickParams]):
     def __init__(
         self,
-        name: str,
         ticks: Sequence[matplotlib.axis.Tick],
+        name: str,
         params: Mapping[str, bool],
     ):
-        super().__init__(name, ticks)
+        super().__init__(ticks, name)
         keys = ["bottom", "top", "labelbottom", "labeltop", "gridOn"]
         params = {k: v for k, v in params.items() if k in keys}
         self.params = XTickParams(**params)
@@ -274,11 +274,11 @@ class XTicks(Ticks[XTickParams]):
 class YTicks(Ticks[YTickParams]):
     def __init__(
         self,
-        name: str,
         ticks: Sequence[matplotlib.axis.Tick],
+        name: str,
         params: Mapping[str, bool],
     ):
-        super().__init__(name, ticks)
+        super().__init__(ticks, name)
         keys = ["left", "right", "labelleft", "labelright", "gridOn"]
         params = {k: v for k, v in params.items() if k in keys}
         self.params = YTickParams(**params)
@@ -325,34 +325,34 @@ class Axis:
     @property
     def xlabel(self):
         if self.axes.ax.get_xlabel():
-            return Text("xaxis", self.ax.xaxis.get_label(), self.axes, prefix="label")
+            return Text(self.ax.xaxis.get_label(), self.axes, "xaxis", prefix="label")
 
     @property
     def ylabel(self):
         if self.axes.ax.get_ylabel():
-            return Text("yaxis", self.ax.yaxis.get_label(), self.axes, prefix="label")
+            return Text(self.ax.yaxis.get_label(), self.axes, "yaxis", prefix="label")
 
     @property
     def xoffset(self):
         xaxis_offset_text = self.ax.xaxis.get_offset_text()
         if xaxis_offset_text.get_text():
-            return Text("xaxis", xaxis_offset_text, self.axes, prefix="offset-label")
+            return Text(xaxis_offset_text, self.axes, "xaxis", prefix="offset-label")
 
     @property
     def yoffset(self):
         yaxis_offset_text = self.ax.yaxis.get_offset_text()
         if yaxis_offset_text.get_text():
-            return Text("yaxis", yaxis_offset_text, self.axes, prefix="offset-label")
+            return Text(yaxis_offset_text, self.axes, "yaxis", prefix="offset-label")
 
     @property
     def xticks(self) -> list[XTicks]:
         xticks: list[XTicks] = []
         if ticks := self.ax.xaxis.get_major_ticks():
             params = self.ax.xaxis.get_tick_params(which="major")
-            xticks.append(XTicks("xaxis-major-ticks", ticks, params))
+            xticks.append(XTicks(ticks, "xaxis-major-ticks", params))
         if ticks := self.ax.xaxis.get_minor_ticks():
             params = self.ax.xaxis.get_tick_params(which="minor")
-            xticks.append(XTicks("xaxis-minor-ticks", ticks, params))
+            xticks.append(XTicks(ticks, "xaxis-minor-ticks", params))
         return xticks
 
     @property
@@ -360,10 +360,10 @@ class Axis:
         yticks: list[YTicks] = []
         if ticks := self.ax.yaxis.get_major_ticks():
             params = self.ax.yaxis.get_tick_params(which="major")
-            yticks.append(YTicks("yaxis-major-ticks", ticks, params))
+            yticks.append(YTicks(ticks, "yaxis-major-ticks", params))
         if ticks := self.ax.yaxis.get_minor_ticks():
             params = self.ax.yaxis.get_tick_params(which="minor")
-            yticks.append(YTicks("yaxis-minor-ticks", ticks, params))
+            yticks.append(YTicks(ticks, "yaxis-minor-ticks", params))
         return yticks
 
     @property
@@ -441,8 +441,8 @@ class Spines:
 class AxesBase:
     def __init__(
         self,
-        name: str,
         ax: matplotlib.axes.Axes,
+        name: str,
         prefix: str = "axes",
         standalone: bool = False,
     ):
@@ -502,12 +502,12 @@ class AxesBase:
 class Axes(AxesBase):
     def __init__(
         self,
-        name: str,
         ax: matplotlib.axes.Axes,
+        name: str,
         prefix: str = "axes",
         standalone: bool = False,
     ):
-        super().__init__(name, ax, prefix, standalone)
+        super().__init__(ax, name, prefix, standalone)
         self.inset_axes: list[InsetAxes] = []
 
         self.title = Title(self)
@@ -567,13 +567,13 @@ class Axes(AxesBase):
     def parse(self):
         for i, _child in enumerate(self.ax._children):  # type: ignore
             if isinstance(_child, matplotlib.lines.Line2D):
-                child = Line2D(str(i), _child)
+                child = Line2D(_child, str(i))
             elif isinstance(_child, matplotlib.collections.QuadMesh):
-                child = QuadMesh(str(i), _child)
+                child = QuadMesh(_child, str(i))
             elif isinstance(_child, matplotlib.collections.Collection):
-                child = Collection(str(i), _child)
+                child = Collection(_child, str(i))
             elif isinstance(_child, matplotlib.text.Text):
-                child = Text(str(i), _child, self)
+                child = Text(_child, self, str(i))
             elif isinstance(_child, matplotlib.inset.InsetIndicator):
                 # InsetIndicators are handled in export_insets() for now...
                 continue
@@ -653,9 +653,9 @@ class Axes(AxesBase):
 
 
 class InsetAxes(Axes):
-    def __init__(self, name, ix, axes, prefix: str = "inset"):
+    def __init__(self, ix, axes, name, prefix: str = "inset"):
         self.axes = axes
-        super().__init__(name, ix, prefix, standalone=False)
+        super().__init__(ix, name, prefix, standalone=False)
 
     def transform_bounds(self, point) -> tuple[float, float]:
         return self.axes.ax.transAxes.inverted().transform_point(

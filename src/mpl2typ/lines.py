@@ -131,7 +131,7 @@ class Marker:
 
 
 class Line2D:
-    def __init__(self, name: str, line: matplotlib.lines.Line2D, prefix: str = "line"):
+    def __init__(self, line: matplotlib.lines.Line2D, name: str, prefix: str = "line"):
         self._name = name
         self.line = line
         self._prefix = prefix

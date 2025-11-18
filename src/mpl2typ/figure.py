@@ -67,10 +67,10 @@ class Figure:
         for i, ax in enumerate(self.fig.get_axes()):
             gs = ax.get_gridspec()
             if gs is None:
-                axes = Axes(str(i), ax, prefix="standalone", standalone=True)
+                axes = Axes(ax, str(i), prefix="standalone", standalone=True)
                 self.other_axes.append(axes)
             else:
-                axes = Axes(str(i), ax, standalone=False)
+                axes = Axes(ax, str(i), standalone=False)
                 if gs not in gridspecs:
                     gridspecs.append(gs)
                     grid_axes.append([axes])
@@ -78,12 +78,12 @@ class Figure:
                     grid_axes[gridspecs.index(gs)].append(axes)
 
             for ix in ax.child_axes:
-                inset_axes = InsetAxes(str(len(self.inset_axes)), ix, axes)
+                inset_axes = InsetAxes(ix, axes, str(len(self.inset_axes)))
                 self.inset_axes.append(inset_axes)
                 axes.inset_axes.append(inset_axes)
 
         for i in range(len(gridspecs)):
-            self.grids.append(Grid(str(i), gridspecs[i], grid_axes[i]))
+            self.grids.append(Grid(gridspecs[i], grid_axes[i], str(i)))
 
     def export(self, path: str | pathlib.Path, header: str | None = None) -> None:
         path = pathlib.Path(path)

@@ -19,9 +19,9 @@ def relativ_fontsize(fontsize: float) -> str:
 class Text:
     def __init__(
         self,
-        name: str,
         text: matplotlib.text.Text,
         axes: "typst.axes.Axes",
+        name: str,
         prefix: str = "text",
     ):
         self._name = name

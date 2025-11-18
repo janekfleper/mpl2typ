@@ -53,8 +53,8 @@ def curve_components(path: matplotlib.path.Path):
 class Collection:
     def __init__(
         self,
-        name: str,
         collection: matplotlib.collections.Collection,
+        name: str,
         prefix: str = "collection",
     ):
         self._name = name
@@ -256,8 +256,8 @@ class Collection:
 class QuadMesh:
     def __init__(
         self,
-        name: str,
         collection: matplotlib.collections.QuadMesh,
+        name: str,
         prefix: str = "quad-mesh",
     ):
         self._name = name
