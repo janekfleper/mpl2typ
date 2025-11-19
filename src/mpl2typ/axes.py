@@ -652,6 +652,113 @@ class Axes(AxesBase):
         return s
 
 
+class ColorbarAxes(AxesBase):
+    def __init__(self, ax, name, prefix="colorbar", standalone=False):
+        super().__init__(ax, name, prefix=prefix, standalone=standalone)
+        self.cbar = ax._colorbar
+        self.spines = Spines(ax)
+
+    @property
+    def lim(self) -> list[str]:
+        lim = (
+            self.ax.get_ylim()
+            if self.cbar.orientation == "vertical"
+            else self.ax.get_xlim()
+        )
+        return typst.array(lim)
+
+    @property
+    def header(self) -> str:
+        if self.cbar.orientation == "vertical":
+            transform: str = "(0, 100% - (y * scale + shift))"
+        else:
+            transform: str = "(x * scale + shift, 0)"
+
+        return textwrap.dedent(f"""\
+        let scale = 1 / (lim.at(1) - lim.at(0)) * 100%
+        let shift = 50% - (lim.at(0) + lim.at(1)) / 2 * scale
+
+        let transform(point) = {{
+            let (x, y) = point
+            return {transform}
+        }}
+        """)
+
+    @property
+    def label(self):
+        label = None
+        if self.cbar.orientation == "vertical" and self.ax.get_ylabel():
+            label = self.ax.yaxis.get_label()
+        elif self.cbar.orientation == "horizontal" and self.ax.get_xlabel():
+            label = self.ax.xaxis.get_label()
+        if label is not None:
+            return Text(label, self, "colormap", prefix="label")
+
+    @property
+    def ticks(self):
+        axis = self.ax.yaxis if self.cbar.orientation == "vertical" else self.ax.xaxis
+        Ticks = YTicks if self.cbar.orientation == "vertical" else XTicks
+
+        ticks = []
+        if _ticks := axis.get_major_ticks():
+            params = axis.get_tick_params(which="major")
+            ticks.append(Ticks(_ticks, "colormap-major-ticks", params))
+        if _ticks := axis.get_minor_ticks():
+            params = axis.get_tick_params(which="minor")
+            ticks.append(Ticks(_ticks, "colormap-minor-ticks", params))
+        return ticks
+
+    @property
+    def gradient(self) -> str:
+        angle = -90 if self.cbar.orientation == "vertical" else typst.degree(0)
+        return typst.function(
+            "std.gradient.linear",
+            pos=[f"..color.map.{self.cbar.cmap.name}"],
+            named=dict(angle=typst.degree(angle)),
+            inline=True,
+        )
+
+    @property
+    def rect(self) -> str:
+        return typst.function(
+            "rect",
+            named=dict(width="100%", height="100%", fill="gradient", stroke="none"),
+            inline=True,
+        )
+
+    @property
+    def definition(self) -> str:
+        definitions: list[str] = []
+        if (label := self.label) is not None:
+            definitions.append(label.definition)
+        for ticks in self.ticks:
+            definitions.append(ticks.definition)
+        definitions.append(f"let gradient = {self.gradient}")
+        return "\n".join(definitions)
+
+    @property
+    def draw(self) -> str:
+        draws: list[tuple[str, float]] = []
+        if (label := self.label) is not None:
+            draws.append(label.draw)
+        for ticks in self.ticks:
+            draws.append(ticks.draw)
+        draws.append((typst.function("std.place", body=self.rect, inline=True), 0))
+        return "\n".join([draw[0] for draw in sorted(draws, key=lambda x: x[1])])
+
+    def export(self, path: pathlib.Path) -> str:
+        function = typst.function(self.name, named=dict(lim=self.lim), inline=True)
+        s = f"#let {function} = {{" + "\n"
+        s += textwrap.indent(self.header, "  ") + "\n\n"
+        s += textwrap.indent(self.definition, "  ") + "\n\n"
+        s += textwrap.indent(self.draw, "  ") + "\n"
+        s += "}\n\n"
+
+        if self.standalone:
+            s += typst.block(self.name, self.padding, f"{self.name}()")
+        return s
+
+
 class InsetAxes(Axes):
     def __init__(self, ix, axes, name, prefix: str = "inset"):
         self.axes = axes

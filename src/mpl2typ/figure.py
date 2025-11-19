@@ -5,7 +5,7 @@ import matplotlib.figure
 import matplotlib.gridspec
 
 from . import typst
-from .axes import Axes, InsetAxes
+from .axes import Axes, ColorbarAxes, InsetAxes
 from .grid import Grid
 
 
@@ -65,12 +65,18 @@ class Figure:
         grid_axes: list[list[Axes]] = []
         gridspecs: list[matplotlib.gridspec.GridSpec] = []
         for i, ax in enumerate(self.fig.get_axes()):
+            name = str(i)
             gs = ax.get_gridspec()
+            standalone = gs is None
+
+            if hasattr(ax, "_colorbar"):
+                axes = ColorbarAxes(ax, name, prefix="colorbar", standalone=standalone)
+            else:
+                axes = Axes(ax, name, standalone=standalone)
+
             if gs is None:
-                axes = Axes(ax, str(i), prefix="standalone", standalone=True)
                 self.other_axes.append(axes)
             else:
-                axes = Axes(ax, str(i), standalone=False)
                 if gs not in gridspecs:
                     gridspecs.append(gs)
                     grid_axes.append([axes])
