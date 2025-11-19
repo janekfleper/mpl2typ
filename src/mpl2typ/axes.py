@@ -498,29 +498,6 @@ class AxesBase:
         rowspan = sps.rowspan.stop - y
         return dict(position=(x, y), shape=(colspan, rowspan))
 
-
-class Axes(AxesBase):
-    def __init__(
-        self,
-        ax: matplotlib.axes.Axes,
-        name: str,
-        prefix: str = "axes",
-        standalone: bool = False,
-    ):
-        super().__init__(ax, name, prefix, standalone)
-        self.inset_axes: list[InsetAxes] = []
-
-        self.title = Title(self)
-        self.axis = Axis(self)
-        self.spines = Spines(ax)
-        self.legend = None
-
-        self.children: list[Any] = []
-        self.data: dict[str, Any] = {}
-        self.definitions: list[str] = []
-        self.draws: list[tuple[str, float]] = []
-        self.parse()
-
     def transform_point(self, point, transform) -> str | tuple[str, str]:
         """
         Transform a point from any coordinates to relative axes coordinates.
@@ -555,6 +532,29 @@ class Axes(AxesBase):
                 transform.transform_point(point)
             )
             return typst.ratio((x, 1 - y))
+
+
+class Axes(AxesBase):
+    def __init__(
+        self,
+        ax: matplotlib.axes.Axes,
+        name: str,
+        prefix: str = "axes",
+        standalone: bool = False,
+    ):
+        super().__init__(ax, name, prefix, standalone)
+        self.inset_axes: list[InsetAxes] = []
+
+        self.title = Title(self)
+        self.axis = Axis(self)
+        self.spines = Spines(ax)
+        self.legend = None
+
+        self.children: list[Any] = []
+        self.data: dict[str, Any] = {}
+        self.definitions: list[str] = []
+        self.draws: list[tuple[str, float]] = []
+        self.parse()
 
     @property
     def xlim(self) -> list[str]:
