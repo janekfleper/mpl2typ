@@ -719,10 +719,19 @@ class ColorbarAxes(AxesBase):
         )
 
     @property
+    def stroke(self) -> str:
+        spine = self.ax.spines.outline
+        return typst.stroke(
+            spine.get_edgecolor(),
+            spine.get_linewidth(),
+            spine.get_linestyle(),
+        )
+
+    @property
     def rect(self) -> str:
         return typst.function(
             "rect",
-            named=dict(width="100%", height="100%", fill="gradient", stroke="none"),
+            named=dict(width="100%", height="100%", fill="gradient", stroke="stroke"),
             inline=True,
         )
 
@@ -734,6 +743,7 @@ class ColorbarAxes(AxesBase):
         for ticks in self.ticks:
             definitions.append(ticks.definition)
         definitions.append(f"let gradient = {self.gradient}")
+        definitions.append(f"let stroke = {self.stroke}")
         return "\n".join(definitions)
 
     @property
