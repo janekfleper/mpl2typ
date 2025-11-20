@@ -274,6 +274,10 @@ class QuadMesh:
         return self._prefix + "-" + self._name
 
     @property
+    def rasterized(self) -> bool:
+        return self.collection.get_rasterized()
+
+    @property
     def gradient(self) -> str:
         cmap = self.collection.get_cmap()
         return f"gradient.linear(..color.map.{cmap.name})"
@@ -306,6 +310,14 @@ class QuadMesh:
 
     @property
     def definition(self) -> str:
+        if self.rasterized:
+            return f"let {self.name} = " + typst.function(
+                "image",
+                body=typst.string(f"data/{self.axes.name}-{self.name}.png"),
+                named=dict(width="100%", height="100%"),
+                inline=True,
+            )
+
         return (
             f"let gradient-{self.name} = {self.gradient}\n"
             + f"let {self.colormap}\n"
@@ -321,6 +333,17 @@ class QuadMesh:
 
     @property
     def draw(self) -> tuple[str, float]:
+        if self.rasterized:
+            return (
+                typst.function(
+                    "std.place",
+                    pos=["top + left"],
+                    body=self.name,
+                    inline=True,
+                ),
+                self.collection.zorder,
+            )
+
         return (
             typst.function(
                 "draw.quad-mesh",
