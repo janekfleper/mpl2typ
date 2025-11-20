@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from typing import TypeVar, Generic, Any
 
 import numpy as np
+import imageio.v3 as imageio
+
 import matplotlib
 import matplotlib.axes
 import matplotlib.axis
@@ -565,23 +567,23 @@ class Axes(AxesBase):
         return typst.array(self.ax.get_ylim())
 
     def parse(self):
-        for i, _child in enumerate(self.ax._children):  # type: ignore
-            if isinstance(_child, matplotlib.lines.Line2D):
-                child = Line2D(_child, str(i))
-            elif isinstance(_child, matplotlib.collections.QuadMesh):
-                child = QuadMesh(_child, str(i))
-            elif isinstance(_child, matplotlib.collections.Collection):
-                child = Collection(_child, str(i))
-            elif isinstance(_child, matplotlib.text.Text):
-                child = Text(_child, self, str(i))
-            elif isinstance(_child, matplotlib.inset.InsetIndicator):
+        for i, child in enumerate(self.ax._children):  # type: ignore
+            if isinstance(child, matplotlib.lines.Line2D):
+                Child = Line2D
+            elif isinstance(child, matplotlib.collections.QuadMesh):
+                Child = QuadMesh
+            elif isinstance(child, matplotlib.collections.Collection):
+                Child = Collection
+            elif isinstance(child, matplotlib.text.Text):
+                Child = Text
+            elif isinstance(child, matplotlib.inset.InsetIndicator):
                 # InsetIndicators are handled in export_insets() for now...
                 continue
             else:
-                print("Unknown child type", type(_child))
+                print("Unknown child type", type(child))
                 continue
 
-            self.children.append(child)
+            self.children.append(Child(child, self, name=str(i)))
 
         if self.ax.legend_ is not None:
             self.legend = Legend(self.ax.legend_, self)

@@ -3,6 +3,7 @@ import numpy.typing as npt
 import matplotlib.lines
 
 from . import typst
+from .axes import Axes
 
 # https://matplotlib.org/stable/gallery/lines_bars_and_markers/marker_reference.html
 MARKERS = {
@@ -131,9 +132,16 @@ class Marker:
 
 
 class Line2D:
-    def __init__(self, line: matplotlib.lines.Line2D, name: str, prefix: str = "line"):
-        self._name = name
+    def __init__(
+        self,
+        line: matplotlib.lines.Line2D,
+        axes: "Axes",
+        name: str,
+        prefix: str = "line",
+    ):
         self.line = line
+        self.axes = axes
+        self._name = name
         self._prefix = prefix
         self.stroke = Stroke(line)
         self.marker = Marker(line)
