@@ -618,7 +618,7 @@ class Axes(AxesBase):
 
         for child in self.children:
             if isinstance(child, QuadMesh) and child.rasterized:
-                image = (child.collection._facecolors * 255).astype(np.uint8)[::-1]
+                image = (child.collection._facecolors * 255).astype(np.uint8)
                 filename = path.joinpath("data", f"{self.name}-{child.name}.png")
                 imageio.imwrite(filename, image, mode="RGBA")
 
