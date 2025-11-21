@@ -127,3 +127,25 @@
     }
   }
 }
+
+#let rectangle(p0: none, p1: none, fill: none, stroke: none, transform: none) = {
+  assert.ne(p0, none, message: "Parameter p0 must not be none")
+  assert.ne(p1, none, message: "Parameter p1 must not be none")
+  assert.ne(transform, none, message: "Parameter transform must not be none")
+  let (p0, p1) = (transform(p0), transform(p1))
+  let width = p1.at(0) - p0.at(0)
+  let height = p1.at(1) - p0.at(1)
+
+  show: clip
+  std.place(
+    top + left,
+    dx: p0.at(0),
+    dy: p0.at(1),
+    rect(
+      width: width,
+      height: height,
+      fill: fill,
+      stroke: stroke,
+    ),
+  )
+}

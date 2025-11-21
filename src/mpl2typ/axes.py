@@ -15,10 +15,12 @@ import matplotlib.axis
 import matplotlib.text
 import matplotlib.inset
 import matplotlib.lines
+import matplotlib.patches
 import matplotlib.collections
 
 from . import typst
 from .lines import Stroke, Line2D
+from .patches import Rectangle
 from .collections import Collection, QuadMesh
 from .legend import Legend
 from .text import Text, relativ_fontsize
@@ -576,6 +578,8 @@ class Axes(AxesBase):
                 Child = Collection
             elif isinstance(child, matplotlib.text.Text):
                 Child = Text
+            elif isinstance(child, matplotlib.patches.Rectangle):
+                Child = Rectangle
             elif isinstance(child, matplotlib.inset.InsetIndicator):
                 # InsetIndicators are handled in export_insets() for now...
                 continue
