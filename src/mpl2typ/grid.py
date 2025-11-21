@@ -83,10 +83,10 @@ class Grid:
             self._add_axes(axes)
 
         return (
-            np.unique(np.array(x0)),
-            np.unique(np.array(x1)),
-            np.unique(np.array(y0)),
-            np.unique(np.array(y1)),
+            np.unique(np.round(np.array(x0), 5)),
+            np.unique(np.round(np.array(x1), 5)),
+            np.unique(np.round(np.array(y0), 5)),
+            np.unique(np.round(np.array(y1), 5)),
         )
 
     def parse(self):
