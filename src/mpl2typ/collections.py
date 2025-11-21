@@ -302,6 +302,9 @@ class QuadMesh:
 
     @property
     def data(self) -> dict[str, npt.NDArray[np.float64]]:
+        if self.rasterized:
+            return dict()
+
         return {
             "vertices": self.vertices,
             "values": self.values,
