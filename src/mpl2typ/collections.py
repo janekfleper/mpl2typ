@@ -5,7 +5,6 @@ import matplotlib.collections
 import matplotlib.transforms
 
 from . import typst
-from .axes import Axes
 
 
 def curve_components(path: matplotlib.path.Path):
@@ -55,7 +54,7 @@ class Collection:
     def __init__(
         self,
         collection: matplotlib.collections.Collection,
-        axes: "Axes",
+        axes,
         name: str,
         prefix: str = "collection",
     ):
@@ -260,7 +259,7 @@ class QuadMesh:
     def __init__(
         self,
         collection: matplotlib.collections.QuadMesh,
-        axes: "Axes",
+        axes,
         name: str,
         prefix: str = "quad-mesh",
     ):
