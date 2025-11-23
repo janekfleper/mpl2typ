@@ -36,6 +36,14 @@
   if data != none { line2d(..data, handle-length: handle-length) }
 }
 
+#let rectangle(fill: none, stroke: none, ..style) = {
+  let (handle-length, handle-height, ..) = style.named()
+  draw.place(
+    (0%, 0%),
+    std.rect(width: handle-length, height: handle-height, fill: fill, stroke: stroke),
+  )
+}
+
 #let legend(
   location: top + left,
   title: none,
