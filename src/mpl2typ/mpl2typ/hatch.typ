@@ -53,7 +53,7 @@
 
 // The default size (24pt, 24pt) and the default density 2 match the default of
 // matplotlib where the density is 6 in a unit square of size (72pt, 72pt).
-#let hatch(pattern: "", stroke: none, fill: none, size: (24pt, 24pt), density: 2) = {
+#let hatch(pattern: "", stroke: none, fill: none, size: (24pt, 24pt), density: 2, scale: 1) = {
   // the density is rescaled for everything but the diagonal hatches
   size = size.map(s => s * 2)
 
@@ -75,15 +75,15 @@
 
   // The circle radii are computed from 12pt * size in matplotlib/hatch.py
   if n-small-circles > 0 {
-    let circle = place(center + horizon, dx: 0pt, dy: 0pt, circle(radius: 2.4pt, stroke: stroke))
+    let circle = place(center + horizon, dx: 0pt, dy: 0pt, circle(radius: 2.4pt * scale, stroke: stroke))
     children += _hatch-shape(circle, n-small-circles, size, density)
   }
   if n-large-circles > 0 {
-    let circle = place(center + horizon, dx: 0pt, dy: 0pt, circle(radius: 4.8pt, stroke: stroke))
+    let circle = place(center + horizon, dx: 0pt, dy: 0pt, circle(radius: 4.8pt * scale, stroke: stroke))
     children += _hatch-shape(circle, n-large-circles, size, density)
   }
   if n-small-filled-circles > 0 {
-    let circle = place(center + horizon, dx: 0pt, dy: 0pt, circle(radius: 1.2pt, stroke: stroke, fill: black))
+    let circle = place(center + horizon, dx: 0pt, dy: 0pt, circle(radius: 1.2pt * scale, stroke: stroke, fill: black))
     children += _hatch-shape(circle, n-small-filled-circles, size, density)
   }
 
