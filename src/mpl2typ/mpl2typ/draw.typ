@@ -112,6 +112,7 @@
   show: clip
   for (i, row) in values.enumerate() {
     for (j, value) in row.enumerate() {
+      if value == none { continue }
       let color = colormap(value)
       std.place(
         top + left,
