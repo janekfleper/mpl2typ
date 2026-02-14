@@ -118,6 +118,7 @@
         top + left,
         curve(
           fill: color,
+          stroke: color + 0.3pt,
           curve.move(transform(vertices.at(i).at(j))),
           curve.line(transform(vertices.at(i).at(j + 1))),
           curve.line(transform(vertices.at(i + 1).at(j + 1))),
