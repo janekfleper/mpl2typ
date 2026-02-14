@@ -151,3 +151,30 @@
     ),
   )
 }
+
+#let regular-quad-mesh(data: (:), width: none, height: none, colormap: none) = {
+  assert.ne(width, none, message: "Parameter width must not be none")
+  assert.ne(height, none, message: "Parameter height must not be none")
+  assert.ne(colormap, none, message: "Parameter colormap must not be none")
+  let vertices = data.remove("vertices", default: ())
+  let values = data.remove("values", default: ())
+
+  show: clip
+  let ny = values.len()
+  let nx = values.at(0).len()
+  for y in range(ny) {
+    for x in range(nx) {
+      let color = colormap(values.at(y).at(x))
+      std.place(
+        top + left,
+        dx: x * width / nx,
+        dy: y * height / ny,
+        rect(
+          width: width / nx + 0.5pt,
+          height: height / ny + 0.5pt,
+          fill: color,
+        ),
+      )
+    }
+  }
+}
