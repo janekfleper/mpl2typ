@@ -1,471 +1,241 @@
-import textwrap
-from typing import Any, overload
-from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
 
-COLORS = {
-    "k": "black",
-    "w": "white",
-    "r": "red",
-    "b": "blue",
-    "g": "green",
-    (0.0, 0.0, 0.0, 1.0): "black",
-    (1.0, 1.0, 1.0, 1.0): "white",
-    (1.0, 0.0, 0.0, 1.0): "red",
-    (0.0, 1.0, 0.0, 1.0): "green",
-    (0.0, 0.0, 1.0, 1.0): "blue",
+from pypst.binding import Binding
+from pypst.block import Block
+from pypst.color import ColorPredefined, ColorRGB, ColorLuma, PREDEFINED_COLORS
+from pypst.functional import Functional
+from pypst.place import Place
+from pypst.quantity import Length, Quantity, Ratio
+from pypst.renderable import Renderable
+from pypst.stroke import Dash, Stroke
+from pypst.utils import render, render_fenced
+
+"""
+The base colors from matplotlib.
+
+https://matplotlib.org/stable/gallery/color/named_colors.html#base-colors
+"""
+MPL_BASE_COLOR_BLACK = "black"
+MPL_BASE_COLOR_WHITE = "white"
+MPL_BASE_COLOR_RED = (1.0, 0.0, 0.0)
+MPL_BASE_COLOR_GREEN = (0.0, 0.5, 0.0)
+MPL_BASE_COLOR_BLUE = (0.0, 0.0, 1.0)
+MPL_BASE_COLOR_YELLOW = (0.75, 0.75, 0.0)
+MPL_BASE_COLOR_MAGENTA = (0.75, 0.0, 0.75)
+MPL_BASE_COLOR_CYAN = (0.0, 0.75, 0.75)
+
+MPL_BASE_COLORS: dict[str | tuple[float, ...], str | tuple[float, ...]] = {
+    "k": MPL_BASE_COLOR_BLACK,
+    "w": MPL_BASE_COLOR_WHITE,
+    "black": MPL_BASE_COLOR_BLACK,
+    "white": MPL_BASE_COLOR_WHITE,
+    (0.0, 0.0, 0.0): MPL_BASE_COLOR_BLACK,
+    (1.0, 1.0, 1.0): MPL_BASE_COLOR_WHITE,
+    "r": MPL_BASE_COLOR_RED,
+    "g": MPL_BASE_COLOR_GREEN,
+    "b": MPL_BASE_COLOR_BLUE,
+    "y": MPL_BASE_COLOR_YELLOW,
+    "m": MPL_BASE_COLOR_MAGENTA,
+    "c": MPL_BASE_COLOR_CYAN,
+    "red": MPL_BASE_COLOR_RED,
+    "green": MPL_BASE_COLOR_GREEN,
+    "blue": MPL_BASE_COLOR_BLUE,
+    "yellow": MPL_BASE_COLOR_YELLOW,
+    "magenta": MPL_BASE_COLOR_MAGENTA,
+    "cyan": MPL_BASE_COLOR_CYAN,
 }
 
 
-def body(elements: Sequence[str]) -> str:
+def color_from_mpl(
+    color: str | tuple[float, ...],
+    alpha: int | float | None = None,
+    simplify: bool = True,
+) -> ColorPredefined | ColorRGB | ColorLuma:
     """
-    Join elements into a valid Typst body
+    Create a Typst color from a matplotlib color string or tuple.
 
-    If the list is empty, "none" is returned to get an empty body.
-    If the list contains a single element, it is returned as is.
-    Otherwise, the elements are wrapped in curly braces.
+    Args:
+        color: A color string. Can be a matplotlib alias, a hex string,
+            a float string, or a tuple of RGB/RGBA values in [0, 1].
+        alpha: The alpha component.
+        simplify: Simplify the color expression.
 
-    Parameters
-    ----------
-    elements: list[str]
-        The elements to join
-
-    Returns
-    -------
-    str
+    Examples:
+        >>> color_from_mpl("k")
+        ColorPredefined("black")
+        >>> color_from_mpl("red")
+        ColorRGB(red=Ratio(1.0), green=Ratio(0.0), blue=Ratio(0.0), alpha=None)
+        >>> color_from_mpl("#ff0000", alpha=0.9)
+        ColorRGB(hex="#ff0000", alpha=Ratio(0.9))
+        >>> color_from_mpl("0.5")
+        ColorLuma(lightness=Ratio(0.5), alpha=None)
+        >>> color_from_mpl((0.1, 0.1, 0.1), alpha=0.9, simplify=True)
+        ColorLuma(lightness=Ratio(0.1), alpha=Ratio(0.9))
+        >>> color_from_mpl((0.5, 0.6, 0.7, 0.8))
+        ColorRGB(red=Ratio(0.5), green=Ratio(0.6), blue=Ratio(0.7), alpha=Ratio(0.8))
     """
-    if not elements:
-        return "none"
-    elif len(elements) == 1:
-        return elements[0]
-    else:
-        return "{\n" + textwrap.indent("\n".join(elements), "  ") + "\n}"
+    if color in MPL_BASE_COLORS.keys():
+        color = MPL_BASE_COLORS[color]
 
+    if isinstance(color, str):
+        if alpha is not None:
+            alpha: Ratio = Ratio(alpha)
 
-def boolean(value: bool) -> str:
-    return "true" if value else "false"
+        if color in PREDEFINED_COLORS:
+            return ColorPredefined(color=color, alpha=alpha)
+        elif color.startswith("#"):
+            return ColorRGB(hex=color, alpha=alpha)
+        else:
+            return ColorLuma(Ratio(float(color)), alpha=alpha)
 
-
-def string(value: str) -> str:
-    return f'"{value}"'
-
-
-def content(value: str) -> str:
-    return f"[{value}]"
-
-
-def array(
-    elements: Sequence[str | int | float],
-    squeeze: bool = False,
-    inline: bool = True,
-) -> str:
-    if not elements:
-        return "()"
-    elif len(elements) == 1:
-        return str(elements[0]) if squeeze else f"({elements[0]},)"
-
-    newline = "" if inline else "\n"
-    separator = ", " if inline else ",\n"
-    indent = "" if inline else "  "
-
-    return (
-        f"({newline}"
-        + textwrap.indent(separator.join([str(e) for e in elements]), indent)
-        + f"{separator if not inline else ''})"
-    )
-
-
-def ndarray(a: npt.NDArray[Any]) -> str:
-    if np.ndim(a) == 1:
-        return np.array2string(a, separator=", ").replace("[", "(").replace("]", ")")
-    return "(\n" + textwrap.indent(",\n".join([ndarray(_a) for _a in a]), "  ") + ",\n)"
-
-
-def dictionary(elements: Mapping[str, str], inline: bool = False) -> str:
-    if not elements:
-        return "(:)"
-
-    newline = "" if inline else "\n"
-    separator = ", " if inline else ",\n"
-    indent = "" if inline else "  "
-
-    return (
-        f"({newline}"
-        + textwrap.indent(
-            separator.join([f"{k}: {v}" for k, v in elements.items()]),
-            indent,
+    if len(color) == 4 and color[3] < 1.0:
+        if alpha is not None:
+            raise ValueError("Color tuple already contains a finite alpha value.")
+        alpha: Ratio | int = (
+            Ratio(color[3]) if isinstance(color[3], float) else color[3]
         )
-        + f"{separator if not inline else ''})"
+
+    color = color[:3]
+    if color in MPL_BASE_COLORS:
+        return ColorPredefined(color=MPL_BASE_COLORS[color], alpha=alpha)
+
+    if len(set(color)) == 1:
+        return ColorLuma(lightness=Ratio(color[0]), alpha=alpha)
+    return ColorRGB(
+        red=Ratio(color[0]),
+        green=Ratio(color[1]),
+        blue=Ratio(color[2]),
+        alpha=alpha,
     )
 
 
-@overload
-def length(
-    values: int | float,
-    unit: str,
-    *,
-    scale: int | float | None = ...,
-    digits: int | None = ...,
-) -> str: ...
+def stroke_from_mpl(
+    edgecolor: str | tuple[float, ...],
+    linewidth: float,
+    linestyle: str | tuple[float, tuple[float, ...]] | None = None,
+) -> Stroke:
+    """
+    Create a Typst stroke from a matplotlib edgecolor, linewidth, and linestyle.
 
+    Args:
+        edgecolor: The edgecolor of the stroke.
+        linewidth: The linewidth of the stroke.
+        linestyle: The linestyle of the stroke.
 
-@overload
-def length(
-    values: Sequence[int | float],
-    unit: str,
-    *,
-    scale: int | float | None = ...,
-    digits: int | None = ...,
-) -> list[str]: ...
-
-
-@overload
-def length(
-    values: Mapping[str, int | float],
-    unit: str,
-    *,
-    scale: int | float | None = ...,
-    digits: int | None = ...,
-) -> dict[str, str]: ...
-
-
-def length(
-    values: int | float | Sequence[int | float] | Mapping[str, int | float],
-    unit: str,
-    *,
-    scale: int | float | None = None,
-    digits: int | None = 3,
-) -> str | list[str] | dict[str, str]:
-    if isinstance(values, Mapping):
-        return dict(
-            zip(
-                values.keys(),
-                length(list(values.values()), unit=unit, scale=scale, digits=digits),
-            )
+    Examples:
+        >>> stroke_from_mpl("black", 1)
+        Stroke(paint=ColorPredefined("black"), thickness=Length(1, "pt"))
+        >>> stroke_from_mpl("#ffff00", 0.9, (2, (3, 4, 5)))
+        Stroke(
+            paint=ColorRGB(hex="#ffff00"),
+            thickness=Length(0.9, "pt"),
+            dash=Dash(
+                array=Length((3, 4, 5), "pt"),
+                phase=Length(2, "pt"),
+            ),
         )
-    elif isinstance(values, (int, float, np.integer, np.floating)):
-        if scale is not None:
-            values = values * scale
-        if digits is not None:
-            values = round(values, digits)
-        return f"{values}{unit}"
+    """
+    if isinstance(linestyle, str):
+        dash = Dash(pattern=linestyle)
+    elif isinstance(linestyle, tuple):
+        phase, array = linestyle
+        phase = None if phase == 0 else Length(phase, "pt")
+        array = Length(array, "pt")
+        dash = Dash(array=array, phase=phase)
 
-    if scale is not None:
-        values = [v * scale for v in values]
-    if digits is not None:
-        values = [round(v, digits) for v in values]
-    return [f"{v}{unit}" for v in values]
-
-
-@overload
-def fraction(
-    values: int | float,
-    scale: int | float | None = ...,
-    digits: int = ...,
-) -> str: ...
-
-
-@overload
-def fraction(
-    values: Sequence[int | float],
-    scale: int | float | None = ...,
-    digits: int = ...,
-) -> list[str]: ...
-
-
-@overload
-def fraction(
-    values: Mapping[str, int | float],
-    scale: int | float | None = ...,
-    digits: int = ...,
-) -> dict[str, str]: ...
-
-
-def fraction(
-    values: int | float | Sequence[int | float] | Mapping[str, int | float],
-    scale: int | float | None = None,
-    digits: int = 3,
-) -> str | list[str] | dict[str, str]:
-    return length(values, "fr", scale=scale, digits=digits)
-
-
-@overload
-def degree(
-    values: int | float,
-    scale: int | float | None = ...,
-    digits: int = ...,
-) -> str: ...
-
-
-@overload
-def degree(
-    values: Sequence[int | float],
-    scale: int | float | None = ...,
-    digits: int = ...,
-) -> list[str]: ...
-
-
-@overload
-def degree(
-    values: Mapping[str, int | float],
-    scale: int | float | None = ...,
-    digits: int = ...,
-) -> dict[str, str]: ...
-
-
-def degree(
-    values: int | float | Sequence[int | float] | Mapping[str, int | float],
-    scale: int | float | None = None,
-    digits: int = 3,
-) -> str | list[str] | dict[str, str]:
-    return length(values, "deg", scale=scale, digits=digits)
-
-
-@overload
-def radian(
-    values: int | float,
-    scale: int | float | None = ...,
-    digits: int = ...,
-) -> str: ...
-
-
-@overload
-def radian(
-    values: Sequence[int | float],
-    scale: int | float | None = ...,
-    digits: int = ...,
-) -> list[str]: ...
-
-
-@overload
-def radian(
-    values: Mapping[str, int | float],
-    scale: int | float | None = ...,
-    digits: int = ...,
-) -> dict[str, str]: ...
-
-
-def radian(
-    values: int | float | Sequence[int | float] | Mapping[str, int | float],
-    scale: int | float | None = None,
-    digits: int = 3,
-) -> str | list[str] | dict[str, str]:
-    return length(values, "rad", scale=scale, digits=digits)
-
-
-@overload
-def ratio(
-    values: int | float,
-    scale: int | float = ...,
-    digits: int = ...,
-) -> str: ...
-
-
-@overload
-def ratio(
-    values: Sequence[int | float],
-    scale: int | float = ...,
-    digits: int = ...,
-) -> list[str]: ...
-
-
-@overload
-def ratio(
-    values: Mapping[str, int | float],
-    scale: int | float = ...,
-    digits: int = ...,
-) -> dict[str, str]: ...
-
-
-def ratio(
-    values: int | float | Sequence[int | float] | Mapping[str, int | float],
-    scale: int | float = 100,
-    digits: int = 3,
-) -> str | list[str] | dict[str, str]:
-    return length(values, "%", scale=scale, digits=digits)
-
-
-def function(
-    name: str,
-    *,
-    pos: Sequence[str | int | float] | None = None,
-    named: Mapping[str, str | int | float] | None = None,
-    body: str | None = None,
-    comment: str = "",
-    inline: bool = False,
-) -> str:
-    if pos is None:
-        pos = []
-    if named is None:
-        named = {}
-
-    comment = f"// {comment}\n" if comment else ""
-    args = [f"{dump(p)}" for p in pos] + [f"{k}: {dump(v)}" for k, v in named.items()]
-    if body is not None:
-        args.append(body)
-    if not args:
-        return f"{comment}{name}()"
-
-    newline = "" if inline else "\n"
-    separator = ", " if inline else ",\n"
-    indent = "" if inline else "  "
-
-    return (
-        f"{comment}{name}({newline}"
-        + textwrap.indent(separator.join(args), indent)
-        + f"{separator if not inline else ''})"
+    return Stroke(
+        paint=color_from_mpl(edgecolor),
+        thickness=Length(linewidth, "pt"),
+        dash=dash,
     )
 
 
-def block(name: str, padding: dict[str, float], body: str | None = None):
-    s = "let padding = " + dictionary(ratio(padding), inline=True) + "\n\n"
+@dataclass
+class NDArray:
+    """
+    A numpy array.
 
-    inner = function(
-        "block",
-        named=dict(
+    Args:
+        array: The numpy array.
+
+    Examples:
+        >>> NDArray(np.array([1, 3, 7])).render()
+        '(1, 2, 3)'
+        >>> NDArray(np.array([[1, 2, 3], [4, 5, 6]])).render()
+        '((1, 2, 3), (4, 5, 6))'
+    """
+
+    array: npt.NDArray[Any]
+
+    def render(self) -> str:
+        return (
+            np.array2string(self.array, separator=", ")
+            .replace("[", "(")
+            .replace("]", ")")
+        )
+
+
+@dataclass
+class PlaceBlock:
+    name: str
+    padding: dict[str, float]
+    body: str | Renderable | Functional | None = None
+
+    def render(self) -> str:
+        # return render_sequence()
+        padding = Binding(
+            name="padding",
+            value=Ratio(self.padding),
+        )
+
+        block = Block(
             width="100% - padding.right - padding.left",
             height="100% - padding.top - padding.bottom",
             stroke="none",
             fill="none",
-        ),
-        body=body,
-    )
+            body=self.body,
+        )
 
-    place = function(
-        "place",
-        pos=["top + left"],
-        named=dict(dx="padding.left", dy="padding.top"),
-        body=inner,
-    )
+        place = Place(
+            alignment="top + left",
+            dx="padding.left",
+            dy="padding.top",
+            body=block,
+        )
 
-    return (
-        f"#let {name}() = {{\n"
-        + textwrap.indent(s, "  ")
-        + textwrap.indent(place, "  ")
-        + "\n}\n\n"
-    )
+        return Binding(
+            name=self.name + "()",
+            value=render_fenced(body=(padding, place)).lstrip("#"),
+        ).render()
 
 
-def _color_from_str(color: str) -> str:
-    if color in COLORS.values():
-        return color
-    elif color in COLORS:
-        return COLORS[color]
-    elif color.startswith("#"):
-        return function("color.rgb", pos=[f'"{color}"'], inline=True)
-    elif color.startswith("C"):
-        return f"colors({color[1:]})"
-    else:
-        try:
-            return function("color.luma", pos=[ratio(float(color))], inline=True)
-        except ValueError:
-            print(f"Unknown color '{color}', defaulting to black")
-            return "black"
+@dataclass
+class Transform:
+    name: str
+    scale: tuple[float, ...] | tuple[str, ...] | None = None
+    shift: tuple[float, ...] | tuple[str, ...] | None = None
+    unit: tuple[str | Quantity, ...] | None = None
 
+    def render(self) -> str:
+        x = "x"
+        y = "y"
+        if self.scale is not None:
+            x = f"x * {render(self.scale[0])}"
+            y = f"y * {render(self.scale[1])}"
+        if self.shift is not None:
+            x = f"{x} + {render(self.shift[0])}"
+            y = f"{y} + {render(self.shift[1])}"
+        if self.unit is not None:
+            x = f"({x}) * {render(self.unit[0])}"
+            y = f"({y}) * {render(self.unit[1])}"
+        transformed = f"({x}, {y})"
 
-def _color_from_tuple(color: tuple[float, ...], simplify: bool = True) -> str:
-    if simplify:
-        if color in COLORS:
-            return COLORS[color]
-        elif len(set(color[:3])) == 1 and (len(color) == 3 or color[3] == 1.0):
-            return function("color.luma", pos=[ratio(color[0])], inline=True)
-    return function("color.rgb", pos=ratio(color), inline=True)
-
-
-def color(
-    color: str | tuple[float, ...], alpha: float | None = None, simplify: bool = True
-) -> str:
-    if isinstance(color, str):
-        color = _color_from_str(color)
-    elif isinstance(color, (tuple, list, np.ndarray)):
-        color = _color_from_tuple(tuple(color), simplify=simplify)
-
-    if alpha is None:
-        return color
-    return f"{color}.transparentize({ratio(1 - alpha)})"
-
-
-def dash(
-    offset: str | int | np.integer | float | Any,
-    pattern: str | None | Sequence[float] | Any,
-) -> str:
-    if pattern is None:
-        return '"solid"'
-    elif isinstance(pattern, str):
-        return pattern
-
-    if not isinstance(pattern, Sequence):
-        raise TypeError(f"Unknown pattern type '{type(pattern)}'")
-    if not isinstance(offset, (str, int, np.integer, float)):
-        raise TypeError(f"Unknown offset type '{type(offset)}'")
-
-    pattern = np.array(pattern, dtype=float)
-    return dict(array=length(pattern, "pt"), phase=f"{offset}pt")
-
-
-def stroke(edgecolor, linewidth, linestyle):
-    paint = color(edgecolor)
-    thickness = length(linewidth, "pt")
-    if linestyle == "solid":
-        return f"{paint} + {thickness}"
-
-    if isinstance(linestyle, (str, float)):
-        _dash = f'"{linestyle}"'
-    else:
-        _dash = dash(*linestyle)
-    return dict(paint=paint, thickness=thickness, dash=_dash)
-
-
-def transform(
-    scale: Sequence[float] | Sequence[str] | None = None,
-    shift: Sequence[float] | Sequence[str] | None = None,
-    unit: Sequence[str] | None = None,
-):
-    x = "x"
-    y = "y"
-    if scale is not None:
-        x = f"x * {scale[0]}"
-        y = f"y * {scale[1]}"
-    if shift is not None:
-        x = f"{x} + {shift[0]}"
-        y = f"{y} + {shift[1]}"
-    if unit is not None:
-        x = f"({x}) * {unit[0]}"
-        y = f"({y}) * {unit[1]}"
-    transformed = f"({x}, {y})"
-    body = "let (x, y) = point\n" + transformed
-    return "{\n" + textwrap.indent(body, "  ") + "\n}"
-
-
-def dump(obj, squeeze: bool = False):
-    """
-    Dump an object to a Typst string
-
-    This function is equivalent to `json.dumps()` that turns any object into a
-    valid string.
-
-    Parameters
-    ----------
-    obj: any
-        The object to dump
-    squeeze: bool
-        If True, lists and tuples are squeezed if they contain a single element
-
-    Returns
-    -------
-    str
-    """
-    if isinstance(obj, np.ndarray):
-        return ndarray(obj)
-    elif isinstance(obj, (list, tuple)):
-        elements = [dump(e, squeeze=squeeze) for e in obj]
-        length = sum([len(e) for e in elements])
-        return array(elements, squeeze=squeeze, inline=length < 80)
-    elif isinstance(obj, dict):
-        values = [dump(v, squeeze=squeeze) for v in obj.values()]
-        length = sum([len(k) for k in obj.keys()]) + sum([len(v) for v in values])
-        return dictionary(dict(zip(obj.keys(), values)), inline=length < 80)
-    else:
-        return str(obj)
+        point = Binding(name="(x, y)", value="point")
+        return Binding(
+            name=self.name + "(point)",
+            value=render_fenced(body=(point, transformed)).lstrip("#"),
+        ).render()
