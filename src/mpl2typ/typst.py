@@ -214,6 +214,24 @@ class PlaceBlock:
 
 
 @dataclass
+class Function:
+    name: str
+    args: list[str | Renderable] | None = None
+    kwargs: dict[str, str | Renderable] | None = None
+    body: str | Renderable | None = None
+
+    def render(self) -> str:
+        args = []
+        if self.args is not None:
+            args.extend(self.args)
+        if self.kwargs is not None:
+            args.extend([f"{k}: {v}" for k, v in self.kwargs.items()])
+        if self.body is not None:
+            args.append(self.body)
+        return f"{self.name}({', '.join(args)})"
+
+
+@dataclass
 class Transform:
     name: str
     scale: tuple[float, ...] | tuple[str, ...] | None = None
@@ -236,6 +254,6 @@ class Transform:
 
         point = Binding(name="(x, y)", value="point")
         return Binding(
-            name=self.name + "(point)",
+            name=Function(name=self.name, args=["point"]),
             value=render_fenced(body=(point, transformed)).lstrip("#"),
         ).render()
