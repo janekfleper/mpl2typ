@@ -4,16 +4,27 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
+import matplotlib.lines
 
-from pypst.binding import Binding
-from pypst.block import Block
-from pypst.color import ColorPredefined, ColorRGB, ColorLuma, PREDEFINED_COLORS
-from pypst.functional import Functional
-from pypst.place import Place
-from pypst.quantity import Length, Quantity, Ratio
-from pypst.renderable import Renderable
-from pypst.stroke import Dash, Stroke
-from pypst.utils import render, render_fenced
+from pypst import (
+    Binding,
+    Block,
+    Color,
+    ColorPredefined,
+    ColorRGB,
+    ColorLuma,
+    Dash,
+    PREDEFINED_COLORS,
+    Functional,
+    Place,
+    Length,
+    Quantity,
+    Ratio,
+    Renderable,
+    render,
+    render_fenced,
+    Stroke as PypstStroke,
+)
 
 """
 The base colors from matplotlib.
@@ -114,7 +125,7 @@ def color_from_mpl(
     )
 
 
-def dash_from_mpl(linestyle: str | tuple[float, tuple[float, ...]]) -> pypst.Dash:
+def dash_from_mpl(linestyle: str | tuple[float, tuple[float, ...]]) -> Dash:
     if isinstance(linestyle, str):
         return Dash(pattern=linestyle)
     elif isinstance(linestyle, tuple):
@@ -125,7 +136,7 @@ def dash_from_mpl(linestyle: str | tuple[float, tuple[float, ...]]) -> pypst.Das
 
 
 @dataclass
-class Stroke(pypst.Stroke):
+class Stroke(PypstStroke):
     @classmethod
     def from_mpl(
         cls,
@@ -168,11 +179,11 @@ class Stroke(pypst.Stroke):
         Args:
             line: The matplotlib.lines.Line2D object.
         """
-        color: pypst.Color = color_from_mpl(
+        color: Color = color_from_mpl(
             color=line.get_color(),
             alpha=line.get_alpha(),
         )
-        thickness: pypst.Length = pypst.Length(value=line.get_linewidth(), unit="pt")
+        thickness: Length = Length(value=line.get_linewidth(), unit="pt")
 
         capstyle = line.get_dash_capstyle()
         if capstyle == "projecting":
