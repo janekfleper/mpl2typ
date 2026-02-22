@@ -273,7 +273,6 @@ class Function:
 
 @dataclass
 class Transform:
-    name: str
     scale: tuple[float, ...] | tuple[str, ...] | None = None
     shift: tuple[float, ...] | tuple[str, ...] | None = None
     unit: tuple[str | Quantity, ...] | None = None
@@ -293,7 +292,4 @@ class Transform:
         transformed = f"({x}, {y})"
 
         point = Binding(name="(x, y)", value="point")
-        return Binding(
-            name=Function(name=self.name, args=["point"]),
-            value=render_fenced(body=(point, transformed)).lstrip("#"),
-        ).render()
+        return render_fenced(body=(point, transformed)).lstrip("#")
