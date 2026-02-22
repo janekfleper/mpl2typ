@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
@@ -293,3 +294,32 @@ class Transform:
 
         point = Binding(name="(x, y)", value="point")
         return render_fenced(body=(point, transformed)).lstrip("#")
+
+
+class Drawable:
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def zorder(self) -> float:
+        pass
+
+    @property
+    @abstractmethod
+    def definition(self) -> str | Binding | tuple[Binding, ...]:
+        pass
+
+    @property
+    @abstractmethod
+    def execution(self) -> str | Function | tuple[Function, ...]:
+        pass
+
+
+class DrawableCollection:
+    @property
+    @abstractmethod
+    def children(self) -> list[Drawable]:
+        pass
