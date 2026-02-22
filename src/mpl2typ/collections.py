@@ -4,7 +4,9 @@ import matplotlib.path
 import matplotlib.collections
 import matplotlib.transforms
 
-from . import typst
+from pypst import Binding, Color, Image, Length, Ratio
+
+from .typst import color_from_mpl, dash_from_mpl, Drawable, Function, Stroke, Transform
 
 
 def curve_components(path: matplotlib.path.Path):
@@ -24,7 +26,7 @@ def curve_components(path: matplotlib.path.Path):
     -----
     The y-position has to be inverted to match the Typst coordinate system.
     """
-    components: list[str] = []
+    components: list[str | Function] = []
     for segment, code in path.iter_segments():  # type: ignore
         if code == path.CLOSEPOLY:
             components.append("curve.close()")
@@ -32,7 +34,7 @@ def curve_components(path: matplotlib.path.Path):
 
         segment[1::2] *= -1  # flip the y-coordinates
         points = [
-            typst.length(list(point), " * s")
+            Length(value=list(point), unit=" * s")
             for point in np.array(segment, dtype=float).reshape(-1, 2)
         ]
         if code == path.MOVETO:
@@ -45,7 +47,7 @@ def curve_components(path: matplotlib.path.Path):
             function = "curve.cubic"
         else:
             raise ValueError(f"Unknown path code: {code}")
-        components.append(typst.function(function, pos=points, inline=True))
+        components.append(Function(name=function, args=points))
 
     return components
 
@@ -66,6 +68,10 @@ class Collection:
     @property
     def name(self) -> str:
         return self._prefix + "-" + self._name
+
+    @property
+    def zorder(self) -> float:
+        return self.collection.zorder
 
     @property
     def path(self) -> list[npt.NDArray[np.float64]]:
@@ -94,10 +100,13 @@ class Collection:
         matrix = np.array(transform.get_matrix(), dtype=float)
         scale = np.diag(matrix[:2, :2])
         shift = matrix[:2, 2]
-        return "point => " + typst.transform(
-            list(scale),
-            list(shift),
-            unit=[typst.length(1, "pt"), typst.length(-1, "pt")],
+        return (
+            "point => "
+            + Transform(
+                scale=list(scale),
+                shift=list(shift),
+                unit=[Length(1, "pt"), Length(-1, "pt")],
+            ).render()
         )
 
     @property
@@ -146,38 +155,40 @@ class Collection:
         offset_shift = offset_matrix[:2, 2]
 
         dpi = axes.figure.dpi
-        return "point => " + typst.transform(
-            list(offset_scale / dpi),
-            list(offset_shift / dpi),
-            unit=[typst.length(72, "pt"), typst.length(-72, "pt")],
+        return (
+            "point => "
+            + Transform(
+                scale=list(offset_scale / dpi),
+                shift=list(offset_shift / dpi),
+                unit=[Length(72, "pt"), Length(-72, "pt")],
+            ).render()
         )
 
     @property
-    def fill(self) -> list[str]:
-        colors = [typst.color(color) for color in self.collection.get_facecolor()]
+    def fill(self) -> list[str | Function]:
+        colors = [color_from_mpl(color) for color in self.collection.get_facecolor()]
 
         hatch = self.collection.get_hatch()
         if hatch is None:
             return colors
 
-        color = typst.color(self.collection._hatch_color)
-        linewidth = typst.length(self.collection.get_hatch_linewidth(), "pt")
-        stroke = f"{color} + {linewidth}"
+        color = color_from_mpl(self.collection._hatch_color)
+        linewidth = Length(self.collection.get_hatch_linewidth(), "pt")
+        stroke = Stroke(paint=color, thickness=linewidth)
         return [
-            typst.function(
-                "hatch.hatch",
-                named=dict(pattern=typst.string(hatch), stroke=stroke, fill=color),
-                inline=False,
+            Function(
+                name="hatch.hatch",
+                kwargs=dict(pattern=hatch, stroke=stroke, fill=color),
             )
             for color in colors
         ]
 
     @property
-    def edgecolor(self) -> list[str]:
-        return [typst.color(color) for color in self.collection.get_edgecolor()]
+    def edgecolor(self) -> list[Color]:
+        return [color_from_mpl(color) for color in self.collection.get_edgecolor()]
 
     @property
-    def linewidth(self) -> list[str]:
+    def linewidth(self) -> list[str | Length]:
         """
         The linewidths "inherit" the shape of the linestyles, and vice versa.
         If there are multiple linestyles but only a single linewidth, the
@@ -186,9 +197,9 @@ class Collection:
         """
         linewidth = self.collection.get_linewidth()
         if isinstance(linewidth, (float, int)):
-            return [typst.length(linewidth, "pt")]
+            return [Length(linewidth, "pt")]
 
-        linewidths = [typst.length(lw, "pt") for lw in linewidth]
+        linewidths = [Length(lw, "pt") for lw in linewidth]
         if all(lw == linewidths[0] for lw in linewidths):
             return linewidths[:1]
         return linewidths
@@ -203,18 +214,14 @@ class Collection:
         if isinstance(linestyle, (str, float)):
             return [f"{linestyle}"]
 
-        linestyles = [typst.dash(offset, pattern) for offset, pattern in linestyle]
+        linestyles = [dash_from_mpl(_linestyle) for _linestyle in linestyle]
         if all(lw == linestyles[0] for lw in linestyles):
             return linestyles[:1]
         return linestyles
 
     @property
     def stroke(self) -> dict[str, str]:
-        return dict(
-            paint=typst.dump(self.edgecolor, squeeze=True),
-            thickness=typst.dump(self.linewidth, squeeze=True),
-            dash=typst.dump(self.linestyle, squeeze=True),
-        )
+        return dict(paint=self.edgecolor, thickness=self.linewidth, dash=self.linestyle)
 
     @property
     def data(
@@ -227,35 +234,32 @@ class Collection:
         }
 
     @property
-    def definition(self):
+    def definition(self) -> tuple[Binding, ...]:
         return (
-            f"let fill-{self.name} = {typst.array(self.fill, squeeze=True, inline=False)}\n"
-            + f"let stroke-{self.name} = {typst.dictionary(self.stroke, inline=False)}\n"
-            + f"let transform-{self.name} = {self.transform}\n"
-            + f"let compute-scale-{self.name} = {self.compute_scale}\n"
-            + f"let offset-transform-{self.name} = {self.offset_transform}\n"
-            + f"let {self.name} = "
-            + typst.dictionary(
-                {
+            Binding(name=f"fill-{self.name}", value=self.fill),
+            Binding(name=f"stroke-{self.name}", value=self.stroke),
+            Binding(name=f"transform-{self.name}", value=self.transform),
+            Binding(name=f"compute-scale-{self.name}", value=self.compute_scale),
+            Binding(name=f"offset-transform-{self.name}", value=self.offset_transform),
+            Binding(
+                name=f"{self.name}",
+                value={
                     "data": f'data.at("{self.name}")',
                     "fill": f"fill-{self.name}",
                     "stroke": f"stroke-{self.name}",
                     "transform": f"transform-{self.name}",
                     "compute-scale": f"compute-scale-{self.name}",
                     "offset-transform": f"offset-transform-{self.name}",
-                }
-            )
+                },
+            ),
         )
 
     @property
-    def draw(self) -> tuple[str, float]:
-        return (
-            typst.function("draw.collection", body=f"..{self.name}", inline=True),
-            self.collection.zorder,
-        )
+    def execution(self) -> Function:
+        return Function(name="draw.collection", body=f"..{self.name}")
 
 
-class QuadMesh:
+class QuadMesh(Drawable):
     def __init__(
         self,
         collection: matplotlib.collections.QuadMesh,
@@ -273,24 +277,37 @@ class QuadMesh:
         return self._prefix + "-" + self._name
 
     @property
+    def zorder(self) -> float:
+        return self.collection.zorder
+
+    @property
     def rasterized(self) -> bool:
         return self.collection.get_rasterized()
 
     @property
-    def gradient(self) -> str:
+    def gradient_function(self) -> Function:
         cmap = self.collection.get_cmap()
-        return f"gradient.linear(..color.map.{cmap.name})"
+        return Function(name="gradient.linear", body=f"..color.map.{cmap.name}")
 
     @property
-    def colormap(self) -> str:
+    def colormap_signature(self) -> Function:
         norm = self.collection.norm
-        signature = typst.function(
-            f"colormap-{self.name}",
-            pos=["v"],
-            named=dict(vmin=norm.vmin, vmax=norm.vmax),
-            inline=True,
+        return Function(
+            name=f"colormap-{self.name}",
+            args=["v"],
+            kwargs=dict(vmin=norm.vmin, vmax=norm.vmax),
         )
-        return f"{signature} = gradient-{self.name}.sample((v - vmin) / (vmax - vmin) * 100%)"
+
+    @property
+    def colormap_function(self) -> Function:
+        return Function(
+            name=f"gradient-{self.name}.sample",
+            body="(v - vmin) / (vmax - vmin) * 100%",
+        )
+
+    @property
+    def colormap(self) -> Binding:
+        return Binding(name=self.colormap_signature, value=self.colormap_function)
 
     @property
     def vertices(self) -> npt.NDArray[np.float64]:
@@ -311,46 +328,40 @@ class QuadMesh:
         }
 
     @property
-    def definition(self) -> str:
+    def definition(self) -> Binding | tuple[Binding, ...]:
         if self.rasterized:
-            return f"let {self.name} = " + typst.function(
-                "image",
-                body=typst.string(f"data/{self.axes.name}-{self.name}.png"),
-                named=dict(width="100%", height="100%"),
-                inline=True,
+            return Binding(
+                name=self.name,
+                value=Image(
+                    path=f"data/{self.axes.name}-{self.name}.png",
+                    width=Ratio(1.0),
+                    height=Ratio(1.0),
+                ),
             )
 
         return (
-            f"let gradient-{self.name} = {self.gradient}\n"
-            + f"let {self.colormap}\n"
-            + f"let {self.name} = "
-            + typst.dictionary(
-                {
-                    "data": f'data.at("{self.name}")',
-                    "colormap": f"colormap-{self.name}",
-                    "transform": "transform",
-                }
-            )
+            Binding(name=f"gradient-{self.name}", value=self.gradient_function),
+            Binding(name=self.colormap_signature, value=self.colormap_function),
+            Binding(
+                name=self.name,
+                value=dict(
+                    data=f'data.at("{self.name}")',
+                    colormap=f"colormap-{self.name}",
+                    transform="transform",
+                ),
+            ),
         )
 
     @property
-    def draw(self) -> tuple[str, float]:
+    def execution(self) -> Function:
         if self.rasterized:
-            return (
-                typst.function(
-                    "std.place",
-                    pos=["top + left"],
-                    body=self.name,
-                    inline=True,
-                ),
-                self.collection.zorder,
+            return Function(
+                name="std.place",
+                args=["top + left"],
+                body=self.name,
             )
 
-        return (
-            typst.function(
-                "draw.quad-mesh",
-                body=f"..{self.name}",
-                inline=True,
-            ),
-            self.collection.zorder,
+        return Function(
+            name="draw.quad-mesh",
+            body=f"..{self.name}",
         )

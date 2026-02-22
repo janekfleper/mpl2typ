@@ -2,7 +2,9 @@ import numpy as np
 import numpy.typing as npt
 import matplotlib.lines
 
-from . import typst
+from pypst import Binding, Color, Length
+
+from .typst import color_from_mpl, Drawable, Function, Stroke
 
 # https://matplotlib.org/stable/gallery/lines_bars_and_markers/marker_reference.html
 MARKERS = {
@@ -46,91 +48,57 @@ MARKERS = {
 }
 
 
-class Stroke:
-    def __init__(self, line: matplotlib.lines.Line2D):
-        self.line = line
-
-    @property
-    def color(self) -> str:
-        return typst.color(self.line.get_color(), self.line.get_alpha())
-
-    @property
-    def thickness(self) -> str:
-        return typst.length(self.line.get_linewidth(), "pt")
-
-    @property
-    def capstyle(self) -> str:
-        capstyle = self.line.get_dash_capstyle()
-        if capstyle == "projecting":
-            capstyle = "square"  # this is the equivalent cap style in Typst
-        return typst.string(capstyle)
-
-    @property
-    def joinstyle(self) -> str:
-        return typst.string(self.line.get_dash_joinstyle())
-
-    @property
-    def dash(self) -> str | dict[str, str]:
-        offset, pattern = self.line._dash_pattern
-        if pattern is None:
-            return typst.string("solid")
-        else:
-            return dict(array=typst.length(pattern, "pt"), phase=f"{offset}pt")
-
-    def export(self) -> str | dict[str, str]:
-        if self.line.get_linestyle() in ["none", "None", " ", ""]:
-            return "none"
-        return dict(
-            paint=self.color,
-            thickness=self.thickness,
-            cap=self.capstyle,
-            join=self.joinstyle,
-            dash=self.dash,
-        )
-
-
 class Marker:
     def __init__(self, line: matplotlib.lines.Line2D):
         self.line = line
 
     @property
-    def size(self) -> str:
-        return typst.length(self.line.get_markersize() / 2, "pt")
+    def size(self) -> Length:
+        return Length(value=self.line.get_markersize() / 2, unit="pt")
 
     @property
-    def face_color(self) -> str:
-        return typst.color(self.line.get_markerfacecolor(), self.line.get_alpha())
+    def face_color(self) -> Color:
+        return color_from_mpl(
+            color=self.line.get_markerfacecolor(),
+            alpha=self.line.get_alpha(),
+        )
 
     @property
-    def edge_color(self) -> str:
-        return typst.color(self.line.get_markeredgecolor(), self.line.get_alpha())
+    def edge_color(self) -> Color:
+        return color_from_mpl(
+            color=self.line.get_markeredgecolor(),
+            alpha=self.line.get_alpha(),
+        )
 
     @property
-    def edge_width(self) -> str:
-        return typst.length(self.line.get_markeredgewidth(), "pt")
+    def edge_width(self) -> Length:
+        return Length(value=self.line.get_markeredgewidth(), unit="pt")
 
     @property
-    def stroke(self) -> str:
-        return f"{self.edge_color} + {self.edge_width}"
+    def stroke(self) -> Stroke:
+        return Stroke(
+            paint=self.edge_color,
+            thickness=self.edge_width,
+        )
 
-    def export(self) -> str:
+    def render(self) -> str:
         marker = self.line.get_marker()
         if marker in ["none", "None", " ", ""]:
             return "none"
         if marker not in MARKERS:
             raise ValueError(f"Unknown marker '{marker}'")
 
-        return typst.function(
-            MARKERS[marker],
-            pos=[self.size],
-            named=dict(
+        return Function(
+            name=MARKERS[marker],
+            args=[self.size],
+            kwargs=dict(
                 fill=self.face_color,
                 stroke=self.stroke,
             ),
-        )
+        ).render()
 
 
-class Line2D:
+class Line2D(Drawable):
     def __init__(
         self,
         line: matplotlib.lines.Line2D,
@@ -142,7 +110,7 @@ class Line2D:
         self.axes = axes
         self._name = name
         self._prefix = prefix
-        self.stroke = Stroke(line)
+        self.stroke = Stroke.from_line(line)
         self.marker = Marker(line)
 
     @property
@@ -150,28 +118,29 @@ class Line2D:
         return self._prefix + "-" + self._name
 
     @property
+    def zorder(self) -> float:
+        return self.line.zorder
+
+    @property
     def data(self) -> npt.NDArray[np.float64]:
         return np.array(self.line.get_path().vertices)
 
     @property
-    def definition(self) -> str:
+    def definition(self) -> tuple[Binding, ...]:
         return (
-            f"let stroke-{self.name} = {typst.dump(self.stroke.export())}\n"
-            + f"let marker-{self.name} = {typst.dump(self.marker.export())}\n"
-            + f"let {self.name} = "
-            + typst.dictionary(
-                dict(
+            Binding(name=f"stroke-{self.name}", value=self.stroke),
+            Binding(name=f"marker-{self.name}", value=self.marker),
+            Binding(
+                name=self.name,
+                value=dict(
                     data=f'data.at("{self.name}")',
                     stroke=f"stroke-{self.name}",
                     marker=f"marker-{self.name}",
                     transform="transform",
-                )
-            )
+                ),
+            ),
         )
 
     @property
-    def draw(self) -> tuple[str, float]:
-        return (
-            typst.function("draw.line", body=f"..{self.name}", inline=True),
-            self.line.zorder,
-        )
+    def execution(self) -> Function:
+        return Function(name="draw.line", body=f"..{self.name}")

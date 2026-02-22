@@ -3,24 +3,36 @@ import matplotlib.text
 import matplotlib.axes
 import matplotlib.transforms
 
-from . import typst
+from pypst import (
+    Binding,
+    Color,
+    Content,
+    Degree,
+    Length,
+    Place,
+    Renderable,
+    Rotate,
+    Text as PypstText,
+)
+
+from .typst import color_from_mpl, Drawable, Function
 
 
 def relativ_fontsize(fontsize: float) -> str:
     delta = fontsize - matplotlib.rcParams["font.size"]
-    fontsize = typst.length(1, "em")
+    fontsize: str = Length(1, "em").render()
     if delta > 0:
-        fontsize += " + " + typst.length(delta, "pt")
+        fontsize += " + " + Length(delta, "pt").render()
     elif delta < 0:
-        fontsize += " - " + typst.length(abs(delta), "pt")
+        fontsize += " - " + Length(abs(delta), "pt").render()
     return fontsize
 
 
-class Text:
+class Text(Drawable):
     def __init__(
         self,
         text: matplotlib.text.Text,
-        axes: "typst.axes.Axes",
+        axes: "mpl2typ.axes.Axes",
         name: str,
         prefix: str = "text",
     ):
@@ -34,6 +46,10 @@ class Text:
         return self._prefix + "-" + self._name
 
     @property
+    def zorder(self) -> float:
+        return self.text.zorder
+
+    @property
     def position(self) -> str | tuple[str, str]:
         return self.axes.transform_point(
             self.text.get_position(),
@@ -45,8 +61,11 @@ class Text:
         return relativ_fontsize(float(self.text.get_fontsize()))
 
     @property
-    def color(self) -> str:
-        return typst.color(str(self.text.get_color()), self.text.get_alpha())
+    def color(self) -> Color:
+        return color_from_mpl(
+            str(self.text.get_color()),
+            self.text.get_alpha(),
+        )
 
     @property
     def alignment(self) -> str:
@@ -59,61 +78,44 @@ class Text:
 
         return f"{horizontal} + {vertical}"
 
-    def inner(self, body: str) -> str:
+    def inner(self, body: str | Renderable) -> str | Renderable:
         rotation = self.text.get_rotation()
         if rotation:
             if self.text.get_rotation_mode() == "anchor":
-                return typst.function(
-                    "rotate",
-                    pos=[typst.degree(-rotation)],
-                    body=typst.function(
-                        "place",
-                        pos=[self.alignment],
-                        body=body,
-                    ),
+                return Rotate(
+                    angle=Degree(-rotation),
+                    body=Place(alignment=self.alignment, body=body),
                 )
             else:  # "default" or None
-                return typst.function(
-                    "place",
-                    pos=[self.alignment],
-                    body=typst.function(
-                        "rotate",
-                        pos=[typst.degree(-rotation)],
-                        named=dict(reflow="true"),
-                        body=body,
-                    ),
+                return Place(
+                    alignment=self.alignment,
+                    body=Rotate(angle=Degree(-rotation), reflow=True, body=body),
                 )
         else:
-            return typst.function(
-                "place",
-                pos=[self.alignment],
+            return Place(
+                alignment=self.alignment,
                 body=body,
             )
 
     @property
-    def definition(self) -> str:
-        kwargs = dict(size=self.fontsize, fill=self.color)
-        if self.text.get_verticalalignment() in ["center", "bottom"]:
-            kwargs["bottom-edge"] = '"descender"'
-
-        text = typst.function(
-            "text",
-            named=kwargs,
-            body=typst.content(self.text.get_text()),
-            inline=True,
+    def definition(self) -> Binding:
+        bottom_edge = (
+            '"descender"'
+            if self.text.get_verticalalignment() in ["center", "bottom"]
+            else None
         )
-        return f"let {self.name} = {typst.dump(dict(position=self.position, body=self.inner(text)))}"
+
+        text = PypstText(
+            size=self.fontsize,
+            fill=self.color,
+            bottom_edge=bottom_edge,
+            body=Content(self.text.get_text()),
+        )
+        return Binding(
+            name=self.name,
+            value=dict(position=self.position, body=self.inner(text)),
+        )
 
     @property
-    def draw(self) -> tuple[str, float]:
-        return (
-            typst.function(
-                "draw.text",
-                body=f"..{self.name}",
-                inline=True,
-            ),
-            self.text.zorder,
-        )
-
-    def export(self) -> str:
-        return f"let {self.name} = " + self.definition + "\n" + self.draw[0]
+    def execution(self) -> Function:
+        return Function(name="draw.text", body=f"..{self.name}")

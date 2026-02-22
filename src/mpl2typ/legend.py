@@ -2,9 +2,11 @@ import matplotlib.legend
 import matplotlib.lines
 import matplotlib.container
 
-from . import typst
+from pypst import Binding, Color, Content, Length
+
+from .collections import Collection
 from .lines import Line2D
-from .collections import Collection, QuadMesh
+from .typst import color_from_mpl, Drawable, Function
 
 
 # The "best" location is not supported (yet) in mpl2typ since matplotlib just
@@ -41,12 +43,11 @@ class LegendHandlerLine2D:
             raise ValueError(f"Could not find handle {self.handle} in legend")
         self.name = child.name
 
-    def export(self):
-        return typst.function(
-            "legend.line2d.with",
-            named=dict(stroke=f"stroke-{self.name}", marker=f"marker-{self.name}"),
-            inline=True,
-        )
+    def render(self) -> str:
+        return Function(
+            name="legend.line2d.with",
+            kwargs=dict(stroke=f"stroke-{self.name}", marker=f"marker-{self.name}"),
+        ).render()
 
 
 class LegendHandlerErrorbar:
@@ -116,20 +117,32 @@ class LegendHandlerErrorbar:
             return ""
         return elements
 
-    def export(self):
-        return typst.function(
-            "legend.errorbar.with",
-            named=dict(data=self.data, caps=self.caps, bars=self.bars),
-        )
+    def render(self) -> str:
+        return Function(
+            name="legend.errorbar.with",
+            kwargs=dict(data=self.data, caps=self.caps, bars=self.bars),
+        ).render()
 
 
-class Legend:
-    def __init__(self, legend: matplotlib.legend.Legend, axes: "typst.axes.Axes"):
+class Legend(Drawable):
+    def __init__(
+        self,
+        legend: matplotlib.legend.Legend,
+        axes: "mpl2typ.axes.Axes",
+    ):
         self.legend = legend
         self.axes = axes
 
         self.items = []
         self.parse()
+
+    @property
+    def name(self) -> str:
+        return "legend"
+
+    @property
+    def zorder(self) -> float:
+        return self.legend.zorder
 
     def parse(self):
         for handle, label in zip(*self.axes.ax.get_legend_handles_labels()):
@@ -156,35 +169,35 @@ class Legend:
         return None
 
     @property
-    def title(self) -> str:
+    def title(self) -> str | Content:
         title = self.legend.get_title().get_text()
         if not title:
             return "none"
-        return typst.content(title)
+        return Content(title)
 
     @property
-    def style(self) -> dict[str, str | int]:
+    def style(self) -> dict[str, str | int | Length]:
         return {
             "location": LOCATION[self.legend._loc],
             "title": self.title,
             "columns": self.legend._ncols,
-            "row-gutter": typst.length(self.legend.labelspacing, unit="em"),
-            "item-gutter": typst.length(self.legend.handletextpad, unit="em"),
-            "column-gutter": typst.length(self.legend.columnspacing, unit="em"),
-            "handle-length": typst.length(self.legend.handlelength, unit="em"),
-            "handle-height": typst.length(self.legend.handleheight, unit="em"),
+            "row-gutter": Length(self.legend.labelspacing, unit="em"),
+            "item-gutter": Length(self.legend.handletextpad, unit="em"),
+            "column-gutter": Length(self.legend.columnspacing, unit="em"),
+            "handle-length": Length(self.legend.handlelength, unit="em"),
+            "handle-height": Length(self.legend.handleheight, unit="em"),
         }
 
     @property
-    def fill(self) -> str:
-        return typst.color(self.legend.legendPatch.get_facecolor())
+    def fill(self) -> Color:
+        return color_from_mpl(color=self.legend.legendPatch.get_facecolor())
 
     @property
-    def stroke(self) -> str:
-        return typst.color(self.legend.legendPatch.get_edgecolor())
+    def stroke(self) -> Color:
+        return color_from_mpl(color=self.legend.legendPatch.get_edgecolor())
 
     @property
-    def frame(self) -> dict[str, str | int | dict[str, str]]:
+    def frame(self) -> dict[str, str | Color | Length | Function]:
         if not self.legend.get_frame_on():
             return dict()
 
@@ -192,44 +205,32 @@ class Legend:
         style = frame.get_boxstyle()
         frame_kwargs = dict()
         if isinstance(style, matplotlib.patches.BoxStyle.Round):
-            frame_kwargs["radius"] = typst.length(
-                style.rounding_size * frame.get_mutation_scale(), "pt"
+            frame_kwargs["radius"] = Length(
+                value=style.rounding_size * frame.get_mutation_scale(),
+                unit="pt",
             )
 
         return dict(
             fill=self.fill,
             stroke=self.stroke,
-            frame=typst.function(
+            frame=Function(
                 "block.with",
-                named=frame_kwargs,
-                inline=True,
+                kwargs=frame_kwargs,
             ),
         )
 
     @property
-    def definition(self) -> str:
+    def definition(self) -> tuple[Binding, ...]:
         style = self.style | self.frame
-        items = [
-            dict(handle=item.export(), label=f"[{item.label}]") for item in self.items
-        ]
+        items = [dict(handle=item, label=Content(item.label)) for item in self.items]
         return (
-            "let legend-style = "
-            + typst.dump(style)
-            + "\n"
-            + "let legend-items = "
-            + typst.dump(items)
+            Binding(name=f"{self.name}-style", value=style),
+            Binding(name=f"{self.name}-items", value=items),
         )
 
     @property
-    def draw(self) -> tuple[str, float]:
-        return (
-            typst.function(
-                "legend.legend",
-                body="..legend-style, ..legend-items",
-                inline=True,
-            ),
-            self.legend.zorder,
+    def execution(self) -> Function:
+        return Function(
+            name="legend.legend",
+            body="..{self.name}-style, ..{self.name}-items",
         )
-
-    def export(self) -> str:
-        return self.definition + "\n" + self.draw[0]

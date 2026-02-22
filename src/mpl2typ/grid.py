@@ -3,11 +3,13 @@ import numpy.typing as npt
 
 import matplotlib.gridspec
 
-from . import typst
+from pypst import Fraction, Grid, Ratio
+
 from .axes import Axes
+from .typst import Function, PlaceBlock
 
 
-class Cell:
+class AxesCell:
     def __init__(self, position: tuple[int, int], shape: tuple[int, int]):
         self.position = position
         self.shape = shape
@@ -15,14 +17,14 @@ class Cell:
 
     def export(self) -> str:
         axes = [f"{axes.name}()" for axes in self.axes]
-        return typst.function(
-            "axes.cell",
-            named=dict(position=self.position, shape=self.shape),
-            body=typst.body(axes),
-        )
+        return Function(
+            name="axes.cell",
+            kwargs=dict(position=self.position, shape=self.shape),
+            body=axes,
+        ).render()
 
 
-class Grid:
+class AxesGrid:
     def __init__(
         self,
         grid: matplotlib.gridspec.GridSpec,
@@ -35,7 +37,7 @@ class Grid:
         self.axes = axes
         self._prefix = prefix
 
-        self.cells: list[Cell] = []
+        self.cells: list[AxesCell] = []
         self.padding: dict[str, float] = dict(left=0, right=0, top=0, bottom=0)
         self.parse()
 
@@ -57,7 +59,7 @@ class Grid:
                 cell.axes.append(axes)
                 return
 
-        cell = Cell(**axes.cell)
+        cell = AxesCell(**axes.cell)
         cell.axes.append(axes)
         self.cells.append(cell)
 
@@ -106,20 +108,17 @@ class Grid:
         self.column_gutter = list((x0[1:] - x1[:-1]) / (xmax - xmin))
         self.row_gutter = list((y0[1:] - y1[:-1]) / (ymax - ymin))[::-1]
 
-    def export(self):
-        cells: list[str] = []
-        for cell in self.cells:
-            cells.append(cell.export())
-
-        grid = typst.function(
-            "grid",
-            named={
-                "columns": typst.fraction(self.columns),
-                "rows": typst.fraction(self.rows),
-                "column-gutter": typst.ratio(self.column_gutter),
-                "row-gutter": typst.ratio(self.row_gutter),
-            },
-            body=",\n".join(cells) if cells else None,
+    def render(self) -> str:
+        grid = Grid(
+            columns=Fraction(self.columns),
+            rows=Fraction(self.rows),
+            column_gutter=Ratio(self.column_gutter),
+            row_gutter=Ratio(self.row_gutter),
+            children=self.cells,
         )
 
-        return typst.block(self.name, self.padding, grid)
+        return PlaceBlock(
+            name=self.name,
+            padding=self.padding,
+            body=grid,
+        ).render()

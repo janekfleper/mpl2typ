@@ -18,12 +18,22 @@ import matplotlib.lines
 import matplotlib.patches
 import matplotlib.collections
 
-from . import typst
-from .lines import Stroke, Line2D
+from pypst import Binding, Degree, Length, Ratio, Renderable
+from pypst.utils import render_fenced
+
+from .lines import Line2D
 from .patches import Rectangle
 from .collections import Collection, QuadMesh
 from .legend import Legend
 from .text import Text, relativ_fontsize
+from .typst import (
+    color_from_mpl,
+    Drawable,
+    DrawableCollection,
+    Function,
+    PlaceBlock,
+    Stroke,
+)
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -69,60 +79,71 @@ class YTickParams:
 TickParams = TypeVar("TickParams", XTickParams, YTickParams)
 
 
-class Title:
-    def __init__(self, axes: "Axes"):
+@dataclass
+class AxesTitles(DrawableCollection):
+    center: Text | None = None
+    left: Text | None = None
+    right: Text | None = None
+
+    @classmethod
+    def from_axes(cls, axes: "Axes"):
         ax = axes.ax
-        self.center = (
-            Text(ax.title, axes, "main", prefix="title")
+        center = (
+            Text(
+                text=ax.title,
+                axes=axes,
+                name="center",
+                prefix="title",
+            )
             if ax.get_title(loc="center")
             else None
         )
-        self.left = (
-            Text(ax._left_title, axes, "left", prefix="title")  # type: ignore
+        left = (
+            Text(
+                text=ax._left_title,  # type: ignore
+                axes=axes,
+                name="left",
+                prefix="title",
+            )
             if ax.get_title(loc="left")
             else None
         )
-        self.right = (
-            Text(ax._right_title, axes, "right", prefix="title")  # type: ignore
+        right = (
+            Text(
+                text=ax._right_title,  # type: ignore
+                axes=axes,
+                name="right",
+                prefix="title",
+            )
             if ax.get_title(loc="right")
             else None
         )
+        return cls(center=center, left=left, right=right)
 
     @property
-    def definition(self):
-        definitions = []
-        if self.center is not None:
-            definitions.append(self.center.definition)
-        if self.left is not None:
-            definitions.append(self.left.definition)
-        if self.right is not None:
-            definitions.append(self.right.definition)
-        return "\n".join(definitions)
-
-    @property
-    def draw(self) -> list[tuple[str, float]]:
-        draws = []
-        if self.center is not None:
-            draws.append(self.center.draw)
-        if self.left is not None:
-            draws.append(self.left.draw)
-        if self.right is not None:
-            draws.append(self.right.draw)
-        return draws
-
-    def export(self) -> str:
-        return self.definition + "\n" + "\n".join([draw[0] for draw in self.draw])
+    def children(self) -> list[Drawable]:
+        return [
+            child for child in [self.center, self.left, self.right] if child is not None
+        ]
 
 
-class Ticks(ABC, Generic[TickParams]):
+class AxesTicks(ABC, Drawable, Generic[TickParams]):
     def __init__(
         self,
         ticks: Sequence[matplotlib.axis.Tick],
         name: str,
     ):
-        self.name = name
+        self._name = name
         self.ticks = ticks
         self.params: TickParams
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def zorder(self) -> float:
+        return self.ticks[0].tick1line.zorder
 
     @property
     def locs(self) -> list[str]:
@@ -164,40 +185,36 @@ class Ticks(ABC, Generic[TickParams]):
     def tick_style(self) -> dict[str, str | dict[str, str]]:
         tick = self.ticks[0]
         line = tick.tick1line
-        stroke = (
-            typst.color(line.get_color(), line.get_alpha())
-            + " + "
-            + typst.length(line.get_markeredgewidth(), "pt")
-        )
+        stroke = Stroke.from_line(line)
         return dict(
-            direction=typst.string(tick.get_tickdir()),
+            direction=String(tick.get_tickdir()),
             line=dict(
-                length=typst.length(line.get_markersize(), "pt"),
+                length=Length(line.get_markersize(), "pt"),
                 angle=self.tick_angle,
                 stroke=stroke,
             ),
         )
 
     @property
-    def grid_style(self) -> dict[str, str]:
+    def grid_stroke(self) -> Stroke:
         line = self.ticks[0].gridline
-        return dict(stroke=Stroke(line).export())
+        return Stroke.from_line(line)
 
     @property
     def label_style(self) -> dict[str, str | dict[str, str]]:
         tick = self.ticks[0]
         text = self.ticks[0].label1
         return dict(
-            pad=typst.length(tick.get_pad(), "pt"),
-            rotation=typst.degree(-text.get_rotation()),
+            pad=Length(tick.get_pad(), "pt"),
+            rotation=Degree(-text.get_rotation()),
             text=dict(
                 size=relativ_fontsize(float(text.get_fontsize())),
-                fill=typst.color(str(text.get_color()), text.get_alpha()),
+                fill=color_from_mpl(text.get_color(), text.get_alpha()),
             ),
         )
 
     @property
-    def definition(self):
+    def definition(self) -> Binding:
         items = {
             "locs": self.locs,
             "labels": self.labels,
@@ -205,34 +222,25 @@ class Ticks(ABC, Generic[TickParams]):
             "label-style": self.label_style,
         }
         if self.params.gridOn:
-            items["grid-style"] = self.grid_style
-        return f"let {self.name} = " + typst.dump(items)
+            items["grid-style"] = dict(stroke=self.grid_stroke)
+        return Binding(name=self.name, value=items)
 
     @property
-    def draw(self) -> tuple[str, float]:
+    def execution(self) -> tuple[Function, ...]:
         named = {
             "show-ticks": self.tick_positions,
             "show-labels": self.label_positions,
         }
 
-        s = ""
+        body = f"..{self.name}, transform"
+        s: list[Function] = []
         if self.params.gridOn:
-            s += typst.function(
-                self.grid_function,
-                body=f"..{self.name}, transform",
-                inline=True,
-            )
-            s += "\n"
-        s += typst.function(
-            self.draw_function,
-            named=named,
-            body=f"..{self.name}, transform",
-            inline=True,
-        )
-        return (s, self.ticks[0].tick1line.zorder)
+            s.append(Function(self.grid_function, body=body))
+        s.append(Function(self.draw_function, kwargs=named, body=body))
+        return tuple(s)
 
 
-class XTicks(Ticks[XTickParams]):
+class AxesXTicks(AxesTicks[XTickParams]):
     def __init__(
         self,
         ticks: Sequence[matplotlib.axis.Tick],
@@ -245,8 +253,8 @@ class XTicks(Ticks[XTickParams]):
         self.params = XTickParams(**params)
 
     @property
-    def tick_angle(self) -> str:
-        return typst.degree(90)
+    def tick_angle(self) -> Degree:
+        return Degree(90)
 
     @property
     def draw_function(self) -> str:
@@ -275,7 +283,7 @@ class XTicks(Ticks[XTickParams]):
         return pos
 
 
-class YTicks(Ticks[YTickParams]):
+class AxesYTicks(AxesTicks[YTickParams]):
     def __init__(
         self,
         ticks: Sequence[matplotlib.axis.Tick],
@@ -288,8 +296,8 @@ class YTicks(Ticks[YTickParams]):
         self.params = YTickParams(**params)
 
     @property
-    def tick_angle(self) -> str:
-        return typst.degree(0)
+    def tick_angle(self) -> Degree:
+        return Degree(0)
 
     @property
     def draw_function(self) -> str:
@@ -318,7 +326,7 @@ class YTicks(Ticks[YTickParams]):
         return pos
 
 
-class Axis:
+class Axis(DrawableCollection):
     def __init__(self, axes: "Axes"):
         self.axes = axes
 
@@ -329,102 +337,115 @@ class Axis:
     @property
     def xlabel(self):
         if self.axes.ax.get_xlabel():
-            return Text(self.ax.xaxis.get_label(), self.axes, "xaxis", prefix="label")
+            return Text(
+                text=self.ax.xaxis.get_label(),
+                axes=self.axes,
+                name="xaxis",
+                prefix="label",
+            )
 
     @property
     def ylabel(self):
         if self.axes.ax.get_ylabel():
-            return Text(self.ax.yaxis.get_label(), self.axes, "yaxis", prefix="label")
+            return Text(
+                text=self.ax.yaxis.get_label(),
+                axes=self.axes,
+                name="yaxis",
+                prefix="label",
+            )
 
     @property
     def xoffset(self):
         xaxis_offset_text = self.ax.xaxis.get_offset_text()
         if xaxis_offset_text.get_text():
-            return Text(xaxis_offset_text, self.axes, "xaxis", prefix="offset-label")
+            return Text(
+                text=xaxis_offset_text,
+                axes=self.axes,
+                name="xaxis",
+                prefix="offset-label",
+            )
 
     @property
     def yoffset(self):
         yaxis_offset_text = self.ax.yaxis.get_offset_text()
         if yaxis_offset_text.get_text():
-            return Text(yaxis_offset_text, self.axes, "yaxis", prefix="offset-label")
+            return Text(
+                text=yaxis_offset_text,
+                axes=self.axes,
+                name="yaxis",
+                prefix="offset-label",
+            )
 
     @property
-    def xticks(self) -> list[XTicks]:
-        xticks: list[XTicks] = []
+    def xticks(self) -> list[AxesXTicks]:
+        xticks: list[AxesXTicks] = []
         if ticks := self.ax.xaxis.get_major_ticks():
             params = self.ax.xaxis.get_tick_params(which="major")
-            xticks.append(XTicks(ticks, "xaxis-major-ticks", params))
+            xticks.append(AxesXTicks(ticks, "xaxis-major-ticks", params))
         if ticks := self.ax.xaxis.get_minor_ticks():
             params = self.ax.xaxis.get_tick_params(which="minor")
-            xticks.append(XTicks(ticks, "xaxis-minor-ticks", params))
+            xticks.append(AxesXTicks(ticks, "xaxis-minor-ticks", params))
         return xticks
 
     @property
-    def yticks(self) -> list[YTicks]:
-        yticks: list[YTicks] = []
+    def yticks(self) -> list[AxesYTicks]:
+        yticks: list[AxesYTicks] = []
         if ticks := self.ax.yaxis.get_major_ticks():
             params = self.ax.yaxis.get_tick_params(which="major")
-            yticks.append(YTicks(ticks, "yaxis-major-ticks", params))
+            yticks.append(AxesYTicks(ticks, "yaxis-major-ticks", params))
         if ticks := self.ax.yaxis.get_minor_ticks():
             params = self.ax.yaxis.get_tick_params(which="minor")
-            yticks.append(YTicks(ticks, "yaxis-minor-ticks", params))
+            yticks.append(AxesYTicks(ticks, "yaxis-minor-ticks", params))
         return yticks
 
     @property
-    def definition(self) -> str:
-        definitions: list[str] = []
+    def children(self) -> list[Drawable]:
+        children: list[Drawable] = []
         if self.xlabel is not None:
-            definitions.append(self.xlabel.definition)
+            children.append(self.xlabel)
         if self.ylabel is not None:
-            definitions.append(self.ylabel.definition)
+            children.append(self.ylabel)
         if self.xoffset is not None:
-            definitions.append(self.xoffset.definition)
+            children.append(self.xoffset)
         if self.yoffset is not None:
-            definitions.append(self.yoffset.definition)
-        for ticks in self.xticks + self.yticks:
-            definitions.append(ticks.definition)
-        return "\n".join(definitions)
-
-    @property
-    def draw(self) -> list[tuple[str, float]]:
-        draws: list[tuple[str, float]] = []
-        if self.xlabel is not None:
-            draws.append(self.xlabel.draw)
-        if self.ylabel is not None:
-            draws.append(self.ylabel.draw)
-        if self.xoffset is not None:
-            draws.append(self.xoffset.draw)
-        if self.yoffset is not None:
-            draws.append(self.yoffset.draw)
-        for ticks in self.xticks + self.yticks:
-            draws.append(ticks.draw)
-        return draws
+            children.append(self.yoffset)
+        children.extend(self.xticks)
+        children.extend(self.yticks)
+        return children
 
 
-class Spines:
+class AxesSpines(Drawable):
     def __init__(self, ax):
         self.spines = ax.spines
         self.transform = ax.transLimits
 
-    def get_bounds(self, spine) -> str:
+    @property
+    def name(self) -> str:
+        return "spines"
+
+    @property
+    def zorder(self) -> float:
+        return self.spines.left.zorder
+
+    def get_bounds(self, spine) -> str | Ratio:
         points = self.transform.transform_path(spine.get_path()).vertices
         if isinstance(spine.axis, matplotlib.axis.YAxis):
-            return typst.ratio(1 - points[:, 1])
+            return Ratio(1 - points[:, 1])
         elif isinstance(spine.axis, matplotlib.axis.XAxis):
-            return typst.ratio(points[:, 0])
+            return Ratio(points[:, 0])
         else:
             raise TypeError(f"Unknown axis type {type(spine.axis)}")
 
     @staticmethod
-    def get_stroke(spine) -> str:
-        return typst.stroke(
-            spine.get_edgecolor(),
-            spine.get_linewidth(),
-            spine.get_linestyle(),
+    def get_stroke(spine) -> Stroke:
+        return Stroke.from_mpl(
+            edgecolor=spine.get_edgecolor(),
+            linewidth=spine.get_linewidth(),
+            linestyle=spine.get_linestyle(),
         )
 
     @property
-    def definition(self):
+    def definition(self) -> Binding:
         spines = {}
         for key in self.spines:
             spine = self.spines[key]
@@ -432,13 +453,39 @@ class Spines:
                 spines[key] = dict(
                     bounds=self.get_bounds(spine), stroke=self.get_stroke(spine)
                 )
-        return "let spines = " + typst.dump(spines)
+        return Binding(name=self.name, value=spines)
 
     @property
-    def draw(self) -> tuple[str, float]:
-        return (
-            typst.function("axes.spines", body="spines", inline=True),
-            self.spines.left.zorder,
+    def execution(self) -> Function:
+        return Function(name="axes.spines", body="spines")
+
+
+@dataclass
+class AxesPatch(Drawable):
+    ax: matplotlib.axes.Axes
+
+    @property
+    def name(self) -> str:
+        return "patch"
+
+    @property
+    def zorder(self) -> float:
+        return self.ax.patch.zorder
+
+    @property
+    def definition(self) -> None:
+        return None
+
+    @property
+    def execution(self) -> Function:
+        return Function(
+            name="rect",
+            kwargs=dict(
+                width="100%",
+                height="100%",
+                fill=color_from_mpl(self.ax.get_facecolor()),
+                alpha=self.ax.get_alpha(),
+            ),
         )
 
 
@@ -454,6 +501,7 @@ class AxesBase:
         self.ax = ax
         self._prefix = prefix
         self.standalone = standalone
+        self.patch = AxesPatch(ax)
 
     @property
     def name(self) -> str:
@@ -479,19 +527,6 @@ class AxesBase:
         )
 
     @property
-    def patch(self) -> tuple[str, float]:
-        fill = typst.color(self.ax.get_facecolor(), self.ax.get_alpha())
-        patch = typst.function(
-            "rect",
-            named=dict(width="100%", height="100%", fill=fill, stroke="none"),
-            inline=True,
-        )
-        return (
-            typst.function("std.place", body=patch, inline=True),
-            self.ax.patch.zorder,
-        )
-
-    @property
     def cell(self):
         sps = self.ax.get_subplotspec()
         if sps is None:
@@ -502,7 +537,11 @@ class AxesBase:
         rowspan = sps.rowspan.stop - y
         return dict(position=(x, y), shape=(colspan, rowspan))
 
-    def transform_point(self, point, transform) -> str | tuple[str, str]:
+    def transform_point(
+        self,
+        point,
+        transform,
+    ) -> str | Renderable | tuple[str | Renderable, str | Renderable]:
         """
         Transform a point from any coordinates to relative axes coordinates.
 
@@ -511,31 +550,31 @@ class AxesBase:
         """
         x, y = point
         if transform == self.ax.transData:
-            return typst.function("transform", pos=[typst.array([x, y])], inline=True)
+            return Function(name="transform", args=[(x, y)])
         elif transform == self.ax.transAxes:
-            return typst.ratio((x, 1 - y))
+            return Ratio((x, 1 - y))
         elif isinstance(transform, matplotlib.transforms.IdentityTransform):
             (x0, y0), (x1, y1) = self.ax.bbox.get_points()
-            x = typst.ratio((x - x0) / (x1 - x0))
-            y = typst.ratio((y1 - y) / (y1 - y0))
+            x = Ratio((x - x0) / (x1 - x0))
+            y = Ratio((y1 - y) / (y1 - y0))
             return (x, y)
         elif isinstance(transform, matplotlib.transforms.BlendedAffine2D):
             if transform._x == self.ax.transAxes:
-                x = typst.ratio(x)
+                x = Ratio(x)
             elif isinstance(transform._x, matplotlib.transforms.IdentityTransform):
                 x0, x1 = self.ax.bbox.get_points()[:, 0]
-                x = typst.ratio((x - x0) / (x1 - x0))
+                x = Ratio((x - x0) / (x1 - x0))
             if transform._y == self.ax.transAxes:
-                y = typst.ratio(1 - y)
+                y = Ratio(1 - y)
             elif isinstance(transform._y, matplotlib.transforms.IdentityTransform):
                 y0, y1 = self.ax.bbox.get_points()[:, 1]
-                y = typst.ratio((y1 - y) / (y1 - y0))
+                y = Ratio((y1 - y) / (y1 - y0))
             return (x, y)
         else:
             x, y = self.ax.transAxes.inverted().transform_point(
                 transform.transform_point(point)
             )
-            return typst.ratio((x, 1 - y))
+            return Ratio((x, 1 - y))
 
 
 class Axes(AxesBase):
@@ -549,24 +588,24 @@ class Axes(AxesBase):
         super().__init__(ax, name, prefix, standalone)
         self.inset_axes: list[InsetAxes] = []
 
-        self.title = Title(self)
+        self.titles = AxesTitles.from_axes(self)
         self.axis = Axis(self)
-        self.spines = Spines(ax)
+        self.spines = AxesSpines(ax)
         self.legend = None
 
         self.children: list[Any] = []
         self.data: dict[str, Any] = {}
-        self.definitions: list[str] = []
-        self.draws: list[tuple[str, float]] = []
+        self.definitions: list[Binding] = []
+        self.executions: list[tuple[Function, float]] = []
         self.parse()
 
     @property
-    def xlim(self) -> list[str]:
-        return typst.array(self.ax.get_xlim())
+    def xlim(self) -> tuple[float, float]:
+        return tuple(self.ax.get_xlim())
 
     @property
-    def ylim(self) -> list[str]:
-        return typst.array(self.ax.get_ylim())
+    def ylim(self) -> tuple[float, float]:
+        return tuple(self.ax.get_ylim())
 
     def parse(self):
         for i, child in enumerate(self.ax._children):  # type: ignore
@@ -595,7 +634,7 @@ class Axes(AxesBase):
     def export_insets(self):
         for ix in self.inset_axes:
             self.definitions.append(ix.definition)
-            self.draws.append(ix.draw)
+            self.executions.append((ix.execution, ix.zorder))
 
         for i, _child in enumerate(self.ax._children):  # type: ignore
             if isinstance(_child, matplotlib.inset.InsetIndicator):
@@ -603,22 +642,24 @@ class Axes(AxesBase):
                 if len(inset_axes) == 1:
                     child = InsetIndicator(_child, inset_axes[0])
                     self.definitions.append(child.definition)
-                    self.draws.append(child.draw)
+                    self.executions.append((child.execution, child.zorder))
                 else:
                     message = f"Found {len(inset_axes)} inset axes for inset indicator {str(i)}"
                     print(message)
 
-    def export(self, path: pathlib.Path) -> None:
-        if title := self.title.definition:
-            self.definitions.append(title)
-            self.draws.extend(self.title.draw)
+    def render(self, path: pathlib.Path) -> str:
+        for child in self.titles.children:
+            self.definitions.append(child.definition)
+            self.executions.append((child.execution, child.zorder))
 
-        self.draws.append(self.patch)
+        self.definitions.append(self.patch.definition)
+        self.executions.append((self.patch.execution, self.patch.zorder))
         self.definitions.append(self.spines.definition)
-        self.draws.append(self.spines.draw)
+        self.executions.append((self.spines.execution, self.spines.zorder))
 
-        self.definitions.append(self.axis.definition)
-        self.draws.extend(self.axis.draw)
+        for child in self.axis.children:
+            self.definitions.append(child.definition)
+            self.executions.append((child.execution, child.zorder))
 
         for child in self.children:
             if isinstance(child, QuadMesh) and child.rasterized:
@@ -627,7 +668,7 @@ class Axes(AxesBase):
                 imageio.imwrite(filename, image, mode="RGBA")
 
             self.definitions.append(child.definition)
-            self.draws.append(child.draw)
+            self.executions.append((child.execution, child.zorder))
             if hasattr(child, "data"):
                 self.data[child.name] = child.data
 
@@ -635,31 +676,38 @@ class Axes(AxesBase):
 
         if self.legend is not None:
             self.definitions.append(self.legend.definition)
-            self.draws.append(self.legend.draw)
+            self.executions.append((self.legend.execution, self.legend.zorder))
 
-        draws = [draw[0] for draw in sorted(self.draws, key=lambda x: x[1])]
+        definitions = [definition.render() for definition in self.definitions]
+        executions = [
+            execution[0].render()
+            for execution in sorted(self.executions, key=lambda x: x[1])
+        ]
 
         if self.data:
             filename = path.joinpath("data", f"{self.name}.json")
             with open(filename, "w") as f:
                 json.dump(self.data, f, indent=4, cls=NumpyEncoder)
 
-        function = typst.function(
-            self.name,
-            named=dict(xlim=self.xlim, ylim=self.ylim, dpi=self.ax.figure.dpi),
-            inline=True,
+        function = Function(
+            name=self.name,
+            kwargs=dict(xlim=self.xlim, ylim=self.ylim, dpi=self.ax.figure.dpi),
         )
-        s = f"#let {function} = {{"
+        s = f"#let {function.render()} = {{"
         s += header + "\n"
         if self.data:
             load_data = f'let data = json("data/{self.name}.json")\n\n'
             s += textwrap.indent(load_data, "  ")
-        s += textwrap.indent("\n\n".join(self.definitions), "  ") + "\n\n"
-        s += textwrap.indent("\n".join(draws), "  ") + "\n"
+        s += textwrap.indent("\n\n".join(definitions), "  ") + "\n\n"
+        s += textwrap.indent("\n".join(executions), "  ") + "\n"
         s += "}\n\n"
 
         if self.standalone:
-            s += typst.block(self.name, self.padding, f"{self.name}()")
+            s += PlaceBlock(
+                name=self.name,
+                padding=self.padding,
+                body=f"{self.name}()",
+            ).render()
         return s
 
 
@@ -667,7 +715,7 @@ class ColorbarAxes(AxesBase):
     def __init__(self, ax, name, prefix="colorbar", standalone=False):
         super().__init__(ax, name, prefix=prefix, standalone=standalone)
         self.cbar = ax._colorbar
-        self.spines = Spines(ax)
+        self.spines = AxesSpines(ax)
 
     @property
     def lim(self) -> list[str]:
@@ -676,7 +724,7 @@ class ColorbarAxes(AxesBase):
             if self.cbar.orientation == "vertical"
             else self.ax.get_xlim()
         )
-        return typst.array(lim)
+        return lim
 
     @property
     def header(self) -> str:
@@ -708,7 +756,7 @@ class ColorbarAxes(AxesBase):
     @property
     def ticks(self):
         axis = self.ax.yaxis if self.cbar.orientation == "vertical" else self.ax.xaxis
-        Ticks = YTicks if self.cbar.orientation == "vertical" else XTicks
+        Ticks = AxesYTicks if self.cbar.orientation == "vertical" else AxesXTicks
 
         ticks = []
         if _ticks := axis.get_major_ticks():
@@ -720,63 +768,73 @@ class ColorbarAxes(AxesBase):
         return ticks
 
     @property
-    def gradient(self) -> str:
+    def gradient(self) -> str | Function:
         angle = -90 if self.cbar.orientation == "vertical" else typst.degree(0)
-        return typst.function(
-            "std.gradient.linear",
-            pos=[f"..color.map.{self.cbar.cmap.name}"],
-            named=dict(angle=typst.degree(angle)),
-            inline=True,
+        return Function(
+            name="std.gradient.linear",
+            args=[f"..color.map.{self.cbar.cmap.name}"],
+            kwargs=dict(angle=Degree(angle)),
         )
 
     @property
-    def stroke(self) -> str:
+    def stroke(self) -> str | Stroke:
         spine = self.ax.spines.outline
-        return typst.stroke(
-            spine.get_edgecolor(),
-            spine.get_linewidth(),
-            spine.get_linestyle(),
+        return Stroke.from_mpl(
+            edgecolor=spine.get_edgecolor(),
+            linewidth=spine.get_linewidth(),
+            linestyle=spine.get_linestyle(),
         )
 
     @property
-    def rect(self) -> str:
-        return typst.function(
-            "rect",
-            named=dict(width="100%", height="100%", fill="gradient", stroke="stroke"),
-            inline=True,
+    def rect(self) -> str | Function:
+        return Function(
+            name="rect",
+            kwargs=dict(width="100%", height="100%", fill="gradient", stroke="stroke"),
         )
 
     @property
-    def definition(self) -> str:
-        definitions: list[str] = []
+    def definitions(self) -> list[Binding]:
+        definitions: list[Binding] = []
         if (label := self.label) is not None:
             definitions.append(label.definition)
         for ticks in self.ticks:
             definitions.append(ticks.definition)
-        definitions.append(f"let gradient = {self.gradient}")
-        definitions.append(f"let stroke = {self.stroke}")
-        return "\n".join(definitions)
+        definitions.append(Binding(name="gradient", value=self.gradient))
+        definitions.append(Binding(name="stroke", value=self.stroke))
+        return definitions
 
     @property
-    def draw(self) -> str:
-        draws: list[tuple[str, float]] = []
+    def executions(self) -> list[tuple[Function, float]]:
+        executions: list[tuple[Function, float]] = []
         if (label := self.label) is not None:
-            draws.append(label.draw)
+            executions.append((label.execution, label.zorder))
         for ticks in self.ticks:
-            draws.append(ticks.draw)
-        draws.append((typst.function("std.place", body=self.rect, inline=True), 0))
-        return "\n".join([draw[0] for draw in sorted(draws, key=lambda x: x[1])])
+            executions.append((ticks.execution, ticks.zorder))
+        executions.append((Function(name="std.place", body=self.rect), 0))
+        return [execution for execution in sorted(executions, key=lambda x: x[1])]
 
-    def export(self, path: pathlib.Path) -> str:
-        function = typst.function(self.name, named=dict(lim=self.lim), inline=True)
-        s = f"#let {function} = {{" + "\n"
-        s += textwrap.indent(self.header, "  ") + "\n\n"
-        s += textwrap.indent(self.definition, "  ") + "\n\n"
-        s += textwrap.indent(self.draw, "  ") + "\n"
-        s += "}\n\n"
+    def render(self, path: pathlib.Path) -> str:
+        function = Function(name=self.name, kwargs=dict(lim=self.lim))
+        definitions = [definition.render() for definition in self.definitions]
+        executions = [execution[0].render() for execution in self.executions]
+
+        s = Binding(
+            name=function,
+            value=render_fenced(
+                (
+                    self.header,
+                    self.definitions,
+                    self.executions,
+                )
+            ),
+        ).render()
 
         if self.standalone:
-            s += typst.block(self.name, self.padding, f"{self.name}()")
+            s += PlaceBlock(
+                name=self.name,
+                padding=self.padding,
+                body=f"{self.name}()",
+            ).render()
         return s
 
 
@@ -809,26 +867,22 @@ class InsetAxes(Axes):
         return (x1 - x0, y1 - y0)
 
     @property
-    def definition(self) -> str:
+    def definition(self) -> str | Binding:
         properties = dict(
-            position=typst.ratio(self.position),
-            shape=typst.ratio(self.shape),
+            position=Ratio(self.position),
+            shape=Ratio(self.shape),
         )
-        return f"let properties-{self.name} = " + typst.dump(properties)
+        return Binding(name=f"properties-{self.name}", value=properties)
 
     @property
-    def draw(self) -> tuple[str, float]:
-        return (
-            typst.function(
-                "axes.inset",
-                body=f"..properties-{self.name}, {self.name}()",
-                inline=True,
-            ),
-            self.ax.zorder,
+    def execution(self) -> str | Function | list[Function]:
+        return Function(
+            name="axes.inset",
+            body=f"..properties-{self.name}, {self.name}()",
         )
 
 
-class InsetIndicator:
+class InsetIndicator(Drawable):
     def __init__(self, indicator, inset_axes):
         self.indicator = indicator
         self.inset_axes = inset_axes
@@ -836,6 +890,10 @@ class InsetIndicator:
     @property
     def name(self) -> str:
         return f"indicator-{self.inset_axes.name}"
+
+    @property
+    def zorder(self) -> float:
+        return self.indicator.zorder
 
     @property
     def target(self) -> dict[str, str | tuple[float, ...]]:
@@ -846,10 +904,10 @@ class InsetIndicator:
             position=(x, y + height),
             shape=(width, height),
             transform="transform",
-            stroke=typst.stroke(
-                rect.get_edgecolor(),
-                rect.get_linewidth(),
-                rect.get_linestyle(),
+            stroke=Stroke.from_mpl(
+                edgecolor=rect.get_edgecolor(),
+                linewidth=rect.get_linewidth(),
+                linestyle=rect.get_linestyle(),
             ),
         )
 
@@ -867,26 +925,24 @@ class InsetIndicator:
 
         return dict(
             anchors=[anchors[i] for i in indices],
-            stroke=typst.stroke(
-                connector.get_edgecolor(),
-                connector.get_linewidth(),
-                connector.get_linestyle(),
+            stroke=Stroke.from_mpl(
+                edgecolor=connector.get_edgecolor(),
+                linewidth=connector.get_linewidth(),
+                linestyle=connector.get_linestyle(),
             ),
         )
 
     @property
-    def definition(self) -> str:
-        return f"let {self.name} = " + typst.dump(
-            dict(
+    def definition(self) -> str | Binding:
+        return Binding(
+            name=self.name,
+            value=dict(
                 target=self.target,
                 source=self.source,
                 connectors=self.connectors,
-            )
+            ),
         )
 
     @property
-    def draw(self) -> tuple[str, float]:
-        return (
-            typst.function("axes.inset-indicator", body=f"..{self.name}", inline=True),
-            self.indicator.zorder,
-        )
+    def execution(self) -> str | Function | list[Function]:
+        return Function(name="axes.inset-indicator", body=f"..{self.name}")

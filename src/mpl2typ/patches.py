@@ -1,9 +1,11 @@
 import matplotlib.patches
 
-from . import typst
+from pypst import Binding, Color
+
+from .typst import color_from_mpl, Drawable, Function, Stroke
 
 
-class Patch:
+class Patch(Drawable):
     def __init__(
         self,
         patch: matplotlib.patches.Patch,
@@ -21,15 +23,19 @@ class Patch:
         return self._prefix + "-" + self._name
 
     @property
-    def fill(self) -> str:
-        return typst.color(self.patch.get_facecolor())
+    def zorder(self) -> float:
+        return self.patch.zorder
 
     @property
-    def stroke(self) -> str:
-        return typst.stroke(
-            self.patch.get_edgecolor(),
-            self.patch.get_linewidth(),
-            self.patch.get_linestyle(),
+    def fill(self) -> Color:
+        return color_from_mpl(self.patch.get_facecolor())
+
+    @property
+    def stroke(self) -> Stroke:
+        return Stroke.from_mpl(
+            edgecolor=self.patch.get_edgecolor(),
+            linewidth=self.patch.get_linewidth(),
+            linestyle=self.patch.get_linestyle(),
         )
 
 
@@ -41,21 +47,19 @@ class Rectangle(Patch):
         return (x, y + height), (x + width, y)
 
     @property
-    def definition(self) -> str:
+    def definition(self) -> Binding:
         points = self.points
-        return f"let {self.name} = " + typst.dump(
-            dict(
-                p0=typst.array(points[0]),
-                p1=typst.array(points[1]),
+        return Binding(
+            name=f"{self.name}",
+            value=dict(
+                p0=points[0],
+                p1=points[1],
                 fill=self.fill,
                 stroke=self.stroke,
                 transform="transform",
-            )
+            ),
         )
 
     @property
-    def draw(self) -> tuple[str, float]:
-        return (
-            typst.function("draw.rectangle", body=f"..{self.name}", inline=True),
-            self.patch.zorder,
-        )
+    def execution(self) -> Function:
+        return Function(name="draw.rectangle", body=f"..{self.name}")

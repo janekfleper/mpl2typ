@@ -4,37 +4,35 @@ import textwrap
 import matplotlib.figure
 import matplotlib.gridspec
 
-from . import typst
+from pypst import Binding, Block, Color, Functional, Renderable, ShowRule
+from pypst.utils import render_fenced
+
 from .axes import Axes, ColorbarAxes, InsetAxes
-from .grid import Grid
+from .grid import AxesGrid
+from .typst import color_from_mpl, Function, Length, Stroke
 
 
 def template(
     width: str,
     height: str,
-    fill: str,
-    stroke: str,
-    body: str | None = None,
+    fill: Color,
+    stroke: Stroke,
+    body: str | Renderable | None = None,
 ) -> str:
-    figure = typst.function(
-        "figure",
-        named=dict(width=width, height=height),
-        inline=True,
+    figure = Function(
+        name="figure",
+        kwargs=dict(width=width, height=height),
     )
 
-    block = typst.function(
-        "block",
-        named=dict(
-            width="width",
-            height="height",
-            stroke=stroke,
-            fill=fill,
-        ),
+    block = Block(
+        width="width",
+        height="height",
+        stroke=stroke,
+        fill=fill,
         body=body,
-        inline=False,
     )
-    body = typst.body(("show: figure-style", block))
-    return "#let " + figure + " = " + body + "\n\n" + "#figure()"
+    body = render_fenced((ShowRule(body="figure-style"), block))
+    return Binding(name=figure, value=body).render() + "\n\n" + "#figure()"
 
 
 class Figure:
@@ -46,20 +44,24 @@ class Figure:
         self.parse()
 
     @property
-    def width(self) -> str:
-        return typst.length(self.fig.get_figwidth() * 2.54, "cm")
+    def width(self) -> Length:
+        return Length(self.fig.get_figwidth() * 2.54, "cm")
 
     @property
-    def height(self) -> str:
-        return typst.length(self.fig.get_figheight() * 2.54, "cm")
+    def height(self) -> Length:
+        return Length(self.fig.get_figheight() * 2.54, "cm")
 
     @property
-    def fill(self) -> str:
-        return typst.color(self.fig.get_facecolor())
+    def fill(self) -> Color:
+        return color_from_mpl(self.fig.get_facecolor())
 
     @property
-    def stroke(self) -> str:
-        return typst.stroke(self.fig.get_edgecolor(), self.fig.get_linewidth(), "solid")
+    def stroke(self) -> Stroke:
+        return Stroke.from_mpl(
+            edgecolor=self.fig.get_edgecolor(),
+            linewidth=self.fig.get_linewidth(),
+            linestyle="solid",
+        )
 
     def parse(self) -> None:
         grid_axes: list[list[Axes]] = []
@@ -89,9 +91,9 @@ class Figure:
                 axes.inset_axes.append(inset_axes)
 
         for i in range(len(gridspecs)):
-            self.grids.append(Grid(gridspecs[i], grid_axes[i], str(i)))
+            self.grids.append(AxesGrid(gridspecs[i], grid_axes[i], str(i)))
 
-    def export(self, path: str | pathlib.Path, header: str | None = None) -> None:
+    def render(self, path: str | pathlib.Path, header: str | None = None) -> None:
         path = pathlib.Path(path)
         path.mkdir(parents=True, exist_ok=True)
         path.joinpath("data").mkdir(parents=True, exist_ok=True)
@@ -110,16 +112,16 @@ class Figure:
 
             children: list[str] = []
             for inset in self.inset_axes:
-                f.write(inset.export(path) + "\n")
+                f.write(inset.render(path) + "\n")
 
             for grid in self.grids:
                 for ax in grid.axes:
-                    f.write(ax.export(path) + "\n")
-                f.write(grid.export() + "\n")
+                    f.write(ax.render(path) + "\n")
+                f.write(grid.render() + "\n")
                 children.append(f"{grid.name}()")
 
             for ax in self.other_axes:
-                f.write(ax.export(path) + "\n")
+                f.write(ax.render(path) + "\n")
                 children.append(f"{ax.name}()")
 
             f.write(
@@ -128,6 +130,6 @@ class Figure:
                     height=self.height,
                     fill=self.fill,
                     stroke=self.stroke,
-                    body=typst.body(children),
+                    body=Functional(children),
                 )
             )

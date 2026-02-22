@@ -14,17 +14,16 @@ from pypst import (
     ColorRGB,
     ColorLuma,
     Dash,
-    PREDEFINED_COLORS,
     Functional,
     Place,
     Length,
     Quantity,
     Ratio,
     Renderable,
-    render,
-    render_fenced,
     Stroke as PypstStroke,
 )
+from pypst.color import PREDEFINED_COLORS
+from pypst.utils import render, render_fenced
 
 """
 The base colors from matplotlib.
