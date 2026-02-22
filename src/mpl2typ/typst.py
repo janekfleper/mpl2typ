@@ -113,10 +113,14 @@ def color_from_mpl(
     )
 
 
+def dash_from_mpl(linestyle: str | tuple[float, tuple[float, ...]]) -> pypst.Dash:
     if isinstance(linestyle, str):
+        return Dash(pattern=linestyle)
     elif isinstance(linestyle, tuple):
         phase, array = linestyle
         phase = None if phase == 0 else Length(phase, "pt")
+        array: tuple[Length, ...] = tuple([Length(a, "pt") for a in array])
+        return Dash(array=array, phase=phase)
 
 
 @dataclass
