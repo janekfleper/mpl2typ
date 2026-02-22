@@ -113,45 +113,81 @@ def color_from_mpl(
     )
 
 
-def stroke_from_mpl(
-    edgecolor: str | tuple[float, ...],
-    linewidth: float,
-    linestyle: str | tuple[float, tuple[float, ...]] | None = None,
-) -> Stroke:
-    """
-    Create a Typst stroke from a matplotlib edgecolor, linewidth, and linestyle.
-
-    Args:
-        edgecolor: The edgecolor of the stroke.
-        linewidth: The linewidth of the stroke.
-        linestyle: The linestyle of the stroke.
-
-    Examples:
-        >>> stroke_from_mpl("black", 1)
-        Stroke(paint=ColorPredefined("black"), thickness=Length(1, "pt"))
-        >>> stroke_from_mpl("#ffff00", 0.9, (2, (3, 4, 5)))
-        Stroke(
-            paint=ColorRGB(hex="#ffff00"),
-            thickness=Length(0.9, "pt"),
-            dash=Dash(
-                array=Length((3, 4, 5), "pt"),
-                phase=Length(2, "pt"),
-            ),
-        )
-    """
     if isinstance(linestyle, str):
-        dash = Dash(pattern=linestyle)
     elif isinstance(linestyle, tuple):
         phase, array = linestyle
         phase = None if phase == 0 else Length(phase, "pt")
-        array = Length(array, "pt")
-        dash = Dash(array=array, phase=phase)
 
-    return Stroke(
-        paint=color_from_mpl(edgecolor),
-        thickness=Length(linewidth, "pt"),
-        dash=dash,
-    )
+
+@dataclass
+class Stroke(pypst.Stroke):
+    @classmethod
+    def from_mpl(
+        cls,
+        edgecolor: str | tuple[float, ...],
+        linewidth: float,
+        linestyle: str | tuple[float, tuple[float, ...]] | None = None,
+    ) -> "Stroke":
+        """
+        Create a Typst stroke from a matplotlib edgecolor, linewidth, and linestyle.
+
+        Args:
+            edgecolor: The edgecolor of the stroke.
+            linewidth: The linewidth of the stroke.
+            linestyle: The linestyle of the stroke.
+
+        Examples:
+            >>> Stroke.from_mpl("black", 1)
+            Stroke(paint=ColorPredefined("black"), thickness=Length(1, "pt"))
+            >>> Stroke.from_mpl("#ffff00", 0.9, (2, (3, 4, 5)))
+            Stroke(
+                paint=ColorRGB(hex="#ffff00"),
+                thickness=Length(0.9, "pt"),
+                dash=Dash(
+                    array=Length((3, 4, 5), "pt"),
+                    phase=Length(2, "pt"),
+                ),
+            )
+        """
+        return cls(
+            paint=color_from_mpl(edgecolor),
+            thickness=Length(linewidth, "pt"),
+            dash=dash_from_mpl(linestyle),
+        )
+
+    @classmethod
+    def from_line(cls, line: matplotlib.lines.Line2D) -> "Stroke":
+        """
+        Create a Typst stroke from a matplotlib line.
+
+        Args:
+            line: The matplotlib.lines.Line2D object.
+        """
+        color: pypst.Color = color_from_mpl(
+            color=line.get_color(),
+            alpha=line.get_alpha(),
+        )
+        thickness: pypst.Length = pypst.Length(value=line.get_linewidth(), unit="pt")
+
+        capstyle = line.get_dash_capstyle()
+        if capstyle == "projecting":
+            capstyle = "square"  # this is the equivalent cap style in Typst
+        joinstyle = line.get_dash_joinstyle()
+
+        offset, array = line._dash_pattern
+        if array is None:
+            dash = Dash(pattern="solid")
+        else:
+            array: tuple[Length, ...] = tuple([Length(a, "pt") for a in array])
+            dash = Dash(array=array, phase=Length(offset, "pt"))
+
+        return cls(
+            paint=color,
+            thickness=thickness,
+            cap=capstyle,
+            join=joinstyle,
+            dash=dash,
+        )
 
 
 @dataclass
