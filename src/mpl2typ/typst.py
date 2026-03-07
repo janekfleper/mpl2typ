@@ -62,7 +62,7 @@ MPL_BASE_COLORS: dict[str | tuple[float, ...], str | tuple[float, ...]] = {
 
 
 def color_from_mpl(
-    color: str | tuple[float, ...],
+    color: str | tuple[float, ...] | npt.NDArray[np.float64],
     alpha: int | float | None = None,
     simplify: bool = True,
 ) -> ColorPredefined | ColorRGB | ColorLuma:
@@ -89,6 +89,9 @@ def color_from_mpl(
         >>> color_from_mpl((0.5, 0.6, 0.7, 0.8))
         ColorRGB(red=Ratio(0.5), green=Ratio(0.6), blue=Ratio(0.7), alpha=Ratio(0.8))
     """
+    if isinstance(color, np.ndarray):
+        color = tuple(color)
+
     if color in MPL_BASE_COLORS.keys():
         color = MPL_BASE_COLORS[color]
 
@@ -126,11 +129,13 @@ def color_from_mpl(
     )
 
 
-def dash_from_mpl(linestyle: str | tuple[float, tuple[float, ...]]) -> Dash:
+def dash_from_mpl(linestyle: str | tuple[float, tuple[float, ...] | None]) -> Dash:
     if isinstance(linestyle, str):
         return Dash(pattern=linestyle)
     elif isinstance(linestyle, tuple):
         phase, array = linestyle
+        if array is None:
+            return Dash()
         phase = None if phase == 0 else Length(phase, "pt")
         array: tuple[Length, ...] = tuple([Length(a, "pt") for a in array])
         return Dash(array=array, phase=phase)
