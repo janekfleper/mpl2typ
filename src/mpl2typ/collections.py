@@ -220,8 +220,17 @@ class Collection:
         return linestyles
 
     @property
-    def stroke(self) -> dict[str, str]:
-        return dict(paint=self.edgecolor, thickness=self.linewidth, dash=self.linestyle)
+    def stroke(self) -> dict[str, str] | None:
+        edgecolor = self.edgecolor
+        if len(edgecolor) == 1:
+            edgecolor = edgecolor[0]
+        linewidth = self.linewidth
+        if len(linewidth) == 1:
+            linewidth = linewidth[0]
+        linestyle = self.linestyle
+        if len(linestyle) == 1:
+            linestyle = linestyle[0]
+        return dict(paint=edgecolor, thickness=linewidth, dash=linestyle)
 
     @property
     def data(
