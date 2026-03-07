@@ -851,13 +851,17 @@ class ColorbarAxes(AxesBase):
 
 
 class InsetAxes(Axes):
-    def __init__(self, ix, axes, name, prefix: str = "inset"):
-        self.axes = axes
-        super().__init__(ix, name, prefix, standalone=False)
+    def __init__(self, inset_axes, parent_axes, name, prefix: str = "inset"):
+        self.parent_axes = parent_axes
+        super().__init__(inset_axes, name, prefix, standalone=False)
+
+    @property
+    def zorder(self) -> float:
+        return self.ax.zorder
 
     def transform_bounds(self, point) -> tuple[float, float]:
-        return self.axes.ax.transAxes.inverted().transform_point(
-            self.axes.ax.figure.transFigure.transform_point(point)
+        return self.parent_axes.ax.transAxes.inverted().transform_point(
+            self.parent_axes.ax.figure.transFigure.transform_point(point)
         )
 
     @property
