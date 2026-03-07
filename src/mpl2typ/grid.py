@@ -3,7 +3,7 @@ import numpy.typing as npt
 
 import matplotlib.gridspec
 
-from pypst import Fraction, Grid, Ratio
+from pypst import Fraction, Grid, Ratio, Functional
 
 from .axes import Axes
 from .typst import Function, PlaceBlock
@@ -15,12 +15,13 @@ class AxesCell:
         self.shape = shape
         self.axes: list[Axes] = []
 
-    def export(self) -> str:
+    def render(self) -> str:
         axes = [f"{axes.name}()" for axes in self.axes]
+        body = axes[0] if len(axes) == 1 else Functional(body=axes).render().lstrip("#")
         return Function(
             name="axes.cell",
             kwargs=dict(position=self.position, shape=self.shape),
-            body=axes,
+            body=body,
         ).render()
 
 
