@@ -18,8 +18,7 @@ import matplotlib.lines
 import matplotlib.patches
 import matplotlib.collections
 
-from pypst import Binding, Degree, Length, Ratio, Renderable
-from pypst.utils import render_fenced
+from pypst import Binding, Degree, Functional, Length, Ratio, Renderable
 
 from .lines import Line2D
 from .patches import Rectangle
@@ -820,8 +819,8 @@ class ColorbarAxes(AxesBase):
 
         s = Binding(
             name=function,
-            value=render_fenced(
-                (
+            value=Functional(
+                body=(
                     self.header,
                     self.definitions,
                     self.executions,
