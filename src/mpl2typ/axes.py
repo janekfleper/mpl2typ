@@ -680,11 +680,24 @@ class Axes(AxesBase):
             self.definitions.append(self.legend.definition)
             self.executions.append((self.legend.execution, self.legend.zorder))
 
-        definitions = [definition.render() for definition in self.definitions]
-        executions = [
-            execution[0].render()
-            for execution in sorted(self.executions, key=lambda x: x[1])
-        ]
+        definitions: list[str] = []
+        for definition in self.definitions:
+            print(definition)
+            if isinstance(definition, tuple):
+                for d in definition:
+                    if d is not None:
+                        definitions.append(d.render().lstrip("#"))
+            elif definition is not None:
+                definitions.append(definition.render().lstrip("#"))
+
+        executions: list[str] = []
+        for execution, _ in sorted(self.executions, key=lambda x: x[1]):
+            if isinstance(execution, tuple):
+                for e in execution:
+                    if e is not None:
+                        executions.append(e.render())
+            elif execution is not None:
+                executions.append(execution.render())
 
         if self.data:
             filename = path.joinpath("data", f"{self.name}.json")
@@ -817,9 +830,6 @@ class ColorbarAxes(AxesBase):
 
     def render(self, path: pathlib.Path) -> str:
         function = Function(name=self.name, kwargs=dict(lim=self.lim))
-        definitions = [definition.render() for definition in self.definitions]
-        executions = [execution[0].render() for execution in self.executions]
-
         s = Binding(
             name=function,
             value=Functional(
