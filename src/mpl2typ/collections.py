@@ -345,7 +345,9 @@ class QuadMesh(Drawable):
                     path=f"data/{self.axes.name}-{self.name}.png",
                     width=Ratio(1.0),
                     height=Ratio(1.0),
-                ),
+                )
+                .render()
+                .lstrip("#"),
             )
 
         return (
