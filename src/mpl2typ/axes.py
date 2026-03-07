@@ -187,7 +187,7 @@ class AxesTicks(ABC, Drawable, Generic[TickParams]):
         line = tick.tick1line
         stroke = Stroke.from_line(line)
         return dict(
-            direction=String(tick.get_tickdir()),
+            direction=f'"{tick.get_tickdir()}"',
             line=dict(
                 length=Length(line.get_markersize(), "pt"),
                 angle=self.tick_angle,
