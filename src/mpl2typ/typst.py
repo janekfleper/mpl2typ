@@ -276,11 +276,13 @@ class Function:
     def render(self) -> str:
         args = []
         if self.args is not None:
-            args.extend(self.args)
+            args.extend(render(arg).lstrip("#") for arg in self.args)
         if self.kwargs is not None:
-            args.extend([f"{k}: {v}" for k, v in self.kwargs.items()])
+            args.extend(
+                [f"{k}: {render(v).lstrip('#')}" for k, v in self.kwargs.items()]
+            )
         if self.body is not None:
-            args.append(self.body)
+            args.append(render(self.body).lstrip("#"))
         return f"{self.name}({', '.join(args)})"
 
 
