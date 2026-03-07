@@ -826,20 +826,35 @@ class ColorbarAxes(AxesBase):
         for ticks in self.ticks:
             executions.append((ticks.execution, ticks.zorder))
         executions.append((Function(name="std.place", body=self.rect), 0))
-        return [execution for execution in sorted(executions, key=lambda x: x[1])]
+        return executions
+        # return [execution[0] for execution in sorted(executions, key=lambda x: x[1])]
 
     def render(self, path: pathlib.Path) -> str:
+        definitions: list[str] = []
+        for definition in self.definitions:
+            # print(definition)
+            if isinstance(definition, tuple):
+                for d in definition:
+                    if d is not None:
+                        definitions.append(d.render().lstrip("#"))
+            elif definition is not None:
+                definitions.append(definition.render().lstrip("#"))
+
+        executions: list[str] = []
+        for execution, _ in sorted(self.executions, key=lambda x: x[1]):
+            if isinstance(execution, tuple):
+                for e in execution:
+                    if e is not None:
+                        executions.append(e.render())
+            elif execution is not None:
+                executions.append(execution.render())
+
         function = Function(name=self.name, kwargs=dict(lim=self.lim))
-        s = Binding(
-            name=function,
-            value=Functional(
-                body=(
-                    self.header,
-                    self.definitions,
-                    self.executions,
-                )
-            ),
-        ).render()
+        s = f"#let {function.render()} = {{"
+        s += self.header + "\n"
+        s += textwrap.indent("\n\n".join(definitions), "  ") + "\n\n"
+        s += textwrap.indent("\n".join(executions), "  ") + "\n"
+        s += "}\n\n"
 
         if self.standalone:
             s += PlaceBlock(
