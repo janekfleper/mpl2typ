@@ -93,7 +93,7 @@ def color_from_mpl(
         color = MPL_BASE_COLORS[color]
 
     if isinstance(color, str):
-        if alpha is not None:
+        if alpha is not None and isinstance(alpha, float):
             alpha: Ratio = Ratio(alpha)
 
         if color in PREDEFINED_COLORS:
@@ -109,6 +109,8 @@ def color_from_mpl(
         alpha: Ratio | int = (
             Ratio(color[3]) if isinstance(color[3], float) else color[3]
         )
+    elif isinstance(alpha, float):
+        alpha: Ratio = Ratio(alpha)
 
     color = color[:3]
     if color in MPL_BASE_COLORS:
