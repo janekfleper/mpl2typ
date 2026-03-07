@@ -115,7 +115,7 @@ class AxesGrid:
             rows=Fraction(self.rows),
             column_gutter=Ratio(self.column_gutter),
             row_gutter=Ratio(self.row_gutter),
-            children=self.cells,
+            children=[cell.render() for cell in self.cells],
         )
 
         return PlaceBlock(
