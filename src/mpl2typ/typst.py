@@ -136,7 +136,8 @@ def dash_from_mpl(linestyle: str | tuple[float, tuple[float, ...] | None]) -> Da
         phase, array = linestyle
         if array is None:
             return Dash()
-        phase = None if phase == 0 else Length(phase, "pt")
+
+        phase = Length(phase, "pt")
         array: tuple[Length, ...] = tuple([Length(a, "pt") for a in array])
         return Dash(array=array, phase=phase)
 
