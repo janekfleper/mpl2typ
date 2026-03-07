@@ -142,7 +142,7 @@ def dash_from_mpl(linestyle: str | tuple[float, tuple[float, ...] | None]) -> Da
 
 
 @dataclass
-class Stroke(PypstStroke):
+class Stroke(PypstStroke, Renderable):
     @classmethod
     def from_mpl(
         cls,
@@ -213,7 +213,7 @@ class Stroke(PypstStroke):
 
 
 @dataclass
-class NDArray:
+class NDArray(Renderable):
     """
     A numpy array.
 
@@ -238,7 +238,7 @@ class NDArray:
 
 
 @dataclass
-class PlaceBlock:
+class PlaceBlock(Renderable):
     name: str
     padding: dict[str, float]
     body: str | Renderable | Functional | None = None
@@ -272,7 +272,7 @@ class PlaceBlock:
 
 
 @dataclass
-class Function:
+class Function(Renderable):
     name: str
     args: list[str | Renderable] | None = None
     kwargs: dict[str, str | Renderable] | None = None
@@ -292,7 +292,7 @@ class Function:
 
 
 @dataclass
-class Transform:
+class Transform(Renderable):
     scale: tuple[float, ...] | tuple[str, ...] | None = None
     shift: tuple[float, ...] | tuple[str, ...] | None = None
     unit: tuple[str | Quantity, ...] | None = None
