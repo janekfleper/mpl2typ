@@ -99,7 +99,7 @@ def color_from_mpl(
         if color in PREDEFINED_COLORS:
             return ColorPredefined(color=color, alpha=alpha)
         elif color.startswith("#"):
-            return ColorRGB(hex=color, alpha=alpha)
+            return ColorRGB(hex=f'"{color}"', alpha=alpha)
         else:
             return ColorLuma(Ratio(float(color)), alpha=alpha)
 
@@ -201,8 +201,8 @@ class Stroke(PypstStroke):
         return cls(
             paint=color,
             thickness=thickness,
-            cap=capstyle,
-            join=joinstyle,
+            cap=f'"{capstyle}"',
+            join=f'"{joinstyle}"',
             dash=dash,
         )
 
