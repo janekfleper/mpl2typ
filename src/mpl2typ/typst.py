@@ -185,6 +185,9 @@ class Stroke(PypstStroke, Renderable):
         Args:
             line: The matplotlib.lines.Line2D object.
         """
+        if line.get_linestyle() in ["none", "None", " ", ""]:
+            return cls()  # rendered as "none"
+
         color: Color = color_from_mpl(
             color=line.get_color(),
             alpha=line.get_alpha(),
