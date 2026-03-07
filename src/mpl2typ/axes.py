@@ -682,7 +682,7 @@ class Axes(AxesBase):
 
         definitions: list[str] = []
         for definition in self.definitions:
-            print(definition)
+            # print(definition)
             if isinstance(definition, tuple):
                 for d in definition:
                     if d is not None:
