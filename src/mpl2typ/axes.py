@@ -477,15 +477,18 @@ class AxesPatch(Drawable):
 
     @property
     def execution(self) -> Function:
-        return Function(
+        rect = Function(
             name="rect",
             kwargs=dict(
                 width="100%",
                 height="100%",
-                fill=color_from_mpl(self.ax.get_facecolor()),
-                alpha=self.ax.get_alpha(),
+                fill=color_from_mpl(
+                    color=self.ax.get_facecolor(),
+                    alpha=self.ax.get_alpha(),
+                ),
             ),
         )
+        return Function(name="std.place", body=rect)
 
 
 class AxesBase:
