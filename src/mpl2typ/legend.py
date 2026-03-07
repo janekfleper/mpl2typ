@@ -232,5 +232,5 @@ class Legend(Drawable):
     def execution(self) -> Function:
         return Function(
             name="legend.legend",
-            body="..{self.name}-style, ..{self.name}-items",
+            body=f"..{self.name}-style, ..{self.name}-items",
         )
