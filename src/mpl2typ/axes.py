@@ -184,7 +184,7 @@ class AxesTicks(ABC, Drawable, Generic[TickParams]):
     def tick_style(self) -> dict[str, str | dict[str, str]]:
         tick = self.ticks[0]
         line = tick.tick1line
-        stroke = Stroke.from_line(line)
+        stroke = Stroke.from_mpl(line.get_color(), line.get_markeredgewidth())
         return dict(
             direction=f'"{tick.get_tickdir()}"',
             line=dict(
