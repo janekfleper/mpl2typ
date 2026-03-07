@@ -5,7 +5,6 @@ import matplotlib.figure
 import matplotlib.gridspec
 
 from pypst import Binding, Block, Color, Functional, Renderable, ShowRule
-from pypst.utils import render_fenced
 
 from .axes import Axes, ColorbarAxes, InsetAxes
 from .grid import AxesGrid
@@ -31,7 +30,7 @@ def template(
         fill=fill,
         body=body,
     )
-    body = render_fenced((ShowRule(body="figure-style"), block))
+    body = Functional(body=(ShowRule(body="figure-style"), block)).render().lstrip("#")
     return Binding(name=figure, value=body).render() + "\n\n" + "#figure()"
 
 
