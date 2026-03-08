@@ -539,6 +539,31 @@ class AxesBase:
         rowspan = sps.rowspan.stop - y
         return dict(position=(x, y), shape=(colspan, rowspan))
 
+    @staticmethod
+    def render_definitions(definitions: list[Binding | None]) -> list[str]:
+        rendered: list[str] = []
+        for definition in definitions:
+            if isinstance(definition, tuple):
+                for d in definition:
+                    if d is not None:
+                        rendered.append(d.render().lstrip("#"))
+            elif definition is not None:
+                rendered.append(definition.render().lstrip("#"))
+            rendered.append("")
+        return rendered
+
+    @staticmethod
+    def render_executions(executions: list[tuple[Function, float]]) -> list[str]:
+        rendered: list[str] = []
+        for execution, _ in sorted(executions, key=lambda x: x[1]):
+            if isinstance(execution, tuple):
+                for e in execution:
+                    if e is not None:
+                        rendered.append(e.render())
+            elif execution is not None:
+                rendered.append(execution.render())
+        return rendered
+
     def transform_point(
         self,
         point,
@@ -633,7 +658,7 @@ class Axes(AxesBase):
         if self.ax.legend_ is not None:
             self.legend = Legend(self.ax.legend_, self)
 
-    def export_insets(self):
+    def render_insets(self):
         for ix in self.inset_axes:
             self.definitions.append(ix.definition)
             self.executions.append((ix.execution, ix.zorder))
@@ -674,31 +699,14 @@ class Axes(AxesBase):
             if hasattr(child, "data"):
                 self.data[child.name] = child.data
 
-        self.export_insets()
+        self.render_insets()
 
         if self.legend is not None:
             self.definitions.append(self.legend.definition)
             self.executions.append((self.legend.execution, self.legend.zorder))
 
-        definitions: list[str] = []
-        for definition in self.definitions:
-            # print(definition)
-            if isinstance(definition, tuple):
-                for d in definition:
-                    if d is not None:
-                        definitions.append(d.render().lstrip("#"))
-            elif definition is not None:
-                definitions.append(definition.render().lstrip("#"))
-            definitions.append("")  # split the definitions of different children
-
-        executions: list[str] = []
-        for execution, _ in sorted(self.executions, key=lambda x: x[1]):
-            if isinstance(execution, tuple):
-                for e in execution:
-                    if e is not None:
-                        executions.append(e.render())
-            elif execution is not None:
-                executions.append(execution.render())
+        definitions = self.render_definitions(self.definitions)
+        executions = self.render_executions(self.executions)
 
         if self.data:
             filename = path.joinpath("data", f"{self.name}.json")
@@ -831,25 +839,8 @@ class ColorbarAxes(AxesBase):
         # return [execution[0] for execution in sorted(executions, key=lambda x: x[1])]
 
     def render(self, path: pathlib.Path) -> str:
-        definitions: list[str] = []
-        for definition in self.definitions:
-            # print(definition)
-            if isinstance(definition, tuple):
-                for d in definition:
-                    if d is not None:
-                        definitions.append(d.render().lstrip("#"))
-            elif definition is not None:
-                definitions.append(definition.render().lstrip("#"))
-            definitions.append("")  # split the definitions of different children
-
-        executions: list[str] = []
-        for execution, _ in sorted(self.executions, key=lambda x: x[1]):
-            if isinstance(execution, tuple):
-                for e in execution:
-                    if e is not None:
-                        executions.append(e.render())
-            elif execution is not None:
-                executions.append(execution.render())
+        definitions = self.render_definitions(self.definitions)
+        executions = self.render_executions(self.executions)
 
         function = Function(name=self.name, kwargs=dict(lim=self.lim))
         s = f"#let {function.render()} = {{"
