@@ -689,6 +689,7 @@ class Axes(AxesBase):
                         definitions.append(d.render().lstrip("#"))
             elif definition is not None:
                 definitions.append(definition.render().lstrip("#"))
+            definitions.append("")  # split the definitions of different children
 
         executions: list[str] = []
         for execution, _ in sorted(self.executions, key=lambda x: x[1]):
@@ -713,7 +714,7 @@ class Axes(AxesBase):
         if self.data:
             load_data = f'let data = json("data/{self.name}.json")\n\n'
             s += textwrap.indent(load_data, "  ")
-        s += textwrap.indent("\n\n".join(definitions), "  ") + "\n\n"
+        s += textwrap.indent("\n".join(definitions), "  ") + "\n"
         s += textwrap.indent("\n".join(executions), "  ") + "\n"
         s += "}\n\n"
 
@@ -839,6 +840,7 @@ class ColorbarAxes(AxesBase):
                         definitions.append(d.render().lstrip("#"))
             elif definition is not None:
                 definitions.append(definition.render().lstrip("#"))
+            definitions.append("")  # split the definitions of different children
 
         executions: list[str] = []
         for execution, _ in sorted(self.executions, key=lambda x: x[1]):
@@ -852,7 +854,7 @@ class ColorbarAxes(AxesBase):
         function = Function(name=self.name, kwargs=dict(lim=self.lim))
         s = f"#let {function.render()} = {{"
         s += self.header + "\n"
-        s += textwrap.indent("\n\n".join(definitions), "  ") + "\n\n"
+        s += textwrap.indent("\n".join(definitions), "  ") + "\n"
         s += textwrap.indent("\n".join(executions), "  ") + "\n"
         s += "}\n\n"
 
