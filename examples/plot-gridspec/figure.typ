@@ -19,18 +19,42 @@
 
   let data = json("data/axes-0.json")
 
-  let title-center = (position: (50.0%, -2.132%), body: place(center + bottom, text(size: 1em + 2.0pt, fill: color.rgb("#000000"), [f(x) = x linear])))
+  let title-center = (
+    position: (50.0%, -2.132%),
+    body: place(center + bottom, text(size: 1em + 2.0pt, fill: color.rgb("#000000"), [f(x) = x linear])),
+  )
 
 
-  let spines = (left: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), right: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), bottom: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), top: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")))
+  let spines = (
+    left: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    right: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    bottom: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    top: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+  )
 
-  let label-xaxis = (position: (50.0%, 107.49%), body: place(center + top, text(size: 1em, fill: color.rgb("#000000"), [x-label])))
+  let label-xaxis = (
+    position: (50.0%, 107.49%),
+    body: place(center + top, text(size: 1em, fill: color.rgb("#000000"), [x-label])),
+  )
 
-  let offset-label-xaxis = (position: (100%, 107.135%), body: place(right + top, text(size: 1em, fill: color.rgb("#000000"), [1e8])))
+  let offset-label-xaxis = (
+    position: (100%, 107.135%),
+    body: place(right + top, text(size: 1em, fill: color.rgb("#000000"), [1e8])),
+  )
 
-  let xaxis-major-ticks = (locs: (-600000000.0, -400000000.0, -200000000.0, 0.0, 200000000.0, 400000000.0, 600000000.0), labels: ($−6$, $−4$, $−2$, $0$, $2$, $4$, $6$), tick-style: (direction: "out", line: (length: 3.5pt, angle: 90deg, stroke: color.rgb("#000000") + 0.8pt)), label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))))
+  let xaxis-major-ticks = (
+    locs: (-600000000.0, -400000000.0, -200000000.0, 0.0, 200000000.0, 400000000.0, 600000000.0),
+    labels: ($−6$, $−4$, $−2$, $0$, $2$, $4$, $6$),
+    tick-style: (direction: "out", line: (length: 3.5pt, angle: 90deg, stroke: color.rgb("#000000") + 0.8pt)),
+    label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))),
+  )
 
-  let yaxis-major-ticks = (locs: (-600000.0, -400000.0, -200000.0, 0.0, 200000.0, 400000.0, 600000.0), labels: ($−600000$, $−400000$, $−200000$, $0$, $200000$, $400000$, $600000$), tick-style: (direction: "out", line: (length: 3.5pt, angle: 0deg, stroke: color.rgb("#000000") + 0.8pt)), label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))))
+  let yaxis-major-ticks = (
+    locs: (-600000.0, -400000.0, -200000.0, 0.0, 200000.0, 400000.0, 600000.0),
+    labels: ($−600000$, $−400000$, $−200000$, $0$, $200000$, $400000$, $600000$),
+    tick-style: (direction: "out", line: (length: 3.5pt, angle: 0deg, stroke: color.rgb("#000000") + 0.8pt)),
+    label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))),
+  )
 
   let stroke-line-0 = (paint: color.rgb("#1f77b4"), thickness: 1.5pt, cap: "butt", join: "round", dash: "solid")
   let marker-line-0 = none
@@ -62,23 +86,60 @@
 
   let data = json("data/axes-1.json")
 
-  let title-center = (position: (50.0%, -32.32%), body: place(center + bottom, text(size: 1em + 2.0pt, fill: color.rgb("#000000"), [f(x) = x squared])))
+  let title-center = (
+    position: (50.0%, -32.32%),
+    body: place(center + bottom, text(size: 1em + 2.0pt, fill: color.rgb("#000000"), [f(x) = x squared])),
+  )
 
 
-  let spines = (left: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), right: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), bottom: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), top: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")))
+  let spines = (
+    left: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    right: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    bottom: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    top: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+  )
 
-  let label-xaxis = (position: (50.0%, 140.267%), body: place(center + top, text(size: 1em, fill: color.rgb("#000000"), [x-label])))
+  let label-xaxis = (
+    position: (50.0%, 140.267%),
+    body: place(center + top, text(size: 1em, fill: color.rgb("#000000"), [x-label])),
+  )
 
-  let offset-label-xaxis = (position: (100%, 138.356%), body: place(right + top, text(size: 1em, fill: color.rgb("#000000"), [1e−8])))
+  let offset-label-xaxis = (
+    position: (100%, 138.356%),
+    body: place(right + top, text(size: 1em, fill: color.rgb("#000000"), [1e−8])),
+  )
 
-  let offset-label-yaxis = (position: (0%, -5.731%), body: place(left + bottom, text(size: 1em, fill: color.rgb("#000000"), [1e6])))
+  let offset-label-yaxis = (
+    position: (0%, -5.731%),
+    body: place(left + bottom, text(size: 1em, fill: color.rgb("#000000"), [1e6])),
+  )
 
-  let xaxis-major-ticks = (locs: (-1e-07, -5e-08, 0.0, 5e-08, 1e-07), labels: ($−10$, $−5$, $0$, $5$, $10$), tick-style: (direction: "out", line: (length: 3.5pt, angle: 90deg, stroke: color.rgb("#000000") + 0.8pt)), label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))))
+  let xaxis-major-ticks = (
+    locs: (-1e-07, -5e-08, 0.0, 5e-08, 1e-07),
+    labels: ($−10$, $−5$, $0$, $5$, $10$),
+    tick-style: (direction: "out", line: (length: 3.5pt, angle: 90deg, stroke: color.rgb("#000000") + 0.8pt)),
+    label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))),
+  )
 
-  let yaxis-major-ticks = (locs: (-2000000.0, 0.0, 2000000.0, 4000000.0), labels: ($−2$, $0$, $2$, $4$), tick-style: (direction: "out", line: (length: 3.5pt, angle: 0deg, stroke: color.rgb("#000000") + 0.8pt)), label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))))
+  let yaxis-major-ticks = (
+    locs: (-2000000.0, 0.0, 2000000.0, 4000000.0),
+    labels: ($−2$, $0$, $2$, $4$),
+    tick-style: (direction: "out", line: (length: 3.5pt, angle: 0deg, stroke: color.rgb("#000000") + 0.8pt)),
+    label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))),
+  )
 
-  let stroke-line-0 = (paint: color.rgb("#1f77b4").transparentize(30.0%), thickness: 1.5pt, cap: "butt", join: "round", dash: (array: (5.55pt, 2.4pt), phase: 0.0pt))
-  let marker-line-0 = markers.circle(3.0pt, fill: color.rgb("#1f77b4").transparentize(30.0%), stroke: color.luma(0%, 70.0%) + 1.0pt)
+  let stroke-line-0 = (
+    paint: color.rgb("#1f77b4").transparentize(30.0%),
+    thickness: 1.5pt,
+    cap: "butt",
+    join: "round",
+    dash: (array: (5.55pt, 2.4pt), phase: 0.0pt),
+  )
+  let marker-line-0 = markers.circle(
+    3.0pt,
+    fill: color.rgb("#1f77b4").transparentize(30.0%),
+    stroke: color.luma(0%, 70.0%) + 1.0pt,
+  )
   let line-0 = (data: data.at("line-0"), stroke: stroke-line-0, marker: marker-line-0, transform: transform)
 
   std.place(rect(width: 100%, height: 100%, fill: color.luma(100.0%)))
@@ -108,21 +169,55 @@
 
   let data = json("data/axes-2.json")
 
-  let title-center = (position: (50.0%, -11.461%), body: place(center + bottom, text(size: 1em + 2.0pt, fill: color.rgb("#000000"), [f(x) = x cubed])))
+  let title-center = (
+    position: (50.0%, -11.461%),
+    body: place(center + bottom, text(size: 1em + 2.0pt, fill: color.rgb("#000000"), [f(x) = x cubed])),
+  )
 
 
-  let spines = (left: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), right: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), bottom: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), top: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")))
+  let spines = (
+    left: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    right: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    bottom: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    top: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+  )
 
-  let label-xaxis = (position: (50.0%, 140.267%), body: place(center + top, text(size: 1em, fill: color.rgb("#000000"), [x-label])))
+  let label-xaxis = (
+    position: (50.0%, 140.267%),
+    body: place(center + top, text(size: 1em, fill: color.rgb("#000000"), [x-label])),
+  )
 
-  let offset-label-yaxis = (position: (0%, -5.731%), body: place(left + bottom, text(size: 1em, fill: color.rgb("#000000"), [1e7])))
+  let offset-label-yaxis = (
+    position: (0%, -5.731%),
+    body: place(left + bottom, text(size: 1em, fill: color.rgb("#000000"), [1e7])),
+  )
 
-  let xaxis-major-ticks = (locs: (-10.0, -5.0, 0.0, 5.0, 10.0), labels: ($−10$, $−5$, $0$, $5$, $10$), tick-style: (direction: "out", line: (length: 3.5pt, angle: 90deg, stroke: color.rgb("#000000") + 0.8pt)), label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))))
+  let xaxis-major-ticks = (
+    locs: (-10.0, -5.0, 0.0, 5.0, 10.0),
+    labels: ($−10$, $−5$, $0$, $5$, $10$),
+    tick-style: (direction: "out", line: (length: 3.5pt, angle: 90deg, stroke: color.rgb("#000000") + 0.8pt)),
+    label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))),
+  )
 
-  let yaxis-major-ticks = (locs: (-20000000.0, -10000000.0, 0.0, 10000000.0, 20000000.0), labels: ($−2$, $−1$, $0$, $1$, $2$), tick-style: (direction: "out", line: (length: 3.5pt, angle: 0deg, stroke: color.rgb("#000000") + 0.8pt)), label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))))
+  let yaxis-major-ticks = (
+    locs: (-20000000.0, -10000000.0, 0.0, 10000000.0, 20000000.0),
+    labels: ($−2$, $−1$, $0$, $1$, $2$),
+    tick-style: (direction: "out", line: (length: 3.5pt, angle: 0deg, stroke: color.rgb("#000000") + 0.8pt)),
+    label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))),
+  )
 
-  let stroke-line-0 = (paint: color.rgb("#1f77b4").transparentize(30.0%), thickness: 1.5pt, cap: "butt", join: "round", dash: (array: (5.55pt, 2.4pt), phase: 0.0pt))
-  let marker-line-0 = markers.circle(3.0pt, fill: color.rgb("#1f77b4").transparentize(30.0%), stroke: color.luma(0%, 70.0%) + 1.0pt)
+  let stroke-line-0 = (
+    paint: color.rgb("#1f77b4").transparentize(30.0%),
+    thickness: 1.5pt,
+    cap: "butt",
+    join: "round",
+    dash: (array: (5.55pt, 2.4pt), phase: 0.0pt),
+  )
+  let marker-line-0 = markers.circle(
+    3.0pt,
+    fill: color.rgb("#1f77b4").transparentize(30.0%),
+    stroke: color.luma(0%, 70.0%) + 1.0pt,
+  )
   let line-0 = (data: data.at("line-0"), stroke: stroke-line-0, marker: marker-line-0, transform: transform)
 
   std.place(rect(width: 100%, height: 100%, fill: color.luma(100.0%)))
@@ -151,21 +246,55 @@
 
   let data = json("data/axes-3.json")
 
-  let title-center = (position: (50.0%, -11.461%), body: place(center + bottom, text(size: 1em + 2.0pt, fill: color.rgb("#000000"), [$f(x) = x^4$])))
+  let title-center = (
+    position: (50.0%, -11.461%),
+    body: place(center + bottom, text(size: 1em + 2.0pt, fill: color.rgb("#000000"), [$f(x) = x^4$])),
+  )
 
 
-  let spines = (left: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), right: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), bottom: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), top: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")))
+  let spines = (
+    left: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    right: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    bottom: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    top: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+  )
 
-  let label-xaxis = (position: (50.0%, 140.267%), body: place(center + top, text(size: 1em, fill: color.rgb("#000000"), [x-label])))
+  let label-xaxis = (
+    position: (50.0%, 140.267%),
+    body: place(center + top, text(size: 1em, fill: color.rgb("#000000"), [x-label])),
+  )
 
-  let offset-label-yaxis = (position: (0%, -5.731%), body: place(left + bottom, text(size: 1em, fill: color.rgb("#000000"), [1e7])))
+  let offset-label-yaxis = (
+    position: (0%, -5.731%),
+    body: place(left + bottom, text(size: 1em, fill: color.rgb("#000000"), [1e7])),
+  )
 
-  let xaxis-major-ticks = (locs: (-10.0, -5.0, 0.0, 5.0, 10.0), labels: ($−10$, $−5$, $0$, $5$, $10$), tick-style: (direction: "out", line: (length: 3.5pt, angle: 90deg, stroke: color.rgb("#000000") + 0.8pt)), label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))))
+  let xaxis-major-ticks = (
+    locs: (-10.0, -5.0, 0.0, 5.0, 10.0),
+    labels: ($−10$, $−5$, $0$, $5$, $10$),
+    tick-style: (direction: "out", line: (length: 3.5pt, angle: 90deg, stroke: color.rgb("#000000") + 0.8pt)),
+    label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))),
+  )
 
-  let yaxis-major-ticks = (locs: (-50000000.0, 0.0, 50000000.0, 100000000.0), labels: ($−5$, $0$, $5$, $10$), tick-style: (direction: "out", line: (length: 3.5pt, angle: 0deg, stroke: color.rgb("#000000") + 0.8pt)), label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))))
+  let yaxis-major-ticks = (
+    locs: (-50000000.0, 0.0, 50000000.0, 100000000.0),
+    labels: ($−5$, $0$, $5$, $10$),
+    tick-style: (direction: "out", line: (length: 3.5pt, angle: 0deg, stroke: color.rgb("#000000") + 0.8pt)),
+    label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))),
+  )
 
-  let stroke-line-0 = (paint: color.rgb("#1f77b4").transparentize(30.0%), thickness: 1.5pt, cap: "butt", join: "round", dash: (array: (5.55pt, 2.4pt), phase: 0.0pt))
-  let marker-line-0 = markers.circle(3.0pt, fill: color.rgb("#1f77b4").transparentize(30.0%), stroke: color.luma(0%, 70.0%) + 1.0pt)
+  let stroke-line-0 = (
+    paint: color.rgb("#1f77b4").transparentize(30.0%),
+    thickness: 1.5pt,
+    cap: "butt",
+    join: "round",
+    dash: (array: (5.55pt, 2.4pt), phase: 0.0pt),
+  )
+  let marker-line-0 = markers.circle(
+    3.0pt,
+    fill: color.rgb("#1f77b4").transparentize(30.0%),
+    stroke: color.luma(0%, 70.0%) + 1.0pt,
+  )
   let line-0 = (data: data.at("line-0"), stroke: stroke-line-0, marker: marker-line-0, transform: transform)
 
   std.place(rect(width: 100%, height: 100%, fill: color.luma(100.0%)))
@@ -181,11 +310,32 @@
 
 #let grid-0() = {
   let padding = (left: 12.19%, right: 0.651%, top: 8.681%, bottom: 9.884%)
-  place(top + left, dx: padding.left, dy: padding.top, block(width: 100% - padding.right - padding.left, height: 100% - padding.top - padding.bottom, fill: none, stroke: none, grid(columns: (2fr, 1fr), rows: (1fr, 1fr, 1fr), column-gutter: (6.912%,), row-gutter: (22.097%, 22.099%), axes.cell(position: (0, 0), shape: (1, 3), axes-0()), axes.cell(position: (1, 0), shape: (1, 1), axes-1()), axes.cell(position: (1, 1), shape: (1, 1), axes-2()), axes.cell(position: (1, 2), shape: (1, 1), axes-3()))))
+  place(top + left, dx: padding.left, dy: padding.top, block(
+    width: 100% - padding.right - padding.left,
+    height: 100% - padding.top - padding.bottom,
+    fill: none,
+    stroke: none,
+    grid(
+      columns: (2fr, 1fr),
+      rows: (1fr, 1fr, 1fr),
+      column-gutter: (6.912%,),
+      row-gutter: (22.097%, 22.099%),
+      axes.cell(position: (0, 0), shape: (1, 3), axes-0()),
+      axes.cell(position: (1, 0), shape: (1, 1), axes-1()),
+      axes.cell(position: (1, 1), shape: (1, 1), axes-2()),
+      axes.cell(position: (1, 2), shape: (1, 1), axes-3()),
+    ),
+  ))
 }
 #let figure(width: 16.256cm, height: 12.192cm) = {
   show: figure-style
-  block(width: width, height: height, fill: color.luma(100.0%), stroke: (paint: color.luma(100.0%), thickness: 0.0pt, dash: "solid"), {grid-0()})
+  block(
+    width: width,
+    height: height,
+    fill: color.luma(100.0%),
+    stroke: (paint: color.luma(100.0%), thickness: 0.0pt, dash: "solid"),
+    { grid-0() },
+  )
 }
 
 #figure()

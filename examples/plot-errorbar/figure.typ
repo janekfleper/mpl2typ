@@ -20,11 +20,26 @@
   let data = json("data/axes-0.json")
 
 
-  let spines = (left: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), right: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), bottom: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")), top: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")))
+  let spines = (
+    left: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    right: (bounds: (100.0%, 0.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    bottom: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+    top: (bounds: (0.0%, 100.0%), stroke: (paint: color.luma(0.0%), thickness: 0.8pt, dash: "solid")),
+  )
 
-  let xaxis-major-ticks = (locs: (-12.5, -10.0, -7.5, -5.0, -2.5, 0.0, 2.5, 5.0, 7.5, 10.0, 12.5), labels: ($−12.5$, $−10.0$, $−7.5$, $−5.0$, $−2.5$, $0.0$, $2.5$, $5.0$, $7.5$, $10.0$, $12.5$), tick-style: (direction: "out", line: (length: 3.5pt, angle: 90deg, stroke: color.rgb("#000000") + 0.8pt)), label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))))
+  let xaxis-major-ticks = (
+    locs: (-12.5, -10.0, -7.5, -5.0, -2.5, 0.0, 2.5, 5.0, 7.5, 10.0, 12.5),
+    labels: ($−12.5$, $−10.0$, $−7.5$, $−5.0$, $−2.5$, $0.0$, $2.5$, $5.0$, $7.5$, $10.0$, $12.5$),
+    tick-style: (direction: "out", line: (length: 3.5pt, angle: 90deg, stroke: color.rgb("#000000") + 0.8pt)),
+    label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))),
+  )
 
-  let yaxis-major-ticks = (locs: (-6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0), labels: ($−6$, $−4$, $−2$, $0$, $2$, $4$, $6$), tick-style: (direction: "out", line: (length: 3.5pt, angle: 0deg, stroke: color.rgb("#000000") + 0.8pt)), label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))))
+  let yaxis-major-ticks = (
+    locs: (-6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0),
+    labels: ($−6$, $−4$, $−2$, $0$, $2$, $4$, $6$),
+    tick-style: (direction: "out", line: (length: 3.5pt, angle: 0deg, stroke: color.rgb("#000000") + 0.8pt)),
+    label-style: (pad: 3.5pt, rotation: -0.0deg, text: (size: 1em, fill: color.rgb("#000000"))),
+  )
 
   let stroke-line-0 = (paint: color.rgb("#1f77b4"), thickness: 1.5pt, cap: "butt", join: "round", dash: "solid")
   let marker-line-0 = markers.caretdown(3.0pt, fill: color.luma(0%), stroke: color.rgb("#1f77b4") + 1.0pt)
@@ -38,7 +53,14 @@
     let (x, y) = point
     ((x * 0.01 + 0.0) * 72pt, (y * 0.01 + 0.0) * -72pt)
   }
-  let collection-1 = (data: data.at("collection-1"), fill: fill-collection-1, stroke: stroke-collection-1, transform: transform-collection-1, compute-scale: compute-scale-collection-1, offset-transform: offset-transform-collection-1)
+  let collection-1 = (
+    data: data.at("collection-1"),
+    fill: fill-collection-1,
+    stroke: stroke-collection-1,
+    transform: transform-collection-1,
+    compute-scale: compute-scale-collection-1,
+    offset-transform: offset-transform-collection-1,
+  )
 
   let stroke-line-2 = (paint: color.rgb("#ff7f0e"), thickness: 1.5pt, cap: "butt", join: "round", dash: "solid")
   let marker-line-2 = markers.hexagon1(3.0pt, fill: color.rgb("#ff7f0e"), stroke: color.rgb("#ff7f0e") + 1.0pt)
@@ -52,10 +74,46 @@
     let (x, y) = point
     ((x * 0.01 + 0.0) * 72pt, (y * 0.01 + 0.0) * -72pt)
   }
-  let collection-3 = (data: data.at("collection-3"), fill: fill-collection-3, stroke: stroke-collection-3, transform: transform-collection-3, compute-scale: compute-scale-collection-3, offset-transform: offset-transform-collection-3)
+  let collection-3 = (
+    data: data.at("collection-3"),
+    fill: fill-collection-3,
+    stroke: stroke-collection-3,
+    transform: transform-collection-3,
+    compute-scale: compute-scale-collection-3,
+    offset-transform: offset-transform-collection-3,
+  )
 
-  let legend-style = (location: top + left, title: none, columns: 1, row-gutter: 0.5em, item-gutter: 0.8em, column-gutter: 2.0em, handle-length: 2.0em, handle-height: 0.7em, fill: color.luma(100.0%, 80.0%), stroke: color.luma(80.0%, 80.0%), frame: block.with(radius: 2.778pt))
-  let legend-items = ((handle: legend.errorbar.with(data: (stroke: stroke-line-0, marker: marker-line-0), caps: (:), bars: (y: stroke-collection-1,)), label: [data-blue]), (handle: legend.errorbar.with(data: (stroke: stroke-line-2, marker: marker-line-2), caps: (:), bars: (y: stroke-collection-3,)), label: [data-orange]))
+  let legend-style = (
+    location: top + left,
+    title: none,
+    columns: 1,
+    row-gutter: 0.5em,
+    item-gutter: 0.8em,
+    column-gutter: 2.0em,
+    handle-length: 2.0em,
+    handle-height: 0.7em,
+    fill: color.luma(100.0%, 80.0%),
+    stroke: color.luma(80.0%, 80.0%),
+    frame: block.with(radius: 2.778pt),
+  )
+  let legend-items = (
+    (
+      handle: legend.errorbar.with(
+        data: (stroke: stroke-line-0, marker: marker-line-0),
+        caps: (:),
+        bars: (y: stroke-collection-1),
+      ),
+      label: [data-blue],
+    ),
+    (
+      handle: legend.errorbar.with(
+        data: (stroke: stroke-line-2, marker: marker-line-2),
+        caps: (:),
+        bars: (y: stroke-collection-3),
+      ),
+      label: [data-orange],
+    ),
+  )
 
   std.place(rect(width: 100%, height: 100%, fill: color.luma(100.0%)))
   draw.collection(..collection-1)
@@ -71,11 +129,29 @@
 
 #let grid-0() = {
   let padding = (left: 12.5%, right: 10.0%, top: 12.0%, bottom: 11.0%)
-  place(top + left, dx: padding.left, dy: padding.top, block(width: 100% - padding.right - padding.left, height: 100% - padding.top - padding.bottom, fill: none, stroke: none, grid(columns: (1fr,), rows: (1fr,), column-gutter: (), row-gutter: (), axes.cell(position: (0, 0), shape: (1, 1), axes-0()))))
+  place(top + left, dx: padding.left, dy: padding.top, block(
+    width: 100% - padding.right - padding.left,
+    height: 100% - padding.top - padding.bottom,
+    fill: none,
+    stroke: none,
+    grid(
+      columns: (1fr,),
+      rows: (1fr,),
+      column-gutter: (),
+      row-gutter: (),
+      axes.cell(position: (0, 0), shape: (1, 1), axes-0()),
+    ),
+  ))
 }
 #let figure(width: 15.24cm, height: 12.7cm) = {
   show: figure-style
-  block(width: width, height: height, fill: color.luma(100.0%), stroke: (paint: color.luma(100.0%), thickness: 0.0pt, dash: "solid"), {grid-0()})
+  block(
+    width: width,
+    height: height,
+    fill: color.luma(100.0%),
+    stroke: (paint: color.luma(100.0%), thickness: 0.0pt, dash: "solid"),
+    { grid-0() },
+  )
 }
 
 #figure()
