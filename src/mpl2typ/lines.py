@@ -91,10 +91,7 @@ class Marker:
         return Function(
             name=MARKERS[marker],
             args=[self.size],
-            kwargs=dict(
-                fill=self.face_color,
-                stroke=self.stroke,
-            ),
+            kwargs=dict(fill=self.face_color, stroke=self.stroke),
         ).render()
 
 
