@@ -80,7 +80,7 @@ Whether this is a `block()` with a text annotation or an arrow to connect data p
 
 Matplotlib can already create figures in a custom file format with a corresponding backend.
 This is surprisingly simple, you just need to implement four methods to draw images, paths, meshs, and text.
-For Typst such a backend is already available, see [mpl_typst](https://github.com/daskol/mpl_typst). The generation of the .typ file is super fast, as is the compilation.
+For Typst such a backend is already available, see [mpl-typst](https://github.com/daskol/mpl-typst). The generation of the .typ file is super fast, as is the compilation.
 And while the resulting figures look really great, the format of the generated code is not suitable for changes to the layout or the styling.
 Everything is drawn in absolute/relative coordinates of the root block, and adjusting the limits of an axes would already require an unreasonable amount of work.
 You would just do the changes in Matplotlib and generate a new figure.
