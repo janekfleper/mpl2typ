@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 import matplotlib.lines
+from matplotlib.colors import get_named_colors_mapping
 
 from pypst import (
     Binding,
@@ -25,40 +26,7 @@ from pypst import (
 from pypst.color import PREDEFINED_COLORS
 from pypst.utils import render, render_fenced
 
-"""
-The base colors from matplotlib.
-
-https://matplotlib.org/stable/gallery/color/named_colors.html#base-colors
-"""
-MPL_BASE_COLOR_BLACK = "black"
-MPL_BASE_COLOR_WHITE = "white"
-MPL_BASE_COLOR_RED = (1.0, 0.0, 0.0)
-MPL_BASE_COLOR_GREEN = (0.0, 0.5, 0.0)
-MPL_BASE_COLOR_BLUE = (0.0, 0.0, 1.0)
-MPL_BASE_COLOR_YELLOW = (0.75, 0.75, 0.0)
-MPL_BASE_COLOR_MAGENTA = (0.75, 0.0, 0.75)
-MPL_BASE_COLOR_CYAN = (0.0, 0.75, 0.75)
-
-MPL_BASE_COLORS: dict[str | tuple[float, ...], str | tuple[float, ...]] = {
-    "k": MPL_BASE_COLOR_BLACK,
-    "w": MPL_BASE_COLOR_WHITE,
-    "black": MPL_BASE_COLOR_BLACK,
-    "white": MPL_BASE_COLOR_WHITE,
-    (0.0, 0.0, 0.0): MPL_BASE_COLOR_BLACK,
-    (1.0, 1.0, 1.0): MPL_BASE_COLOR_WHITE,
-    "r": MPL_BASE_COLOR_RED,
-    "g": MPL_BASE_COLOR_GREEN,
-    "b": MPL_BASE_COLOR_BLUE,
-    "y": MPL_BASE_COLOR_YELLOW,
-    "m": MPL_BASE_COLOR_MAGENTA,
-    "c": MPL_BASE_COLOR_CYAN,
-    "red": MPL_BASE_COLOR_RED,
-    "green": MPL_BASE_COLOR_GREEN,
-    "blue": MPL_BASE_COLOR_BLUE,
-    "yellow": MPL_BASE_COLOR_YELLOW,
-    "magenta": MPL_BASE_COLOR_MAGENTA,
-    "cyan": MPL_BASE_COLOR_CYAN,
-}
+MPL_COLORS: dict[str, str | tuple[float, ...]] = get_named_colors_mapping()
 
 
 def color_from_mpl(
@@ -92,8 +60,8 @@ def color_from_mpl(
     if isinstance(color, np.ndarray):
         color = tuple(color)
 
-    if color in MPL_BASE_COLORS.keys():
-        color = MPL_BASE_COLORS[color]
+    if isinstance(color, str) and color in MPL_COLORS.keys():
+        color = MPL_COLORS[color]
 
     if isinstance(color, str):
         if alpha is not None and isinstance(alpha, float):
@@ -116,9 +84,6 @@ def color_from_mpl(
         alpha: Ratio = Ratio(alpha)
 
     color = color[:3]
-    if color in MPL_BASE_COLORS:
-        return ColorPredefined(color=MPL_BASE_COLORS[color], alpha=alpha)
-
     if len(set(color)) == 1:
         return ColorLuma(lightness=Ratio(color[0]), alpha=alpha)
     return ColorRGB(
