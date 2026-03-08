@@ -9,8 +9,7 @@ description = "Export Matplotlib figures to structured Typst files"
 readme = "README.md"
 authors = [{ name = "Janek Fleper", email = "j.fleper@mailbox.org" }]
 requires-python = ">=3.10"
-dependencies = [
-    "matplotlib>=3.10.1",
-    "pypst>=0.8.0",
-]
+dependencies = ["matplotlib>=3.10.1", "pypst"]
 
+[tool.uv.sources]
+pypst = { git = "https://github.com/janekfleper/pypst.git", rev = "mpl2typ" }
