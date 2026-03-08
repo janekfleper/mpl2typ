@@ -37,7 +37,7 @@ def template(
 class Figure:
     def __init__(self, fig: matplotlib.figure.Figure):
         self.fig = fig
-        self.grids: list[Grid] = []
+        self.grids: list[AxesGrid] = []
         self.inset_axes: list[InsetAxes] = []
         self.other_axes: list[Axes] = []
         self.parse()
@@ -116,12 +116,15 @@ class Figure:
             for grid in self.grids:
                 for ax in grid.axes:
                     f.write(ax.render(path) + "\n")
-                f.write(grid.render() + "\n")
+                f.write(grid.render() + "\n\n")
                 children.append(f"{grid.name}()")
 
             for ax in self.other_axes:
                 f.write(ax.render(path) + "\n")
-                children.append(f"{ax.name}()")
+                name = ax.name
+                if ax.standalone:
+                    name = "standalone-" + name
+                children.append(f"{name}()")
 
             f.write(
                 template(

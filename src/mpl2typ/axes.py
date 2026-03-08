@@ -728,7 +728,7 @@ class Axes(AxesBase):
 
         if self.standalone:
             s += PlaceBlock(
-                name=self.name,
+                name="standalone-" + self.name,
                 padding=self.padding,
                 body=f"{self.name}()",
             ).render()
