@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools >= 78.0.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "mpl2typ"
 version = "0.1.0"
@@ -10,6 +14,3 @@ dependencies = [
     "pypst>=0.8.0",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
