@@ -24,7 +24,7 @@ from .lines import Line2D
 from .patches import Rectangle
 from .collections import Collection, QuadMesh
 from .legend import Legend
-from .text import Text, relativ_fontsize
+from .text import Text, relative_fontsize
 from .typst import (
     color_from_mpl,
     Drawable,
@@ -207,7 +207,7 @@ class AxesTicks(ABC, Drawable, Generic[TickParams]):
             pad=Length(tick.get_pad(), "pt"),
             rotation=Degree(-text.get_rotation()),
             text=dict(
-                size=relativ_fontsize(float(text.get_fontsize())),
+                size=relative_fontsize(float(text.get_fontsize())),
                 fill=color_from_mpl(text.get_color(), text.get_alpha()),
             ),
         )

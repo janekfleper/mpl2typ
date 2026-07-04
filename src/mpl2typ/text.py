@@ -18,7 +18,7 @@ from pypst import (
 from .typst import color_from_mpl, Drawable, Function
 
 
-def relativ_fontsize(fontsize: float) -> str:
+def relative_fontsize(fontsize: float) -> str:
     delta = fontsize - matplotlib.rcParams["font.size"]
     fontsize: str = Length(1, "em").render()
     if delta > 0:
@@ -58,7 +58,7 @@ class Text(Drawable):
 
     @property
     def fontsize(self) -> str:
-        return relativ_fontsize(float(self.text.get_fontsize()))
+        return relative_fontsize(float(self.text.get_fontsize()))
 
     @property
     def color(self) -> Color:
