@@ -8,7 +8,8 @@ from pypst import Binding, Block, Color, Functional, Renderable, ShowRule
 
 from .axes import Axes, ColorbarAxes, InsetAxes
 from .grid import AxesGrid
-from .typst import color_from_mpl, Function, Length, Stroke
+from .text import Text
+from .typst import color_from_mpl, Function, Length, Ratio, Stroke
 
 
 def template(
@@ -40,6 +41,9 @@ class Figure:
         self.grids: list[AxesGrid] = []
         self.inset_axes: list[InsetAxes] = []
         self.other_axes: list[Axes] = []
+        self.texts: list[Text] = []
+        self.definitions: list[Binding] = []
+        self.executions: list[tuple[Function, float]] = []
         self.parse()
 
     @property
@@ -61,6 +65,40 @@ class Figure:
             linewidth=self.fig.get_linewidth(),
             linestyle="solid",
         )
+
+    @staticmethod
+    def render_definitions(definitions: list[Binding | None]) -> list[str]:
+        rendered: list[str] = []
+        for definition in definitions:
+            rendered.append(definition.render().lstrip("#"))
+        return rendered
+
+    @staticmethod
+    def render_executions(executions: list[tuple[Function, float]]) -> list[str]:
+        rendered: list[str] = []
+        for execution, _ in sorted(executions, key=lambda x: x[1]):
+            rendered.append(execution.render())
+        return rendered
+
+    def transform_point(
+        self,
+        point,
+        transform,
+    ) -> str | Renderable | tuple[str | Renderable, str | Renderable]:
+        """
+        Transform a point from any coordinates to relative figure coordinates.
+
+        In Typst, the relative figure coordinates range from 0% to 100% in both
+        directions, although the y-axis is inverted compared to matplotlib.
+        """
+        x, y = point
+        if transform == self.fig.transFigure:
+            return Ratio((x, 1 - y))
+        else:
+            x, y = self.fig.transFigure.inverted().transform_point(
+                transform.transform_point(point)
+            )
+            return Ratio((x, 1 - y))
 
     def parse(self) -> None:
         grid_axes: list[list[Axes]] = []
@@ -91,6 +129,10 @@ class Figure:
 
         for i in range(len(gridspecs)):
             self.grids.append(AxesGrid(gridspecs[i], grid_axes[i], str(i)))
+
+        for i, text in enumerate(self.fig.texts):
+            if text.get_text():
+                self.texts.append(Text(text, self, name=str(i)))
 
     def render(self, path: str | pathlib.Path, header: str | None = None) -> None:
         path = pathlib.Path(path)
@@ -125,6 +167,15 @@ class Figure:
                 if ax.standalone:
                     name = "standalone-" + name
                 children.append(f"{name}()")
+
+            for text in self.texts:
+                self.definitions.append(text.definition)
+                self.executions.append((text.execution, text.zorder))
+
+            if self.definitions:
+                children.append("\n".join(self.render_definitions(self.definitions)))
+            if self.executions:
+                children.append("\n".join(self.render_executions(self.executions)))
 
             f.write(
                 template(
